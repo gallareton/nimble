@@ -53,7 +53,6 @@ export async function sessionRoutes(app: FastifyInstance) {
 
   app.post('/v1/sessions/claim', { preHandler: app.authenticate }, async (req, reply) => {
     const key = requireIdemKey(req, reply); if (!key) return
-    const { code } = ClaimRequest.parse(req.body)
     const walletHash = createHmac('sha256', env.codePepper).update(req.user.address).digest('hex')
     const ipHash = createHmac('sha256', env.codePepper).update(req.ip).digest('hex')
 
@@ -67,6 +66,17 @@ export async function sessionRoutes(app: FastifyInstance) {
     }
     if (await countFor('wallet', walletHash) >= MAX_FAILED || await countFor('ip', ipHash) >= MAX_FAILED * 3)
       return reply.code(429).send({ error: { code: 'RATE_LIMITED', message: 'Too many attempts. Wait a moment.' } })
+
+    // Validate request body; malformed requests count as failed attempts
+    const parsed = ClaimRequest.safeParse(req.body)
+    if (!parsed.success) {
+      await db.insert(claimAttempt).values([
+        { subjectType: 'wallet', subjectHash: walletHash },
+        { subjectType: 'ip', subjectHash: ipHash },
+      ])
+      return reply.code(404).send(CODE_UNAVAILABLE)
+    }
+    const { code } = parsed.data
 
     const { code: status, body } = await withIdempotency<any>(db, `claim:${req.user.userId}`, key, code, async () => {
       const [won] = await db.update(paymentSession).set({

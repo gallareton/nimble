@@ -44,10 +44,43 @@ it('claimed code can never be claimed again; invalid & self-claim give the SAME 
   }
 })
 
-it('throttles after 10 failed attempts', async () => {
+it('throttles after 10 failed attempts per wallet', async () => {
   const r = await makeUser(db, 'NQ25 GUESSER')
   const t = await tokenFor(r)
-  for (let i = 0; i < 10; i++) await claim(t, '999999')
+  for (let i = 0; i < 10; i++) {
+    const res = await claim(t, '999999')
+    expect(res.statusCode).toBe(404)
+  }
   const throttled = await claim(t, '999999')
+  expect(throttled.statusCode).toBe(429)
+})
+
+it('malformed body (missing code) returns 404 CODE_UNAVAILABLE and counts toward throttle', async () => {
+  const r = await makeUser(db, 'NQ26 MALFORMED')
+  const t = await tokenFor(r)
+  const res = await app.inject({ method: 'POST', url: '/v1/sessions/claim', payload: {},
+    headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(res.statusCode).toBe(404)
+  expect(res.json().error.code).toBe('CODE_UNAVAILABLE')
+})
+
+it('malformed body (wrong code shape) returns 404 CODE_UNAVAILABLE and counts toward throttle', async () => {
+  const r = await makeUser(db, 'NQ27 MALFORMED2')
+  const t = await tokenFor(r)
+  const res = await app.inject({ method: 'POST', url: '/v1/sessions/claim', payload: { code: 'abc' },
+    headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(res.statusCode).toBe(404)
+  expect(res.json().error.code).toBe('CODE_UNAVAILABLE')
+})
+
+it('malformed attempts count toward throttle limit', async () => {
+  const r = await makeUser(db, 'NQ28 MALFORMED_THROTTLE')
+  const t = await tokenFor(r)
+  for (let i = 0; i < 10; i++) {
+    await app.inject({ method: 'POST', url: '/v1/sessions/claim', payload: { code: 'bad' },
+      headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
+  }
+  const throttled = await app.inject({ method: 'POST', url: '/v1/sessions/claim', payload: { code: 'bad' },
+    headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
   expect(throttled.statusCode).toBe(429)
 })
