@@ -7,6 +7,7 @@ import { authRoutes } from './routes/auth'
 import { sessionRoutes } from './routes/sessions'
 import { chargeRoutes } from './routes/charges'
 import { sseRoutes } from './routes/sse'
+import { historyRoutes } from './routes/history'
 
 export interface AppDeps { db: Db; verifier: SignatureVerifier; events: SessionEvents }
 
@@ -19,6 +20,7 @@ export function buildApp(deps: AppDeps) {
   app.register(sessionRoutes)
   app.register(chargeRoutes)
   app.register(sseRoutes)
+  app.register(historyRoutes)
   return app
 }
 declare module 'fastify' {
