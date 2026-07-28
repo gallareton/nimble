@@ -20,26 +20,29 @@ export async function chargeRoutes(app: FastifyInstance) {
     if (s.receiverUserId !== req.user.userId)
       return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'only receiver creates charges' } })
 
-    const { code, body: resBody } = await withIdempotency(db, `charge:${sessionId}`, key, body.amountLuna, async () => {
-      // state transition + charge insert are atomic: a crash between them must
-      // not leave the session in AWAITING_PAYER_APPROVAL without a charge
-      const result = await db.transaction(async tx => {
-        const [locked] = await tx.update(paymentSession).set({ status: 'AWAITING_PAYER_APPROVAL' })
-          .where(and(eq(paymentSession.id, sessionId), eq(paymentSession.status, 'CLAIMED'),
-            gt(paymentSession.chargeDeadlineAt, new Date()))).returning()
-        if (!locked) return null
-        const [receiver] = await tx.select().from(userProfile).where(eq(userProfile.id, req.user.userId))
-        const [c] = await tx.insert(charge).values({
-          sessionId, amountAtomic: parseLunaString(body.amountLuna),
-          recipientAddress: receiver.walletAddress, reference: body.reference ?? null,
-        }).returning()
-        return c
-      })
-      if (!result) return { code: 409, body: { error: { code: 'CHARGE_EXISTS', message: 'charge window closed or already charged' } } }
-      await events.publish(db, { sessionId, eventType: 'CHARGE_SUBMITTED', actorType: 'receiver',
-        stateFrom: 'CLAIMED', stateTo: 'AWAITING_PAYER_APPROVAL' })
-      return { code: 201, body: { chargeId: result.id, version: result.version } }
-    })
+    type ChargeResponseBody = { error?: { code: string; message: string }; chargeId?: string; version?: number }
+    const { code, body: resBody } = await withIdempotency<ChargeResponseBody>(
+      db, `charge:${sessionId}`, key, body.amountLuna, async () => {
+        // state transition + charge insert are atomic: a crash between them must
+        // not leave the session in AWAITING_PAYER_APPROVAL without a charge
+        const result = await db.transaction(async tx => {
+          const [locked] = await tx.update(paymentSession).set({ status: 'AWAITING_PAYER_APPROVAL' })
+            .where(and(eq(paymentSession.id, sessionId), eq(paymentSession.status, 'CLAIMED'),
+              gt(paymentSession.chargeDeadlineAt, new Date()))).returning()
+          if (!locked) return null
+          const [receiver] = await tx.select().from(userProfile).where(eq(userProfile.id, req.user.userId))
+          const [c] = await tx.insert(charge).values({
+            sessionId, amountAtomic: parseLunaString(body.amountLuna),
+            recipientAddress: receiver.walletAddress, reference: body.reference ?? null,
+          }).returning()
+          return c
+        })
+        if (!result) return { code: 409, body: { error: { code: 'CHARGE_EXISTS', message: 'charge window closed or already charged' } } }
+        await events.publish(db, { sessionId, eventType: 'CHARGE_SUBMITTED', actorType: 'receiver',
+          stateFrom: 'CLAIMED', stateTo: 'AWAITING_PAYER_APPROVAL' })
+        return { code: 201, body: { chargeId: result.id, version: result.version } }
+      }
+    )
     return reply.code(code).send(resBody)
   })
 }
