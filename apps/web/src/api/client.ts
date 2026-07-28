@@ -62,6 +62,7 @@ export class Api {
     return this.#post<{ transactionId: string }>(`/v1/charges/${chargeId}/transactions`, { hash }, idemKey)
   }
   history() { return this.#get<{ items: HistoryItem[]; nextCursor: null }>('/v1/history') }
+  updateMe(body: { displayName: string }) { return this.#request<{ ok: true }>('PATCH', '/v1/me', body) }
 
   // Tickets are single-use: EventSource's built-in auto-reconnect would replay
   // a consumed ticket and die on 401 — manage reconnection manually and

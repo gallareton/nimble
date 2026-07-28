@@ -37,4 +37,13 @@ export async function authRoutes(app: FastifyInstance) {
       .sign(new TextEncoder().encode(env.jwtSecret))
     return { token, address }
   })
+
+  app.patch('/v1/me', { preHandler: app.authenticate }, async (req, reply) => {
+    const body = req.body as { displayName?: unknown }
+    const displayName = typeof body?.displayName === 'string' ? body.displayName.trim().slice(0, 50) : ''
+    if (!displayName)
+      return reply.code(400).send({ error: { code: 'VALIDATION', message: 'displayName required' } })
+    await db.update(userProfile).set({ displayName }).where(eq(userProfile.id, req.user.userId))
+    return { ok: true }
+  })
 }
