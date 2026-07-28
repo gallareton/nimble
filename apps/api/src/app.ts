@@ -1,10 +1,11 @@
 import Fastify from 'fastify'
 import type { Db } from './db/client'
 import type { SignatureVerifier } from './services/nimiqAuth'
+import { SessionEvents } from './services/events'
 import { authenticate } from './plugins/auth'
 import { authRoutes } from './routes/auth'
 
-export interface AppDeps { db: Db; verifier: SignatureVerifier }
+export interface AppDeps { db: Db; verifier: SignatureVerifier; events: SessionEvents }
 
 export function buildApp(deps: AppDeps) {
   const app = Fastify({ logger: true })
