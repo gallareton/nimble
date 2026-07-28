@@ -5,6 +5,7 @@ import { SessionEvents } from './services/events'
 import { authenticate } from './plugins/auth'
 import { authRoutes } from './routes/auth'
 import { sessionRoutes } from './routes/sessions'
+import { chargeRoutes } from './routes/charges'
 
 export interface AppDeps { db: Db; verifier: SignatureVerifier; events: SessionEvents }
 
@@ -15,6 +16,7 @@ export function buildApp(deps: AppDeps) {
   app.get('/healthz', async () => ({ ok: true }))
   app.register(authRoutes)
   app.register(sessionRoutes)
+  app.register(chargeRoutes)
   return app
 }
 declare module 'fastify' {

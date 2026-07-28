@@ -1,6 +1,6 @@
 import { and, eq, gt, isNull, sql as dsql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
-import { paymentSession, claimAttempt } from '../db/schema'
+import { paymentSession, claimAttempt, charge, userProfile, chainTransaction } from '../db/schema'
 import { env } from '../env'
 import { withIdempotency } from '../plugins/idempotency'
 import { generateCode, hashCode } from '../services/codeService'
@@ -102,5 +102,34 @@ export async function sessionRoutes(app: FastifyInstance) {
       return { code: 200, body: { sessionId: won.id } }
     })
     return reply.code(status).send(body)
+  })
+
+  app.get('/v1/sessions/:id', { preHandler: app.authenticate }, async (req, reply) => {
+    const id = (req.params as { id: string }).id
+    const [s] = await db.select().from(paymentSession).where(eq(paymentSession.id, id))
+    if (!s || (s.payerUserId !== req.user.userId && s.receiverUserId !== req.user.userId))
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'session not found' } })
+
+    const role = s.payerUserId === req.user.userId ? 'payer' : 'receiver'
+    const [c] = await db.select().from(charge).where(eq(charge.sessionId, id))
+    const [tx] = c ? await db.select().from(chainTransaction).where(eq(chainTransaction.chargeId, c.id)) : []
+
+    let counterpart
+    if (role === 'payer' && s.receiverUserId) {
+      const [r] = await db.select().from(userProfile).where(eq(userProfile.id, s.receiverUserId))
+      counterpart = { displayName: r.displayName ?? `…${r.walletAddress.slice(-4)}`,
+        verificationStatus: 'unverified' as const, addressTail: r.walletAddress.slice(-4) }
+    } else if (role === 'receiver') {
+      const [p] = await db.select().from(userProfile).where(eq(userProfile.id, s.payerUserId))
+      counterpart = { displayName: 'Payer connected', verificationStatus: 'unverified' as const,
+        addressTail: p.walletAddress.slice(-4) }
+    }
+    return {
+      sessionId: s.id, status: s.status, role, expiresAt: s.expiresAt.toISOString(),
+      chargeDeadlineAt: s.chargeDeadlineAt?.toISOString(), counterpart,
+      charge: c ? { chargeId: c.id, version: c.version, amountLuna: c.amountAtomic.toString(),
+        asset: 'NIM', network: 'nimiq', reference: c.reference, recipientAddress: c.recipientAddress } : undefined,
+      transaction: tx ? { hash: tx.hash, status: tx.status, confirmations: tx.confirmations } : undefined,
+    }
   })
 }
