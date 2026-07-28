@@ -1,0 +1,23 @@
+# Confidential material — never commit
+private/
+*.docx
+*.doc
+*.pdf
+
+# Secrets & environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies & build output
+node_modules/
+dist/
+coverage/
+
+# Editor/OS noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
