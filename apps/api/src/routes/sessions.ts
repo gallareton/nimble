@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, sql as dsql } from 'drizzle-orm'
+import { and, eq, gt, isNull, inArray, sql as dsql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { paymentSession, claimAttempt, charge, userProfile, chainTransaction } from '../db/schema'
 import { env } from '../env'
@@ -131,5 +131,24 @@ export async function sessionRoutes(app: FastifyInstance) {
         asset: 'NIM', network: 'nimiq', reference: c.reference, recipientAddress: c.recipientAddress } : undefined,
       transaction: tx ? { hash: tx.hash, status: tx.status, confirmations: tx.confirmations } : undefined,
     }
+  })
+
+  app.post('/v1/sessions/:id/cancel', { preHandler: app.authenticate }, async (req, reply) => {
+    const id = (req.params as any).id
+    const [s] = await db.select().from(paymentSession).where(eq(paymentSession.id, id))
+    if (!s || (s.payerUserId !== req.user.userId && s.receiverUserId !== req.user.userId))
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'not found' } })
+    if (s.receiverUserId !== req.user.userId)
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'only receiver cancels' } })
+    const [c] = await db.select().from(charge).where(eq(charge.sessionId, id))
+    if (c?.reconciliationToken)
+      return reply.code(409).send({ error: { code: 'INVALID_STATE', message: 'payer already approved' } })
+    const [updated] = await db.update(paymentSession).set({ status: 'CANCELLED' })
+      .where(and(eq(paymentSession.id, id),
+        inArray(paymentSession.status, ['CLAIMED', 'AWAITING_PAYER_APPROVAL']))).returning()
+    if (!updated) return reply.code(409).send({ error: { code: 'INVALID_STATE', message: 'cannot cancel now' } })
+    await events.publish(db, { sessionId: id, eventType: 'CANCELLED', actorType: 'receiver',
+      stateFrom: s.status, stateTo: 'CANCELLED' })
+    return { status: 'CANCELLED' }
   })
 }
