@@ -21,3 +21,7 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
+
+# Test artifacts
+e2e/test-results/
+e2e/playwright-report/
