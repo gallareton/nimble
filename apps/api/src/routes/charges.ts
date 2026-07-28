@@ -4,10 +4,11 @@ import { and, eq, gt, inArray } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { randomBytes } from 'node:crypto'
 import { charge, paymentSession, userProfile, chainTransaction } from '../db/schema'
+import type { Db } from '../db/client'
 import { withIdempotency } from '../plugins/idempotency'
 import { requireIdemKey } from './sessions'
 
-async function loadChargeWithSession(db: any, chargeId: string) {
+async function loadChargeWithSession(db: Db, chargeId: string) {
   const [c] = await db.select().from(charge).where(eq(charge.id, chargeId))
   if (!c) return null
   const [s] = await db.select().from(paymentSession).where(eq(paymentSession.id, c.sessionId))
@@ -73,14 +74,18 @@ export async function chargeRoutes(app: FastifyInstance) {
     const found = await loadChargeWithSession(db, (req.params as any).id)
     if (!found || found.s.payerUserId !== req.user.userId)
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'not found' } })
-    const [locked] = await db.update(paymentSession).set({ status: 'AWAITING_WALLET_AUTH' })
-      .where(and(eq(paymentSession.id, found.s.id), eq(paymentSession.status, 'AWAITING_PAYER_APPROVAL'))).returning()
-    if (!locked) return reply.code(409).send({ error: { code: 'INVALID_STATE', message: 'cannot approve now' } })
     const token = randomBytes(16).toString('hex')
-    await db.update(charge).set({ reconciliationToken: token }).where(eq(charge.id, found.c.id))
+    const result = await db.transaction(async tx => {
+      const [locked] = await tx.update(paymentSession).set({ status: 'AWAITING_WALLET_AUTH' })
+        .where(and(eq(paymentSession.id, found.s.id), eq(paymentSession.status, 'AWAITING_PAYER_APPROVAL'))).returning()
+      if (!locked) return null
+      await tx.update(charge).set({ reconciliationToken: token }).where(eq(charge.id, found.c.id))
+      return token
+    })
+    if (!result) return reply.code(409).send({ error: { code: 'INVALID_STATE', message: 'cannot approve now' } })
     await events.publish(db, { sessionId: found.s.id, eventType: 'INTENT', actorType: 'payer',
       stateFrom: 'AWAITING_PAYER_APPROVAL', stateTo: 'AWAITING_WALLET_AUTH' })
-    return { reconciliationToken: token, recipientAddress: found.c.recipientAddress,
+    return { reconciliationToken: result, recipientAddress: found.c.recipientAddress,
       amountLuna: found.c.amountAtomic.toString(), validUntil: new Date(Date.now() + 600_000).toISOString() }
   })
 
@@ -111,7 +116,7 @@ export async function chargeRoutes(app: FastifyInstance) {
           stateFrom: 'AWAITING_WALLET_AUTH', stateTo: 'SUBMITTED', safeMetadata: { hash } })
         return { code: 201, body: { transactionId: txRow.id } }
       } catch (e: any) {
-        if (String(e?.message).includes('tx_network_hash'))
+        if (e?.code === '23505' && e?.constraint_name === 'tx_network_hash')
           return { code: 409, body: { error: { code: 'TX_EXISTS', message: 'hash already registered' } } }
         throw e
       }
