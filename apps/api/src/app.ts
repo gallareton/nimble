@@ -6,6 +6,7 @@ import { authenticate } from './plugins/auth'
 import { authRoutes } from './routes/auth'
 import { sessionRoutes } from './routes/sessions'
 import { chargeRoutes } from './routes/charges'
+import { sseRoutes } from './routes/sse'
 
 export interface AppDeps { db: Db; verifier: SignatureVerifier; events: SessionEvents }
 
@@ -17,6 +18,7 @@ export function buildApp(deps: AppDeps) {
   app.register(authRoutes)
   app.register(sessionRoutes)
   app.register(chargeRoutes)
+  app.register(sseRoutes)
   return app
 }
 declare module 'fastify' {
