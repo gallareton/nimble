@@ -22,9 +22,10 @@ export function Pay() {
       setSession(s)
       closeRef.current?.()
       closeRef.current = await api.openEvents(s.sessionId, ({ status }) => {
-        if (status === 'CLAIMED' || status === 'AWAITING_PAYER_APPROVAL')
-          navigate(`/session/${s.sessionId}`)
+        // Any post-pairing state (claimed, charged, cancelled, …) moves the
+        // payer to the session screen — the code phase is over either way.
         if (status === 'EXPIRED') setExpired(true)
+        else if (status && status !== 'AVAILABLE') navigate(`/session/${s.sessionId}`)
       })
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))

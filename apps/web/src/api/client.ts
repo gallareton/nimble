@@ -26,10 +26,12 @@ export class Api {
     const token = this.getToken()
     if (token) headers.authorization = `Bearer ${token}`
     if (method !== 'GET') headers['idempotency-key'] = idemKey ?? crypto.randomUUID()
+    // Fastify rejects an empty body when content-type is JSON — always send
+    // at least {} on non-GET requests.
     const res = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: method === 'GET' ? undefined : JSON.stringify(body ?? {}),
     })
     const json = await res.json().catch(() => ({}))
     if (!res.ok) {

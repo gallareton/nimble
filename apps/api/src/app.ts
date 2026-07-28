@@ -1,4 +1,6 @@
 import Fastify from 'fastify'
+import cors from '@fastify/cors'
+import { env } from './env'
 import type { Db } from './db/client'
 import type { SignatureVerifier } from './services/nimiqAuth'
 import { SessionEvents } from './services/events'
@@ -13,6 +15,11 @@ export interface AppDeps { db: Db; verifier: SignatureVerifier; events: SessionE
 
 export function buildApp(deps: AppDeps) {
   const app = Fastify({ logger: true })
+  app.register(cors, {
+    origin: env.corsOrigin,
+    methods: ['GET', 'POST', 'PATCH'],
+    allowedHeaders: ['authorization', 'content-type', 'idempotency-key'],
+  })
   app.decorate('deps', deps)
   app.decorate('authenticate', authenticate)
   app.get('/healthz', async () => ({ ok: true }))

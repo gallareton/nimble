@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { paymentSession } from '../db/schema'
+import { env } from '../env'
 
 const TICKET_TTL_MS = 30_000
 const tickets = new Map<string, { sessionId: string; expiresAt: number }>()
@@ -29,10 +30,14 @@ export async function sseRoutes(app: FastifyInstance) {
     }
     tickets.delete(ticket!) // single-use
 
+    // reply.raw bypasses fastify's onSend hooks, so the CORS plugin never
+    // decorates this response — set the header explicitly or browsers block
+    // the cross-origin stream.
     reply.raw.writeHead(200, {
       'content-type': 'text/event-stream',
       'cache-control': 'no-cache',
       connection: 'keep-alive',
+      'access-control-allow-origin': env.corsOrigin,
     })
     const send = (event: string, data: object) =>
       reply.raw.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)

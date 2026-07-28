@@ -5,4 +5,6 @@ export const env = {
   nimiqNetwork: process.env.NIMIQ_NETWORK ?? 'TestAlbatross',
   port: Number(process.env.PORT ?? 3000),
   mockAuth: process.env.MOCK_AUTH === '1',
+  fakeChain: process.env.FAKE_CHAIN === '1',
+  corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
 }
