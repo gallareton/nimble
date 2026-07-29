@@ -76,30 +76,49 @@ export async function sessionRoutes(app: FastifyInstance) {
       ])
       return reply.code(404).send(CODE_UNAVAILABLE)
     }
-    const { code } = parsed.data
+    const { code, amountLuna, reference } = parsed.data
 
-    const { code: status, body } = await withIdempotency<any>(db, `claim:${req.user.userId}`, key, code, async () => {
-      const [won] = await db.update(paymentSession).set({
-        receiverUserId: req.user.userId, status: 'CLAIMED', claimedAt: new Date(),
-        chargeDeadlineAt: new Date(Date.now() + CLAIM_WINDOW_MS),
-      }).where(and(
-        eq(paymentSession.codeHash, hashCode(code, env.codePepper)),
-        eq(paymentSession.status, 'AVAILABLE'),
-        gt(paymentSession.expiresAt, new Date()),
-        isNull(paymentSession.receiverUserId),
-        dsql`${paymentSession.payerUserId} <> ${req.user.userId}`,
-      )).returning()
+    const idemPayload = amountLuna ? `${code}:${amountLuna}` : code
+    const { code: status, body } = await withIdempotency<any>(db, `claim:${req.user.userId}`, key, idemPayload, async () => {
+      // BLIK-style: when the receiver supplies the amount up front, claiming
+      // and charging happen in one atomic transaction — the payer's next SSE
+      // event is already AWAITING_PAYER_APPROVAL with the charge attached.
+      const result = await db.transaction(async tx => {
+        const [won] = await tx.update(paymentSession).set({
+          receiverUserId: req.user.userId,
+          status: amountLuna ? 'AWAITING_PAYER_APPROVAL' : 'CLAIMED',
+          claimedAt: new Date(),
+          chargeDeadlineAt: new Date(Date.now() + CLAIM_WINDOW_MS),
+        }).where(and(
+          eq(paymentSession.codeHash, hashCode(code, env.codePepper)),
+          eq(paymentSession.status, 'AVAILABLE'),
+          gt(paymentSession.expiresAt, new Date()),
+          isNull(paymentSession.receiverUserId),
+          dsql`${paymentSession.payerUserId} <> ${req.user.userId}`,
+        )).returning()
+        if (!won) return null
+        if (!amountLuna) return { won, c: null }
+        const [receiver] = await tx.select().from(userProfile).where(eq(userProfile.id, req.user.userId))
+        const [c] = await tx.insert(charge).values({
+          sessionId: won.id, amountAtomic: BigInt(amountLuna),
+          recipientAddress: receiver.walletAddress, reference: reference ?? null,
+        }).returning()
+        return { won, c }
+      })
 
-      if (!won) {
+      if (!result) {
         await db.insert(claimAttempt).values([
           { subjectType: 'wallet', subjectHash: walletHash },
           { subjectType: 'ip', subjectHash: ipHash },
         ])
         return { code: 404, body: CODE_UNAVAILABLE }
       }
+      const { won, c } = result
       await events.publish(db, { sessionId: won.id, eventType: 'CLAIMED', actorType: 'receiver',
         stateFrom: 'AVAILABLE', stateTo: 'CLAIMED' })
-      return { code: 200, body: { sessionId: won.id } }
+      if (c) await events.publish(db, { sessionId: won.id, eventType: 'CHARGE_SUBMITTED', actorType: 'receiver',
+        stateFrom: 'CLAIMED', stateTo: 'AWAITING_PAYER_APPROVAL' })
+      return { code: 200, body: { sessionId: won.id, ...(c ? { chargeId: c.id } : {}) } }
     })
     return reply.code(status).send(body)
   })

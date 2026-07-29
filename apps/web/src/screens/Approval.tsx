@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { lunaToNim, type SessionView } from '@nimblink/shared'
+import { Link, useParams } from 'react-router-dom'
+import { TERMINAL_STATES, lunaToNim, type SessionView } from '@nimblink/shared'
 import { useAppOptional } from '../AppContext'
 import { Countdown } from '../components/Countdown'
 import { StatusBadge } from '../components/StatusBadge'
@@ -139,6 +139,11 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
         <p><small>tx …{view.transaction.hash.slice(-8)} · {view.transaction.confirmations} conf.</small></p>
       )}
       {notice && <p role="alert">{notice}</p>}
+      {TERMINAL_STATES.has(view.status) && (
+        <nav aria-label="after payment">
+          <p><Link to="/">Back to home</Link> · <Link to="/history">History</Link></p>
+        </nav>
+      )}
     </main>
   )
 }

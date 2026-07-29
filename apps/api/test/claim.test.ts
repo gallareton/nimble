@@ -84,3 +84,24 @@ it('malformed attempts count toward throttle limit', async () => {
     headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
   expect(throttled.statusCode).toBe(429)
 })
+
+it('claim with amount creates the charge atomically — payer sees approval immediately', async () => {
+  const payer = await makeUser(db, `NQ32 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ33 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer); const rt = await tokenFor(receiver)
+  const { code } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+
+  const r = await app.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload: { code, amountLuna: '250000', reference: 'Soda' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(r.statusCode).toBe(200)
+  const body = r.json()
+  expect(body.chargeId).toBeTruthy()
+
+  const view = (await app.inject({ url: `/v1/sessions/${body.sessionId}`,
+    headers: { authorization: `Bearer ${pt}` } })).json()
+  expect(view.status).toBe('AWAITING_PAYER_APPROVAL')
+  expect(view.charge.amountLuna).toBe('250000')
+  expect(view.charge.reference).toBe('Soda')
+})

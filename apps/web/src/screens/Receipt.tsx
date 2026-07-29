@@ -36,7 +36,7 @@ export function Receipt() {
           </button>
         </dd>
       </dl>
-      <p><Link to="/history">Back to history</Link></p>
+      <p><Link to="/">Back to home</Link> · <Link to="/history">History</Link></p>
     </main>
   )
 }

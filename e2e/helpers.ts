@@ -26,13 +26,13 @@ export async function pairAndClaim(browser: Browser) {
   const code = (await payer.getByTestId('code').innerText()).replace(/\s/g, '')
 
   await receiver.getByRole('button', { name: /charge/i }).click()
-  await receiver.getByLabel(/code/i).fill(code)
-  await receiver.getByRole('button', { name: /claim/i }).click()
   return { payer, receiver, code }
 }
 
-export async function submitCharge(receiver: Page, amount: string, reference?: string) {
+// BLIK-style single step: amount + reference + code on one form.
+export async function submitCharge(receiver: Page, code: string, amount: string, reference?: string) {
   await receiver.getByLabel(/amount/i).fill(amount)
   if (reference) await receiver.getByLabel(/reference/i).fill(reference)
+  await receiver.getByLabel(/code/i).fill(code)
   await receiver.getByRole('button', { name: /request payment/i }).click()
 }

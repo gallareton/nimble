@@ -3,8 +3,8 @@ import { pairAndClaim, submitCharge } from './helpers'
 
 test('soda purchase end-to-end across two users', async ({ browser, request }) => {
   await request.post('http://localhost:3100/__test/chain/advance', { data: { reset: true } })
-  const { payer, receiver } = await pairAndClaim(browser)
-  await submitCharge(receiver, '2.5', 'Soda')
+  const { payer, receiver, code } = await pairAndClaim(browser)
+  await submitCharge(receiver, code, '2.5', 'Soda')
 
   await expect(payer.getByText('Soda')).toBeVisible({ timeout: 10_000 })
   await expect(payer.getByText(/unverified profile/i)).toBeVisible()

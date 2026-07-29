@@ -67,7 +67,9 @@ export class Api {
   }
 
   createSession(idemKey?: string) { return this.#post<CreateSessionResponse>('/v1/sessions', undefined, idemKey) }
-  claim(code: string, idemKey?: string) { return this.#post<ClaimResponse>('/v1/sessions/claim', { code }, idemKey) }
+  claim(code: string, opts?: { amountLuna?: string; reference?: string }, idemKey?: string) {
+    return this.#post<ClaimResponse>('/v1/sessions/claim', { code, ...opts }, idemKey)
+  }
   createCharge(sessionId: string, amountLuna: string, reference?: string, idemKey?: string) {
     return this.#post<{ chargeId: string; version: number }>(
       `/v1/sessions/${sessionId}/charges`, { amountLuna, reference }, idemKey)

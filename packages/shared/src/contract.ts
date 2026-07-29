@@ -4,7 +4,13 @@ import type { SessionStatus } from './states'
 export const LunaString = z.string().regex(/^\d+$/, 'integer luna string')
 export const PositiveLunaString = LunaString.refine(s => BigInt(s) > 0n, 'must be positive')
 
-export const ClaimRequest = z.object({ code: z.string().regex(/^\d{6}$/) })
+// BLIK-style: the receiver knows the amount before asking for the code, so
+// claim carries the charge — the payer gets the approval prompt immediately.
+export const ClaimRequest = z.object({
+  code: z.string().regex(/^\d{6}$/),
+  amountLuna: PositiveLunaString.optional(),
+  reference: z.string().max(100).optional(),
+})
 export const CreateChargeRequest = z.object({
   amountLuna: PositiveLunaString,
   reference: z.string().max(100).optional(),
@@ -24,7 +30,7 @@ export interface SessionView {
   transaction?: { hash: string; status: SessionStatus; confirmations: number }
 }
 export interface CreateSessionResponse { sessionId: string; code: string; expiresAt: string }
-export interface ClaimResponse { sessionId: string }
+export interface ClaimResponse { sessionId: string; chargeId?: string }
 export interface IntentResponse {
   reconciliationToken: string; recipientAddress: string; amountLuna: string; validUntil: string
 }
