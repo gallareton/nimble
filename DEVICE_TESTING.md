@@ -1,7 +1,9 @@
 # Device testing (Nimiq Pay + testnet)
 
-Manual exit criteria for the NIM payment slice: a real NIM payment between
-two physical Android devices running Nimiq Pay, confirmed on testnet.
+A repeatable manual test protocol: a real NIM payment between two physical
+devices running Nimiq Pay, confirmed on testnet. The checklist at the
+bottom is the pass criteria for each run — work through it whenever the
+wallet-facing or chain-facing code changes. No real funds are involved.
 
 ## One-time setup (each device)
 
@@ -28,7 +30,7 @@ Set `VITE_API_URL` to your machine's LAN address (e.g.
 `VITE_API_URL=http://192.168.1.42:3000 pnpm --filter @nimble/web dev --host`)
 so phones reach the API. Both devices must be on the same Wi-Fi.
 
-WSL2 note: the phones must use the **Windows** LAN IP (`ipconfig`), not the
+Optional — Windows/WSL2 dev setups only: the phones must use the **Windows** LAN IP (`ipconfig`), not the
 WSL-internal address. Forward both ports from Windows to WSL (e.g. netsh
 portproxy) — 5173 for the page and 3000 for the API, which the phone calls
 directly. Set `CORS_ORIGIN=http://<windows-ip>:5173` for the API.
