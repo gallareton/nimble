@@ -14,20 +14,21 @@ export function History() {
   return (
     <main>
       <h1>History</h1>
-      {items.length === 0 ? <p>No confirmed payments yet.</p> : (
-        <ul>
+      {items.length === 0 ? <p className="quiet">No confirmed payments yet.</p> : (
+        <ul className="list">
           {items.map(r => (
             <li key={r.receiptId}>
               <Link to={`/receipt/${r.receiptId}`}>
-                {r.role === 'payer' ? 'Sent' : 'Received'} {String(r.snapshot.amountNim)} NIM
-                {r.snapshot.reference ? ` — ${String(r.snapshot.reference)}` : ''}
-                {' · '}{new Date(r.createdAt).toLocaleString()}
+                <span className="dir">{r.role === 'payer' ? 'Sent' : 'Received'}
+                  {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}<br />
+                  {new Date(r.createdAt).toLocaleString()}</span>
+                <span className="amt">{String(r.snapshot.amountNim)} NIM</span>
               </Link>
             </li>
           ))}
         </ul>
       )}
-      <p><Link to="/">Home</Link></p>
+      <p className="footer-nav"><Link to="/">Home</Link></p>
     </main>
   )
 }

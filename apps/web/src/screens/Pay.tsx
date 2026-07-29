@@ -27,6 +27,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
   const [expired, setExpired] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const closeRef = useRef<(() => void) | null>(null)
+  const ringRef = useRef<HTMLDivElement>(null)
 
   const clearStored = () => sessionStorage.removeItem(ACTIVE_PAY_KEY)
 
@@ -76,14 +77,22 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
       {!session || expired ? (
         <>
           {expired && <p role="alert">Code expired. Generate a new one.</p>}
-          <button onClick={generate}>Generate code</button>
+          <button className="primary" onClick={generate}>Generate code</button>
         </>
       ) : (
         <>
-          <p>Tell this code to the receiver:</p>
-          <CodeDisplay code={session.code} />
-          <p>Expires in <Countdown until={session.expiresAt} onExpired={() => { clearStored(); setExpired(true) }} /></p>
-          <p>Waiting for the receiver to claim…</p>
+          <div className="code-ring" ref={ringRef}>
+            <div className="code-ring__inner">
+              <span className="brand-chip">NIMblink</span>
+              <CodeDisplay code={session.code} />
+              <Countdown
+                until={session.expiresAt}
+                onExpired={() => { clearStored(); setExpired(true) }}
+                onTick={secs => ringRef.current?.style.setProperty('--frac', String(secs / 120))}
+              />
+            </div>
+          </div>
+          <p className="center quiet">Tell this code to the receiver. Waiting for them to claim…</p>
         </>
       )}
       {error && <p role="alert">{error}</p>}

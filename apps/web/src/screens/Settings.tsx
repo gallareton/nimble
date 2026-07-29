@@ -27,17 +27,19 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
   return (
     <main>
       <h1>Settings</h1>
+      <div className="form-card">
       <label>
         Display name
         <input value={name} maxLength={50} onChange={e => { setName(e.target.value); setSaved(false) }} />
       </label>
       <button onClick={save} disabled={!name}>Save</button>
       {saved && <p role="status">Saved.</p>}
-      <p>
+      </div>
+      <p className="quiet">
         Receiving address (your wallet): <code>{address ?? '—'}</code>
       </p>
       {ctx && <button onClick={ctx.logout}>Disconnect</button>}
-      <p><Link to="/">Home</Link></p>
+      <p className="footer-nav"><Link to="/">Home</Link></p>
     </main>
   )
 }

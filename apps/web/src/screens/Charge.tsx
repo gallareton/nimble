@@ -40,6 +40,7 @@ export function Charge() {
   return (
     <main>
       <h1>Charge</h1>
+      <div className="form-card">
       <label>
         Amount (NIM)
         <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="2.5" />
@@ -51,6 +52,7 @@ export function Charge() {
       <label>
         Code from the payer
         <input
+          className="code-input"
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={7}
@@ -62,9 +64,10 @@ export function Charge() {
           placeholder="123 456"
         />
       </label>
-      <button onClick={submit} disabled={busy || !amount || code.replace(/\s/g, '').length !== 6}>
+      <button className="primary" onClick={submit} disabled={busy || !amount || code.replace(/\s/g, '').length !== 6}>
         Request payment
       </button>
+      </div>
       {error && <p role="alert">{error}</p>}
     </main>
   )

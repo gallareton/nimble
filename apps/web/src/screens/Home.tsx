@@ -16,38 +16,43 @@ export function Home() {
   if (!token) {
     return (
       <main>
-        <h1>NIMblink</h1>
-        <p>Pay or get paid with a 6-digit code.</p>
-        <button onClick={() => { setError(null); login().catch(e => setError(String(e.message ?? e))) }}>
-          Connect wallet
-        </button>
-        {error && <p role="alert">{error}</p>}
+        <div className="hero">
+          <h1 className="brand">NIM<em>blink</em></h1>
+          <p>Pay or get paid with a 6-digit code.</p>
+          <button className="primary" onClick={() => { setError(null); login().catch(e => setError(String(e.message ?? e))) }}>
+            Connect wallet
+          </button>
+          {error && <p role="alert">{error}</p>}
+        </div>
       </main>
     )
   }
 
   return (
     <main>
-      <h1>NIMblink</h1>
+      <h1 className="brand">NIM<em>blink</em></h1>
       <nav className="home-actions">
-        <Link to="/pay"><button>Pay</button></Link>
-        <Link to="/charge"><button>Charge</button></Link>
+        <Link to="/pay"><button className="primary" aria-label="Pay">
+          Pay<span className="sub" aria-hidden>show a code</span></button></Link>
+        <Link to="/charge"><button aria-label="Charge">
+          Charge<span className="sub" aria-hidden>enter a code</span></button></Link>
       </nav>
       {recent.length > 0 && (
         <section>
           <h2>Recent</h2>
-          <ul>
+          <ul className="list">
             {recent.map(r => (
               <li key={r.receiptId}>
                 <Link to={`/receipt/${r.receiptId}`}>
-                  {r.role === 'payer' ? 'Sent' : 'Received'} {String(r.snapshot.amountNim)} NIM
+                  <span className="dir">{r.role === 'payer' ? 'Sent' : 'Received'}</span>
+                  <span className="amt">{String(r.snapshot.amountNim)} NIM</span>
                 </Link>
               </li>
             ))}
           </ul>
         </section>
       )}
-      <p><Link to="/history">History</Link> · <Link to="/settings">Settings</Link></p>
+      <p className="footer-nav"><Link to="/history">History</Link> · <Link to="/settings">Settings</Link></p>
     </main>
   )
 }
