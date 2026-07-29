@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAppOptional } from '../AppContext'
 import { CodeDisplay } from '../components/CodeDisplay'
 import { Countdown } from '../components/Countdown'
 import type { Api } from '../api/client'
+import { copyText } from '../lib/copy'
 
 export const ACTIVE_PAY_KEY = 'nimblink:activePay'
 
@@ -26,6 +27,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
   const [session, setSession] = useState<ActivePay | null>(null)
   const [expired, setExpired] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const closeRef = useRef<(() => void) | null>(null)
   const ringRef = useRef<HTMLDivElement>(null)
 
@@ -73,7 +75,10 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
 
   return (
     <main>
-      <h1>Pay</h1>
+      <header className="top-bar">
+        <Link to="/" className="back" aria-label="Back to home">‹ Home</Link>
+        <h1>Pay</h1>
+      </header>
       {!session || expired ? (
         <>
           {expired && <p role="alert">Code expired. Generate a new one.</p>}
@@ -92,6 +97,11 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
               />
             </div>
           </div>
+          <p className="center">
+            <button className="chip" onClick={() => {
+              void copyText(session.code).then(ok => { if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) } })
+            }}>{copied ? 'Copied' : 'Copy code'}</button>
+          </p>
           <p className="center quiet">Tell this code to the receiver. Waiting for them to claim…</p>
         </>
       )}

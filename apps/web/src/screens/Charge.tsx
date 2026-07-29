@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { nimToLuna } from '@nimblink/shared'
 import { useApp } from '../AppContext'
 import { ApiError } from '../api/client'
@@ -39,7 +39,10 @@ export function Charge() {
 
   return (
     <main>
-      <h1>Charge</h1>
+      <header className="top-bar">
+        <Link to="/" className="back" aria-label="Back to home">‹ Home</Link>
+        <h1>Charge</h1>
+      </header>
       <div className="form-card">
       <label>
         Amount (NIM)

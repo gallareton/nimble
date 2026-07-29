@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useApp } from '../AppContext'
 import type { HistoryItem } from '../api/client'
+import { copyText } from '../lib/copy'
 
 export function Receipt() {
   const { api } = useApp()
@@ -31,7 +32,11 @@ export function Receipt() {
         <dt>Transaction</dt>
         <dd>
           …{hash.slice(-8)}{' '}
-          <button onClick={() => { void navigator.clipboard?.writeText(hash); setCopied(true) }}>
+          <button className="chip" onClick={() => {
+            void copyText(hash).then(ok => {
+              if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) }
+            })
+          }}>
             {copied ? 'Copied' : 'Copy hash'}
           </button>
         </dd>

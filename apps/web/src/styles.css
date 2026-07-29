@@ -69,6 +69,26 @@ a:hover { text-decoration-color: var(--red); }
   border: 0;
 }
 
+/* ── top bar ── */
+.top-bar { display: flex; align-items: center; gap: 12px; }
+.top-bar h1 { flex: 1; }
+.back {
+  font-size: 15px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 10px 6px 0;
+}
+.back:hover { color: var(--bone); }
+
+/* small inline action, must not break line/list layouts */
+button.chip {
+  font-size: 13px;
+  min-height: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--raised);
+}
+
 /* ── brand ── */
 .brand {
   font-family: var(--display);
