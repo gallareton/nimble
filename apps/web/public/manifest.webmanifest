@@ -4,7 +4,7 @@
   "description": "Pay or get paid with a 6-digit code. BLIK-style NIM payments inside Nimiq Pay.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0809",
-  "theme_color": "#0b0809",
+  "background_color": "#f4f4f4",
+  "theme_color": "#1f2348",
   "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }

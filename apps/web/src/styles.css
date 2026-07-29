@@ -1,23 +1,33 @@
-/* ── NIMblink design tokens ─────────────────────────────────────────────
-   Warm black + crimson. Red is a decision, not a decoration: it marks the
-   one primary action per screen and the live payment code. Everything else
-   stays quiet — bone text on layered warm-dark surfaces. */
+/* ── Nimble design tokens — Nimiq design language ───────────────────────
+   Straight from nimiq-style: light gray canvas, white cards, Nimiq Blue
+   text, pill buttons with radial gradients. Light blue is the action
+   color; gold/green/orange/red only carry meaning (currency, states).
+   Goal: opening Nimble from Nimiq Pay should feel like the same app. */
 :root {
-  --ink: #0b0809;
-  --surface: #151112;
-  --raised: #1e1819;
-  --line: #2c2425;
-  --red: #e4222e;
-  --red-deep: #b5121f;
-  --bone: #f6efec;
-  --muted: #a29391;
-  --ok: #34b979;
-  --warn: #e5a93b;
-  --radius: 16px;
-  --display: 'Space Grotesk Variable', system-ui, sans-serif;
-  --body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --nimiq-blue: #1f2348;
+  --nimiq-light-blue: #0582ca;
+  --nimiq-gold: #e9b213;
+  --nimiq-green: #21bca5;
+  --nimiq-orange: #fc8702;
+  --nimiq-red: #d94432;
+  --nimiq-gray: #f4f4f4;
+
+  --ink: var(--nimiq-blue);
+  --muted: rgba(31, 35, 72, 0.6);
+  --faint: rgba(31, 35, 72, 0.4);
+  --line: rgba(31, 35, 72, 0.12);
+  --card: #ffffff;
+  --action: var(--nimiq-light-blue);
+  /* nimiq-style radial gradients (bottom right) */
+  --action-bg: radial-gradient(100% 100% at bottom right, #265dd7, var(--nimiq-light-blue));
+  --action-bg-darkened: radial-gradient(100% 100% at bottom right, #2355c4, #0071c3);
+  --blue-bg: radial-gradient(100% 100% at bottom right, #260133, var(--nimiq-blue));
+  --shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.08);
+  --shadow-lift: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
+  --radius: 12px;
+  --body: 'Mulish Variable', Muli, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-family: var(--body);
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -27,8 +37,8 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--ink);
-  color: var(--bone);
+  background: var(--nimiq-gray);
+  color: var(--ink);
   line-height: 1.5;
 }
 
@@ -42,19 +52,18 @@ main {
 }
 
 h1, h2 {
-  font-family: var(--display);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
   margin: 0;
 }
-h1 { font-size: 22px; }
-h2 { font-size: 15px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+h1 { font-size: 24px; }
+h2 { font-size: 13px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; }
 
 p { margin: 0; }
 p + p { margin-top: 4px; }
 
-a { color: var(--bone); text-decoration-color: var(--line); text-underline-offset: 4px; }
-a:hover { text-decoration-color: var(--red); }
+a { color: var(--action); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* visually hidden, still announced by screen readers */
 .sr-only {
@@ -77,66 +86,69 @@ a:hover { text-decoration-color: var(--red); }
   color: var(--muted);
   text-decoration: none;
   padding: 6px 10px 6px 0;
+  font-weight: 600;
 }
-.back:hover { color: var(--bone); }
+.back:hover { color: var(--ink); text-decoration: none; }
 
 /* small inline action, must not break line/list layouts */
 button.chip {
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 700;
   min-height: 0;
+  min-width: 0;
   padding: 6px 14px;
   border-radius: 999px;
-  background: var(--raised);
+  background: var(--card);
+  color: var(--action);
+  box-shadow: var(--shadow);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 /* ── brand ── */
-.brand {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 22px;
-  letter-spacing: -0.02em;
-}
-.brand em { font-style: normal; color: var(--red); }
+.brand { font-weight: 800; font-size: 24px; letter-spacing: -0.02em; color: var(--ink); }
+.brand em { font-style: normal; color: var(--action); }
 
 .brand-chip {
   display: inline-block;
-  font-family: var(--display);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
-  letter-spacing: 0.02em;
   color: #fff;
-  background: var(--red);
-  border-radius: 8px;
-  padding: 3px 10px 4px;
+  background: var(--blue-bg);
+  border-radius: 999px;
+  padding: 4px 12px 5px;
 }
 
-/* ── buttons ── */
+/* ── buttons (nimiq-style pills) ── */
 button, .btn {
-  font: 500 16px/1.2 var(--body);
-  color: var(--bone);
-  background: var(--raised);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px 20px;
-  min-height: 50px;
+  font: 700 15px/1.2 var(--body);
+  color: var(--ink);
+  background: var(--card);
+  border: none;
+  border-radius: 999px;
+  padding: 14px 24px;
+  min-height: 48px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.06s;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s, transform 0.15s, opacity 0.15s;
 }
-button:hover { border-color: var(--muted); }
+button:hover:not(:disabled) { box-shadow: var(--shadow-lift); }
 button:active { transform: translateY(1px); }
-button:disabled { opacity: 0.45; cursor: default; transform: none; }
+button:disabled { opacity: 0.4; cursor: default; transform: none; }
 button:focus-visible, a:focus-visible, input:focus-visible {
-  outline: 2px solid var(--red);
+  outline: 2px solid var(--action);
   outline-offset: 2px;
 }
 
 button.primary {
-  background: var(--red);
-  border-color: var(--red);
+  background: var(--nimiq-light-blue);
+  background-image: var(--action-bg);
   color: #fff;
-  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 14px;
 }
-button.primary:hover:not(:disabled) { background: var(--red-deep); border-color: var(--red-deep); }
+button.primary:hover:not(:disabled) { background-image: var(--action-bg-darkened); }
 
 .actions { display: flex; gap: 10px; }
 .actions > button { flex: 1; }
@@ -147,39 +159,42 @@ label {
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
+  font-weight: 600;
   color: var(--muted);
 }
 input {
   font: 16px var(--body);
-  color: var(--bone);
-  background: var(--surface);
+  color: var(--ink);
+  background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 13px 14px;
   width: 100%;
 }
-input::placeholder { color: #5d5352; }
-input:focus { border-color: var(--muted); outline: none; }
+input::placeholder { color: var(--faint); }
+input:focus { border-color: var(--action); outline: none; }
 
 .form-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--card);
   border-radius: var(--radius);
-  padding: 18px;
+  box-shadow: var(--shadow);
+  padding: 20px 18px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
+.form-card input { background: var(--nimiq-gray); border-color: transparent; }
+.form-card input:focus { border-color: var(--action); }
 
 /* BLIK-style code entry: one input, six-digit rhythm */
 input.code-input {
-  font-family: var(--display);
   font-size: 30px;
-  font-weight: 600;
-  letter-spacing: 0.35em;
+  font-weight: 800;
+  letter-spacing: 0.3em;
   text-align: center;
-  padding: 16px 8px 16px calc(8px + 0.35em);
-  background: var(--ink);
+  padding: 14px 8px 14px calc(8px + 0.3em);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 
 /* ── the signature: payment code inside a depleting ring ── */
@@ -187,17 +202,18 @@ input.code-input {
   --frac: 1;
   width: min(78vw, 300px);
   aspect-ratio: 1;
-  margin: 10px auto;
+  margin: 10px auto 0;
   border-radius: 50%;
   padding: 7px;
-  background: conic-gradient(var(--red) calc(var(--frac) * 100%), var(--line) 0);
+  background: conic-gradient(var(--action) calc(var(--frac) * 100%), var(--line) 0);
   transition: background 1s linear;
 }
 .code-ring__inner {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: var(--surface);
+  background: var(--card);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -207,17 +223,18 @@ input.code-input {
 }
 
 .code-display {
-  font-family: var(--display);
   font-size: 44px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 
 .countdown {
   font-variant-numeric: tabular-nums;
   color: var(--muted);
   font-size: 14px;
+  font-weight: 600;
 }
 
 /* ── status pills ── */
@@ -226,36 +243,36 @@ input.code-input {
   align-items: center;
   gap: 8px;
   font-size: 14px;
+  font-weight: 600;
   padding: 7px 14px;
   border-radius: 999px;
-  background: var(--raised);
-  border: 1px solid var(--line);
-  color: var(--bone);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  color: var(--ink);
 }
-.status--confirmed { border-color: var(--ok); color: var(--ok); background: rgba(52, 185, 121, 0.08); }
-.status--failed, .status--rejected, .status--cancelled, .status--expired {
-  border-color: var(--line); color: var(--muted);
-}
-.status--delayed { border-color: var(--warn); color: var(--warn); }
+.status--confirmed { color: var(--nimiq-green); }
+.status--failed { color: var(--nimiq-red); }
+.status--rejected, .status--cancelled, .status--expired { color: var(--muted); }
+.status--delayed { color: var(--nimiq-orange); }
 
 /* ── payment sheet (Approval) ── */
 .sheet {
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: var(--card);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: 20px 18px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 .amount {
-  font-family: var(--display);
   font-size: 42px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
-.amount small { font-size: 15px; font-weight: 500; color: var(--muted); margin-left: 6px; }
+.amount small { font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 6px; }
 
 dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 14px; }
 dt { color: var(--muted); }
@@ -271,18 +288,19 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .home-actions button {
   width: 100%;
   min-height: 96px;
-  font-family: var(--display);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 19px;
+  font-weight: 800;
   border-radius: var(--radius);
 }
+.home-actions button.primary { text-transform: none; letter-spacing: 0; font-size: 19px; }
 .home-actions .sub {
   display: block;
   margin-top: 4px;
-  font-family: var(--body);
   font-size: 13px;
-  font-weight: 400;
-  opacity: 0.7;
+  font-weight: 500;
+  opacity: 0.75;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -291,22 +309,23 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: 13px 15px;
   text-decoration: none;
   font-size: 15px;
+  color: var(--ink);
 }
-.list a:hover { border-color: var(--muted); }
+.list a:hover { box-shadow: var(--shadow-lift); text-decoration: none; }
 .list .dir { color: var(--muted); font-size: 13px; }
-.list .amt { font-family: var(--display); font-weight: 600; font-variant-numeric: tabular-nums; }
+.list .amt { font-weight: 800; font-variant-numeric: tabular-nums; }
 
 .footer-nav { color: var(--muted); font-size: 14px; text-align: center; }
-.footer-nav a { color: var(--muted); }
+.footer-nav a { color: var(--muted); font-weight: 600; }
 
-[role='alert'] { color: var(--red); font-size: 14px; }
-[role='status'] { color: var(--ok); font-size: 14px; }
+[role='alert'] { color: var(--nimiq-red); font-size: 14px; font-weight: 600; }
+[role='status'] { color: var(--nimiq-green); font-size: 14px; font-weight: 600; }
 
 .center { text-align: center; }
 .quiet { color: var(--muted); font-size: 14px; }

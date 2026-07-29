@@ -1,7 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0b0809"/>
-  <circle cx="256" cy="256" r="150" fill="none" stroke="#e4222e" stroke-width="26"
+  <defs>
+    <radialGradient id="bg" cx="100%" cy="100%" r="141%">
+      <stop offset="0" stop-color="#260133"/>
+      <stop offset="1" stop-color="#1F2348"/>
+    </radialGradient>
+    <radialGradient id="ring" cx="100%" cy="100%" r="141%">
+      <stop offset="0" stop-color="#265DD7"/>
+      <stop offset="1" stop-color="#0582CA"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="url(#ring)" stroke-width="26"
           stroke-linecap="round" stroke-dasharray="754 188" transform="rotate(-90 256 256)"/>
   <text x="256" y="292" text-anchor="middle" font-family="system-ui, sans-serif"
-        font-size="150" font-weight="700" fill="#f6efec">N</text>
+        font-size="150" font-weight="700" fill="#ffffff">N</text>
 </svg>
