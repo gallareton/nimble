@@ -1,5 +1,6 @@
 import type { ClaimResponse, CreateSessionResponse, IntentResponse, SessionView } from '@nimblink/shared'
 import type { WalletProvider } from '../wallet/types'
+import { uuid } from '../lib/uuid'
 
 export interface HistoryItem {
   receiptId: string
@@ -25,7 +26,7 @@ export class Api {
     const headers: Record<string, string> = { 'content-type': 'application/json' }
     const token = this.getToken()
     if (token) headers.authorization = `Bearer ${token}`
-    if (method !== 'GET') headers['idempotency-key'] = idemKey ?? crypto.randomUUID()
+    if (method !== 'GET') headers['idempotency-key'] = idemKey ?? uuid()
     // Fastify rejects an empty body when content-type is JSON — always send
     // at least {} on non-GET requests.
     const res = await fetch(`${this.baseUrl}${path}`, {

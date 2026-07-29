@@ -1,3 +1,4 @@
+import { uuid } from '../lib/uuid'
 import type { WalletProvider } from './types'
 
 const MOCK_ADDRESS = 'NQ07 0000 0000 0000 0000 0000 0000 0000 0000'
@@ -21,6 +22,6 @@ export class MockWalletProvider implements WalletProvider {
 
   async sendTransaction(_tx: { recipient: string; valueLuna: bigint; data?: string }) {
     await new Promise(r => setTimeout(r, 300))
-    return { hash: `mock-${crypto.randomUUID()}` }
+    return { hash: `mock-${uuid()}` }
   }
 }

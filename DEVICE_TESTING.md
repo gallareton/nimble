@@ -37,8 +37,9 @@ In Nimiq Pay open **Mini Apps → Custom URL** and enter the web LAN URL on
 BOTH devices.
 
 Note: over plain HTTP some secure-context browser APIs are unavailable in
-the WebView — the app does not depend on them, but keep it in mind when
-debugging.
+the WebView (no `crypto.randomUUID`, no `crypto.subtle`). The app's
+`src/lib/uuid.ts` falls back to `crypto.getRandomValues`; if you add code
+using other secure-context APIs, it will break here first.
 
 ## Checklist
 

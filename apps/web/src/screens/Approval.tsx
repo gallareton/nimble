@@ -6,6 +6,7 @@ import { Countdown } from '../components/Countdown'
 import { StatusBadge } from '../components/StatusBadge'
 import { WalletError, type WalletProvider } from '../wallet/types'
 import type { Api } from '../api/client'
+import { uuid } from '../lib/uuid'
 
 // Role-aware session screen: payer sees the approval flow (spec §5.2),
 // receiver sees neutral status. Props are injectable for tests; the app
@@ -45,7 +46,7 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
         valueLuna: BigInt(intent.amountLuna),
         data: intent.reconciliationToken,
       })
-      hashRef.current = { hash, idemKey: crypto.randomUUID() }
+      hashRef.current = { hash, idemKey: uuid() }
       await api.registerTx(view.charge.chargeId, hash, hashRef.current.idemKey)
       refresh()
     } catch (e) {
