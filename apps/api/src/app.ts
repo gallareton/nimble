@@ -1,5 +1,6 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
+import fastifyStatic from '@fastify/static'
 import { ZodError } from 'zod'
 import { env } from './env'
 import type { Db } from './db/client'
@@ -34,8 +35,19 @@ export function buildApp(deps: AppDeps) {
     app.log.error({ err })
     return reply.code(500).send({ error: { code: 'INTERNAL', message: 'internal error' } })
   })
-  app.setNotFoundHandler((_req, reply) =>
-    reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'route not found' } }))
+  // Production serves the built web app from the same origin (WEB_DIST).
+  // API paths keep the JSON 404; everything else falls back to the SPA.
+  if (env.webDist) {
+    app.register(fastifyStatic, { root: env.webDist, wildcard: false })
+    app.setNotFoundHandler((req, reply) => {
+      if (req.url.startsWith('/v1') || req.url.startsWith('/__test'))
+        return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'route not found' } })
+      return reply.sendFile('index.html')
+    })
+  } else {
+    app.setNotFoundHandler((_req, reply) =>
+      reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'route not found' } }))
+  }
 
   app.get('/healthz', async () => ({ ok: true }))
   app.register(authRoutes)

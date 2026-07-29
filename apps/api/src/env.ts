@@ -7,4 +7,5 @@ export const env = {
   mockAuth: process.env.MOCK_AUTH === '1',
   fakeChain: process.env.FAKE_CHAIN === '1',
   corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+  webDist: process.env.WEB_DIST ?? '',
 }

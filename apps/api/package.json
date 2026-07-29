@@ -6,10 +6,12 @@
     "dev": "tsx watch src/server.ts",
     "test": "vitest run",
     "migrate": "tsx src/db/migrate.ts",
-    "generate": "drizzle-kit generate"
+    "generate": "drizzle-kit generate",
+    "start": "tsx src/server.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
+    "@fastify/static": "^10.1.2",
     "@nimble/shared": "workspace:*",
     "@nimiq/core": "^2.7.2",
     "drizzle-orm": "^0.38.0",

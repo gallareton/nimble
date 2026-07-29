@@ -1,0 +1,24 @@
+# Render Blueprint: one web service (API + static web) + managed Postgres.
+# Deploy: push the repo to GitHub, then "New > Blueprint" on render.com.
+services:
+  - type: web
+    name: nimble
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nimble-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CODE_PEPPER
+        generateValue: true
+      - key: NIMIQ_NETWORK
+        value: TestAlbatross
+      - key: CORS_ORIGIN
+        value: ""
+databases:
+  - name: nimble-db
+    plan: basic-256mb

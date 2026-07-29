@@ -57,6 +57,19 @@ See [DEVICE_TESTING.md](DEVICE_TESTING.md) — Nimiq Pay has a hidden
 developer menu with a testnet switch and a faucet; the Mini App loads
 straight from your dev server via Custom URL.
 
+## Deploy (public HTTPS)
+
+One container serves the API and the built web app from the same origin;
+`render.yaml` is a ready [Render](https://render.com) Blueprint (web
+service + managed Postgres, secrets generated). Any Docker host works:
+
+```bash
+docker build -t nimble .
+docker run -p 3000:3000 -e DATABASE_URL=... -e JWT_SECRET=... -e CODE_PEPPER=... nimble
+```
+
+In Nimiq Pay: **Mini Apps → Custom URL** → your deployment URL.
+
 ## Design notes
 
 - Money is integer **luna** (`bigint`, 1 NIM = 100 000 luna) end to end;
@@ -70,3 +83,7 @@ straight from your dev server via Custom URL.
   and the payment still completes.
 - "Paid" means **finalized**: a transaction is CONFIRMED only after the
   including block is sealed by a macro block (Albatross finality).
+
+## License
+
+[MIT](LICENSE)
