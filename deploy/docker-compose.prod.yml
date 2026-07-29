@@ -1,0 +1,35 @@
+# Production stack on the VPS: app (API + static web) + dedicated Postgres.
+# App binds to localhost only; nginx terminates TLS and proxies to it.
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3001:3000'
+    environment:
+      DATABASE_URL: postgres://nimble:${DB_PASSWORD}@db:5432/nimble
+      JWT_SECRET: ${JWT_SECRET}
+      CODE_PEPPER: ${CODE_PEPPER}
+      NIMIQ_NETWORK: TestAlbatross
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nimble
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: nimble
+    volumes:
+      - nimble-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nimble']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  nimble-db:
