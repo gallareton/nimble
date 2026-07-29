@@ -11,7 +11,7 @@
   "dependencies": {
     "@fastify/cors": "^11.3.0",
     "@nimblink/shared": "workspace:*",
-    "@nimiq/core": "^2.0.0",
+    "@nimiq/core": "^2.7.2",
     "drizzle-orm": "^0.38.0",
     "fastify": "^5.2.0",
     "jose": "^5.9.0",

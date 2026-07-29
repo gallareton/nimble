@@ -54,7 +54,10 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
   const pending = await db.select().from(chainTransaction)
     .where(inArray(chainTransaction.status, ['SUBMITTED', 'CONFIRMING', 'DELAYED']))
   if (pending.length === 0) return
-  const lastMacro = await chain.getLastMacroHeight()
+  // Right after (re)establishing consensus a peer request can fail — skip
+  // this tick rather than dying before the per-transaction loop runs.
+  let lastMacro: number
+  try { lastMacro = await chain.getLastMacroHeight() } catch { return }
 
   for (const tx of pending) {
     const [c] = await db.select().from(charge).where(eq(charge.id, tx.chargeId))

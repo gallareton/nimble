@@ -8,6 +8,17 @@ export async function makeNimiqChainClient(): Promise<ChainClient> {
   const Nimiq = await import('@nimiq/core')
   const config = new Nimiq.ClientConfiguration()
   config.network(env.nimiqNetwork)
+  // Device-verified: config.network('TestAlbatross') sets the network id but
+  // KEEPS the mainnet seed list, so consensus never establishes (testnet
+  // handshake to mainnet peers is rejected). Explicit testnet seeds fix it.
+  if (env.nimiqNetwork === 'TestAlbatross') {
+    config.seedNodes([
+      '/dns4/seed1.pos.nimiq-testnet.com/tcp/8443/wss',
+      '/dns4/seed2.pos.nimiq-testnet.com/tcp/8443/wss',
+      '/dns4/seed3.pos.nimiq-testnet.com/tcp/8443/wss',
+      '/dns4/seed4.pos.nimiq-testnet.com/tcp/8443/wss',
+    ])
+  }
   const client = await Nimiq.Client.create(config.build())
   await client.waitForConsensusEstablished()
 
