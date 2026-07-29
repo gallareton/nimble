@@ -26,3 +26,24 @@ it('reuses an explicit idempotency key across retries', async () => {
   await api.createSession('my-key')
   expect(keys).toEqual(['my-key', 'my-key'])
 })
+
+it('signals onUnauthorized on 401 so the app can force re-login', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () =>
+    new Response(JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'invalid token' } }),
+      { status: 401, headers: { 'content-type': 'application/json' } })))
+  const onUnauthorized = vi.fn()
+  const api = new Api('http://x', () => 'stale-token', onUnauthorized)
+  await expect(api.createSession()).rejects.toMatchObject({ status: 401 })
+  expect(onUnauthorized).toHaveBeenCalledOnce()
+})
+
+it('does not signal onUnauthorized for auth endpoints (failed login is not a stale session)', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () =>
+    new Response(JSON.stringify({ error: { code: 'AUTH_FAILED', message: 'invalid signature' } }),
+      { status: 401, headers: { 'content-type': 'application/json' } })))
+  const onUnauthorized = vi.fn()
+  const api = new Api('http://x', () => null, onUnauthorized)
+  const wallet = { signMessage: async () => ({ publicKey: 'pk', signature: 'sig' }) }
+  await expect(api.login(wallet as never)).rejects.toMatchObject({ status: 401 })
+  expect(onUnauthorized).not.toHaveBeenCalled()
+})

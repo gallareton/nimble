@@ -10,7 +10,13 @@ export function useAuth() {
   const [address, setAddress] = useState<string | null>(() => localStorage.getItem(ADDRESS_KEY))
 
   const api = useMemo(
-    () => new Api(import.meta.env.VITE_API_URL ?? 'http://localhost:3000', () => localStorage.getItem(TOKEN_KEY)),
+    () => new Api(import.meta.env.VITE_API_URL ?? 'http://localhost:3000', () => localStorage.getItem(TOKEN_KEY),
+      () => { // stale JWT: drop it and fall back to the login screen
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(ADDRESS_KEY)
+        setToken(null)
+        setAddress(null)
+      }),
     [],
   )
 

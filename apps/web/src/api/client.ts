@@ -20,6 +20,7 @@ export class Api {
   constructor(
     public baseUrl: string,
     private getToken: () => string | null,
+    private onUnauthorized?: () => void,
   ) {}
 
   async #request<T>(method: string, path: string, body?: object, idemKey?: string): Promise<T> {
@@ -36,6 +37,9 @@ export class Api {
     })
     const json = await res.json().catch(() => ({}))
     if (!res.ok) {
+      // A 401 outside the auth flow means the stored JWT went stale (1 h
+      // expiry) — tell the app so it can drop it and show the login screen.
+      if (res.status === 401 && !path.startsWith('/v1/auth')) this.onUnauthorized?.()
       const err = (json as { error?: { code?: string; message?: string } }).error
       throw new ApiError(err?.code ?? 'UNKNOWN', err?.message ?? `HTTP ${res.status}`, res.status)
     }
