@@ -1,11 +1,23 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useApp } from '../AppContext'
+import { useAppOptional } from '../AppContext'
+import type { Api } from '../api/client'
 
-export function Settings() {
-  const { api, address, logout } = useApp()
+export function Settings({ api: apiProp }: { api?: Api } = {}) {
+  const ctx = useAppOptional()
+  const api = apiProp ?? ctx!.api
+  const address = ctx?.address ?? null
   const [name, setName] = useState('')
   const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void api.getMe().then((me) => {
+      if (!cancelled && me.displayName) setName(me.displayName)
+    }).catch(() => {})
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const save = async () => {
     await api.updateMe({ displayName: name })
@@ -24,7 +36,7 @@ export function Settings() {
       <p>
         Receiving address (your wallet): <code>{address ?? '—'}</code>
       </p>
-      <button onClick={logout}>Disconnect</button>
+      {ctx && <button onClick={ctx.logout}>Disconnect</button>}
       <p><Link to="/">Home</Link></p>
     </main>
   )

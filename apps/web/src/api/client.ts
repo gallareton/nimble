@@ -65,6 +65,7 @@ export class Api {
     return this.#post<{ transactionId: string }>(`/v1/charges/${chargeId}/transactions`, { hash }, idemKey)
   }
   history() { return this.#get<{ items: HistoryItem[]; nextCursor: null }>('/v1/history') }
+  getMe() { return this.#get<{ walletAddress: string; displayName: string | null }>('/v1/me') }
   updateMe(body: { displayName: string }) { return this.#request<{ ok: true }>('PATCH', '/v1/me', body) }
 
   // Tickets are single-use: EventSource's built-in auto-reconnect would replay

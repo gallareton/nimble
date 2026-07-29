@@ -38,6 +38,13 @@ export async function authRoutes(app: FastifyInstance) {
     return { token, address }
   })
 
+  app.get('/v1/me', { preHandler: app.authenticate }, async (req) => {
+    const [u] = await db.select({ walletAddress: userProfile.walletAddress,
+      displayName: userProfile.displayName })
+      .from(userProfile).where(eq(userProfile.id, req.user.userId))
+    return u
+  })
+
   app.patch('/v1/me', { preHandler: app.authenticate }, async (req, reply) => {
     const body = req.body as { displayName?: unknown }
     const displayName = typeof body?.displayName === 'string' ? body.displayName.trim().slice(0, 50) : ''
