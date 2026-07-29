@@ -5,11 +5,11 @@ const MOCK_ADDRESS = 'NQ07 0000 0000 0000 0000 0000 0000 0000 0000'
 
 // Deterministic wallet for browser dev and E2E — outside the Nimiq Pay
 // WebView `window.nimiq` does not exist. E2E gives each browser context its
-// own identity via localStorage['nimblink.mockAddress']; the mock publicKey
+// own identity via localStorage['nimble.mockAddress']; the mock publicKey
 // carries the address so the server's mock verifier can recover it.
 export class MockWalletProvider implements WalletProvider {
   #address(): string {
-    return localStorage.getItem('nimblink.mockAddress') ?? MOCK_ADDRESS
+    return localStorage.getItem('nimble.mockAddress') ?? MOCK_ADDRESS
   }
 
   async connect() {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { nimToLuna } from '@nimblink/shared'
+import { nimToLuna } from '@nimble/shared'
 import { useApp } from '../AppContext'
 import { ApiError } from '../api/client'
 

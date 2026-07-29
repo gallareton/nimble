@@ -5,7 +5,7 @@ let n = 0
 export async function newUserPage(browser: Browser): Promise<Page> {
   const ctx = await browser.newContext()
   const address = `NQ${String(10 + n++).padStart(2, '0')} E2EU ${crypto.randomUUID().slice(0, 4).toUpperCase()}`
-  await ctx.addInitScript(addr => localStorage.setItem('nimblink.mockAddress', addr), address)
+  await ctx.addInitScript(addr => localStorage.setItem('nimble.mockAddress', addr), address)
   return ctx.newPage()
 }
 

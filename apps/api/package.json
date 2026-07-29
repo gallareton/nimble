@@ -1,5 +1,5 @@
 {
-  "name": "@nimblink/api",
+  "name": "@nimble/api",
   "type": "module",
   "version": "0.0.0",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
-    "@nimblink/shared": "workspace:*",
+    "@nimble/shared": "workspace:*",
     "@nimiq/core": "^2.7.2",
     "drizzle-orm": "^0.38.0",
     "fastify": "^5.2.0",

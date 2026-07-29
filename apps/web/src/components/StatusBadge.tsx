@@ -1,4 +1,4 @@
-import type { SessionStatus } from '@nimblink/shared'
+import type { SessionStatus } from '@nimble/shared'
 
 const LABELS: Record<SessionStatus, { label: string; icon: string }> = {
   AVAILABLE: { label: 'Waiting for claim', icon: '⏳' },

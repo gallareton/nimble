@@ -16,16 +16,16 @@ two physical Android devices running Nimiq Pay, confirmed on testnet.
 
 ```bash
 docker compose up -d postgres
-pnpm --filter @nimblink/api migrate
-pnpm --filter @nimblink/api dev              # port 3000
-pnpm --filter @nimblink/web dev --host       # note the LAN URL, e.g. http://192.168.1.42:5173
+pnpm --filter @nimble/api migrate
+pnpm --filter @nimble/api dev              # port 3000
+pnpm --filter @nimble/web dev --host       # note the LAN URL, e.g. http://192.168.1.42:5173
 ```
 
 Do NOT insert `--` before `--host` — pnpm would pass a literal `"--"` to
 vite, which then ignores `--host` and binds localhost only.
 
 Set `VITE_API_URL` to your machine's LAN address (e.g.
-`VITE_API_URL=http://192.168.1.42:3000 pnpm --filter @nimblink/web dev --host`)
+`VITE_API_URL=http://192.168.1.42:3000 pnpm --filter @nimble/web dev --host`)
 so phones reach the API. Both devices must be on the same Wi-Fi.
 
 WSL2 note: the phones must use the **Windows** LAN IP (`ipconfig`), not the

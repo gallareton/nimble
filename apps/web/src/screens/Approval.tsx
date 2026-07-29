@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { TERMINAL_STATES, lunaToNim, type SessionView } from '@nimblink/shared'
+import { TERMINAL_STATES, lunaToNim, type SessionView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import { Countdown } from '../components/Countdown'
 import { StatusBadge } from '../components/StatusBadge'

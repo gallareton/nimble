@@ -1,4 +1,4 @@
-# NIMblink
+# Nimble
 
 Code-mediated peer-to-peer payments inside [Nimiq Pay](https://nimiq.com).
 The payer generates a temporary six-digit code and tells it to the receiver.
@@ -8,7 +8,7 @@ Nimiq Pay wallet. The receiver treats the payment as successful only after
 blockchain finality. No QR codes, payment links, or wallet addresses are
 exchanged.
 
-NIMblink is a Nimiq Pay **Mini App**: a web app running in a WebView inside
+Nimble is a Nimiq Pay **Mini App**: a web app running in a WebView inside
 Nimiq Pay, talking to the wallet through the injected `window.nimiq`
 provider (`@nimiq/mini-app-sdk`). Keys never leave the wallet; the backend
 never signs anything.
@@ -29,9 +29,9 @@ Requirements: Node 22+, pnpm 9+, Docker.
 ```bash
 pnpm install
 docker compose up -d postgres
-pnpm --filter @nimblink/api generate && pnpm --filter @nimblink/api migrate
-MOCK_AUTH=1 FAKE_CHAIN=1 pnpm --filter @nimblink/api dev
-VITE_WALLET=mock pnpm --filter @nimblink/web dev
+pnpm --filter @nimble/api generate && pnpm --filter @nimble/api migrate
+MOCK_AUTH=1 FAKE_CHAIN=1 pnpm --filter @nimble/api dev
+VITE_WALLET=mock pnpm --filter @nimble/web dev
 ```
 
 Open two browser profiles at `http://localhost:5173` and walk through
@@ -48,7 +48,7 @@ curl -X POST localhost:3000/__test/chain/advance -H 'content-type: application/j
 
 ```bash
 pnpm test                     # unit + integration (needs the postgres container)
-pnpm --filter @nimblink/e2e test   # Playwright end-to-end
+pnpm --filter @nimble/e2e test   # Playwright end-to-end
 ```
 
 ## Real devices (testnet)

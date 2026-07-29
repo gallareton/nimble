@@ -17,7 +17,7 @@ export function Home() {
     return (
       <main>
         <div className="hero">
-          <h1 className="brand">NIM<em>blink</em></h1>
+          <h1 className="brand">Nim<em>ble</em></h1>
           <p>Pay or get paid with a 6-digit code.</p>
           <button className="primary" onClick={() => { setError(null); login().catch(e => setError(String(e.message ?? e))) }}>
             Connect wallet
@@ -30,7 +30,7 @@ export function Home() {
 
   return (
     <main>
-      <h1 className="brand">NIM<em>blink</em></h1>
+      <h1 className="brand">Nim<em>ble</em></h1>
       <nav className="home-actions">
         <Link to="/pay"><button className="primary" aria-label="Pay">
           Pay<span className="sub" aria-hidden>show a code</span></button></Link>

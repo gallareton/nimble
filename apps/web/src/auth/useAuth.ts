@@ -2,9 +2,20 @@ import { useCallback, useMemo, useState } from 'react'
 import { Api } from '../api/client'
 import { getWallet } from '../wallet'
 
-const TOKEN_KEY = 'nimblink.jwt'
-const ADDRESS_KEY = 'nimblink.address'
-const REFRESH_KEY = 'nimblink.refresh'
+const TOKEN_KEY = 'nimble.jwt'
+const ADDRESS_KEY = 'nimble.address'
+const REFRESH_KEY = 'nimble.refresh'
+
+// One-time key migration from the NIMblink era so nobody gets logged out.
+for (const [oldKey, newKey] of [
+  ['nimblink.jwt', TOKEN_KEY], ['nimblink.address', ADDRESS_KEY], ['nimblink.refresh', REFRESH_KEY],
+] as const) {
+  const v = localStorage.getItem(oldKey)
+  if (v !== null) {
+    if (localStorage.getItem(newKey) === null) localStorage.setItem(newKey, v)
+    localStorage.removeItem(oldKey)
+  }
+}
 
 export function useAuth() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY))

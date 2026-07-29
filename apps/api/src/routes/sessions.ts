@@ -4,7 +4,7 @@ import { paymentSession, claimAttempt, charge, userProfile, chainTransaction } f
 import { env } from '../env'
 import { withIdempotency } from '../plugins/idempotency'
 import { generateCode, hashCode } from '../services/codeService'
-import { ClaimRequest } from '@nimblink/shared'
+import { ClaimRequest } from '@nimble/shared'
 import { createHmac } from 'node:crypto'
 
 export const CODE_TTL_MS = 120_000

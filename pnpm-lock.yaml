@@ -13,7 +13,7 @@ importers:
       '@fastify/cors':
         specifier: ^11.3.0
         version: 11.3.0
-      '@nimblink/shared':
+      '@nimble/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@nimiq/core':
@@ -56,7 +56,7 @@ importers:
       '@fontsource-variable/space-grotesk':
         specifier: ^5.3.0
         version: 5.3.0
-      '@nimblink/shared':
+      '@nimble/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@nimiq/mini-app-sdk':

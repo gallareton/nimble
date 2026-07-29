@@ -1,5 +1,5 @@
-import { CreateChargeRequest, RegisterTxRequest } from '@nimblink/shared'
-import { parseLunaString } from '@nimblink/shared'
+import { CreateChargeRequest, RegisterTxRequest } from '@nimble/shared'
+import { parseLunaString } from '@nimble/shared'
 import { and, eq, gt, inArray } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { randomBytes } from 'node:crypto'

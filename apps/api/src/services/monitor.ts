@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm'
-import { lunaToNim } from '@nimblink/shared'
+import { lunaToNim } from '@nimble/shared'
 import { chainTransaction, charge, paymentSession, receipt, userProfile } from '../db/schema'
 import type { Db } from '../db/client'
 import type { SessionEvents } from './events'

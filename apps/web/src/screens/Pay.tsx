@@ -6,7 +6,7 @@ import { Countdown } from '../components/Countdown'
 import type { Api } from '../api/client'
 import { copyText } from '../lib/copy'
 
-export const ACTIVE_PAY_KEY = 'nimblink:activePay'
+export const ACTIVE_PAY_KEY = 'nimble:activePay'
 
 type ActivePay = { sessionId: string; code: string; expiresAt: string }
 
@@ -88,7 +88,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
         <>
           <div className="code-ring" ref={ringRef}>
             <div className="code-ring__inner">
-              <span className="brand-chip">NIMblink</span>
+              <span className="brand-chip">Nimble</span>
               <CodeDisplay code={session.code} />
               <Countdown
                 until={session.expiresAt}

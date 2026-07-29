@@ -13,7 +13,7 @@ export default defineConfig({
   use: { baseURL: 'http://localhost:5174' },
   webServer: [
     {
-      command: 'pnpm --filter @nimblink/api migrate && pnpm --filter @nimblink/api dev',
+      command: 'pnpm --filter @nimble/api migrate && pnpm --filter @nimble/api dev',
       url: 'http://localhost:3100/healthz',
       reuseExistingServer: false,
       timeout: 60_000,
@@ -21,7 +21,7 @@ export default defineConfig({
         CORS_ORIGIN: 'http://localhost:5174' },
     },
     {
-      command: 'pnpm --filter @nimblink/web dev --port 5174 --strictPort',
+      command: 'pnpm --filter @nimble/web dev --port 5174 --strictPort',
       url: 'http://localhost:5174',
       reuseExistingServer: false,
       timeout: 60_000,

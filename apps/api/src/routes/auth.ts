@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { eq, gt, isNull, and } from 'drizzle-orm'
 import { SignJWT } from 'jose'
 import type { FastifyInstance } from 'fastify'
-import { AuthVerifyRequest } from '@nimblink/shared'
+import { AuthVerifyRequest } from '@nimble/shared'
 import { authNonce, authSession, userProfile } from '../db/schema'
 import { env } from '../env'
 
@@ -23,7 +23,7 @@ export async function authRoutes(app: FastifyInstance) {
   app.post('/v1/auth/challenge', async () => {
     const nonce = randomBytes(16).toString('hex')
     await db.insert(authNonce).values({ nonce })
-    return { nonce, message: `NIMblink login ${nonce}` }
+    return { nonce, message: `Nimble login ${nonce}` }
   })
 
   app.post('/v1/auth/verify', async (req, reply) => {
@@ -36,7 +36,7 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'invalid nonce' } })
 
     const { valid, address } = await verifier.verify(
-      `NIMblink login ${body.nonce}`, body.publicKey, body.signature)
+      `Nimble login ${body.nonce}`, body.publicKey, body.signature)
     if (!valid || !address)
       return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'invalid signature' } })
 

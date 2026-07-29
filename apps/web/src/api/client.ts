@@ -1,4 +1,4 @@
-import type { ClaimResponse, CreateSessionResponse, IntentResponse, SessionView } from '@nimblink/shared'
+import type { ClaimResponse, CreateSessionResponse, IntentResponse, SessionView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
