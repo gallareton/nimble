@@ -8,6 +8,13 @@
       "when": 1785264816988,
       "tag": "0000_lyrical_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785319372080,
+      "tag": "0001_odd_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

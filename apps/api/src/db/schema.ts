@@ -11,6 +11,14 @@ export const userProfile = pgTable('user_profile', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+export const authSession = pgTable('auth_session', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => userProfile.id),
+  tokenHash: text('token_hash').notNull().unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export const paymentSession = pgTable('payment_session', {
   id: uuid('id').primaryKey().defaultRandom(),
   payerUserId: uuid('payer_user_id').notNull().references(() => userProfile.id),

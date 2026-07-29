@@ -27,21 +27,38 @@ it('reuses an explicit idempotency key across retries', async () => {
   expect(keys).toEqual(['my-key', 'my-key'])
 })
 
-it('signals onUnauthorized on 401 so the app can force re-login', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () =>
-    new Response(JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'invalid token' } }),
-      { status: 401, headers: { 'content-type': 'application/json' } })))
-  const onUnauthorized = vi.fn()
+it('renews credentials on 401 and retries the request once', async () => {
+  let calls = 0
+  vi.stubGlobal('fetch', vi.fn(async () => {
+    calls += 1
+    if (calls === 1)
+      return new Response(JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'invalid token' } }),
+        { status: 401, headers: { 'content-type': 'application/json' } })
+    return new Response(JSON.stringify({ sessionId: 's1' }), { status: 201 })
+  }))
+  const onUnauthorized = vi.fn(async () => true)
   const api = new Api('http://x', () => 'stale-token', onUnauthorized)
-  await expect(api.createSession()).rejects.toMatchObject({ status: 401 })
+  await expect(api.createSession()).resolves.toMatchObject({ sessionId: 's1' })
   expect(onUnauthorized).toHaveBeenCalledOnce()
+  expect(calls).toBe(2)
 })
 
-it('does not signal onUnauthorized for auth endpoints (failed login is not a stale session)', async () => {
+it('throws when credentials cannot be renewed, without retrying', async () => {
+  const fetchMock = vi.fn(async () =>
+    new Response(JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'invalid token' } }),
+      { status: 401, headers: { 'content-type': 'application/json' } }))
+  vi.stubGlobal('fetch', fetchMock)
+  const onUnauthorized = vi.fn(async () => false)
+  const api = new Api('http://x', () => 'stale-token', onUnauthorized)
+  await expect(api.createSession()).rejects.toMatchObject({ status: 401 })
+  expect(fetchMock).toHaveBeenCalledTimes(1)
+})
+
+it('does not try to renew for auth endpoints (failed login is not a stale session)', async () => {
   vi.stubGlobal('fetch', vi.fn(async () =>
     new Response(JSON.stringify({ error: { code: 'AUTH_FAILED', message: 'invalid signature' } }),
       { status: 401, headers: { 'content-type': 'application/json' } })))
-  const onUnauthorized = vi.fn()
+  const onUnauthorized = vi.fn(async () => true)
   const api = new Api('http://x', () => null, onUnauthorized)
   const wallet = { signMessage: async () => ({ publicKey: 'pk', signature: 'sig' }) }
   await expect(api.login(wallet as never)).rejects.toMatchObject({ status: 401 })

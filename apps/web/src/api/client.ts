@@ -20,10 +20,11 @@ export class Api {
   constructor(
     public baseUrl: string,
     private getToken: () => string | null,
-    private onUnauthorized?: () => void,
+    // Returns true if credentials were silently renewed (request is retried).
+    private onUnauthorized?: () => Promise<boolean>,
   ) {}
 
-  async #request<T>(method: string, path: string, body?: object, idemKey?: string): Promise<T> {
+  async #request<T>(method: string, path: string, body?: object, idemKey?: string, retried = false): Promise<T> {
     const headers: Record<string, string> = { 'content-type': 'application/json' }
     const token = this.getToken()
     if (token) headers.authorization = `Bearer ${token}`
@@ -38,8 +39,12 @@ export class Api {
     const json = await res.json().catch(() => ({}))
     if (!res.ok) {
       // A 401 outside the auth flow means the stored JWT went stale (1 h
-      // expiry) — tell the app so it can drop it and show the login screen.
-      if (res.status === 401 && !path.startsWith('/v1/auth')) this.onUnauthorized?.()
+      // expiry). Ask the app to renew it (refresh token); on success retry
+      // the request once so the user never notices.
+      if (res.status === 401 && !path.startsWith('/v1/auth') && !retried && this.onUnauthorized) {
+        if (await this.onUnauthorized())
+          return this.#request<T>(method, path, body, idemKey, true)
+      }
       const err = (json as { error?: { code?: string; message?: string } }).error
       throw new ApiError(err?.code ?? 'UNKNOWN', err?.message ?? `HTTP ${res.status}`, res.status)
     }
@@ -49,10 +54,16 @@ export class Api {
   #get<T>(path: string) { return this.#request<T>('GET', path) }
   #post<T>(path: string, body?: object, idemKey?: string) { return this.#request<T>('POST', path, body, idemKey) }
 
-  async login(wallet: WalletProvider): Promise<{ token: string; address: string }> {
+  async login(wallet: WalletProvider): Promise<{ token: string; address: string; refreshToken: string }> {
     const { nonce, message } = await this.#post<{ nonce: string; message: string }>('/v1/auth/challenge')
     const { publicKey, signature } = await wallet.signMessage(message)
-    return this.#post<{ token: string; address: string }>('/v1/auth/verify', { nonce, publicKey, signature })
+    return this.#post<{ token: string; address: string; refreshToken: string }>(
+      '/v1/auth/verify', { nonce, publicKey, signature })
+  }
+
+  refresh(refreshToken: string) {
+    return this.#post<{ token: string; address: string; refreshToken: string }>(
+      '/v1/auth/refresh', { refreshToken })
   }
 
   createSession(idemKey?: string) { return this.#post<CreateSessionResponse>('/v1/sessions', undefined, idemKey) }

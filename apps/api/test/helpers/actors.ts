@@ -10,8 +10,8 @@ export async function makeUser(db: Db, address: string) {
     .onConflictDoUpdate({ target: userProfile.walletAddress, set: { walletAddress: address } }).returning()
   return u
 }
-export function authedApp(db: Db) {
-  const app = buildApp({ db, verifier: { verify: async () => ({ valid: true, address: 'NQ00' }) },
+export function authedApp(db: Db, verifiedAddress = 'NQ00') {
+  const app = buildApp({ db, verifier: { verify: async () => ({ valid: true, address: verifiedAddress }) },
     events: new SessionEvents() })
   const tokenFor = (u: { id: string; walletAddress: string }) =>
     new SignJWT({ addr: u.walletAddress }).setProtectedHeader({ alg: 'HS256' })
