@@ -1,4 +1,8 @@
-# Device testing (Nimiq Pay + testnet)
+# Device testing — developer protocol (Nimiq Pay + testnet)
+
+> Just want to try Nimble? You don't need any of this — see **Try it** in
+> the [README](README.md). This document is for developers testing local
+> builds against real devices.
 
 A repeatable manual test protocol: a real NIM payment between two physical
 devices running Nimiq Pay, confirmed on testnet. The checklist at the

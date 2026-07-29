@@ -13,6 +13,18 @@ Nimiq Pay, talking to the wallet through the injected `window.nimiq`
 provider (`@nimiq/mini-app-sdk`). Keys never leave the wallet; the backend
 never signs anything.
 
+## Try it (no setup)
+
+1. Install [Nimiq Pay](https://www.nimiq.com/nimiq-pay/) and switch it to
+   **Testnet**: long-press the settings button for ~10 s to reveal the
+   developer menu, pick Testnet, then tap **Get free NIM** (faucet — no
+   real funds anywhere).
+2. Open **Mini Apps → Custom URL** and enter:
+   `https://nimble.gallareton.pl`
+3. Connect the wallet, tap **Pay** to show a code — and have a second
+   person (or your second device) claim it under **Charge**. Watch both
+   screens follow the payment live until **Confirmed**.
+
 ## Repo layout
 
 ```
