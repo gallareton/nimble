@@ -8,6 +8,9 @@ import type { RateProvider } from './rates'
 export interface ChainClient {
   getTransaction(hash: string): Promise<null | { includedAtHeight: number | null; expired: boolean }>
   getLastMacroHeight(): Promise<number>
+  // Optional realtime inclusion feed: subscribe to these recipients so
+  // getTransaction/findIncomingByData can answer at micro-block speed.
+  watchAddresses?(addresses: string[]): Promise<void>
   // Reconciliation (design §6, lost-hash mitigation b): find an incoming
   // transaction to `recipient` carrying `dataHex` in its data field.
   findIncomingByData(recipient: string, dataHex: string): Promise<{ hash: string } | null>
@@ -29,9 +32,12 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
 
   // Reconciliation pass: payer approved (token issued) but hash never
   // registered — match the on-chain transfer by recipient + data token.
+  // Watch-set sessions include AWAITING_PAYER_APPROVAL so the recipient
+  // subscription is live well before the wallet broadcasts.
   const awaiting = await db.select().from(paymentSession)
-    .where(eq(paymentSession.status, 'AWAITING_WALLET_AUTH'))
+    .where(inArray(paymentSession.status, ['AWAITING_WALLET_AUTH', 'AWAITING_PAYER_APPROVAL']))
   for (const s of awaiting) {
+    if (s.status !== 'AWAITING_WALLET_AUTH') continue
     const [c] = await db.select().from(charge).where(eq(charge.sessionId, s.id))
     if (!c?.reconciliationToken) continue
     const found = await chain.findIncomingByData(c.recipientAddress, c.reconciliationToken)
@@ -54,6 +60,14 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
 
   const pending = await db.select().from(chainTransaction)
     .where(inArray(chainTransaction.status, ['SUBMITTED', 'CONFIRMING', 'DELAYED']))
+  if (chain.watchAddresses) {
+    const watchSet = new Set<string>(pending.map(tx => tx.recipient))
+    for (const s of awaiting) {
+      const [c] = await db.select().from(charge).where(eq(charge.sessionId, s.id))
+      if (c) watchSet.add(c.recipientAddress)
+    }
+    await chain.watchAddresses([...watchSet]).catch(() => {})
+  }
   if (pending.length === 0) return
   // Right after (re)establishing consensus a peer request can fail — skip
   // this tick rather than dying before the per-transaction loop runs.
