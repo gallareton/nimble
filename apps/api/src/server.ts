@@ -40,7 +40,7 @@ if (env.fakeChain) {
 } else {
   // Chain consensus can take a while or fail — the API must serve regardless.
   void makeNimiqChainClient()
-    .then(chain => startMonitor(db, events, chain, 3000, rates))
+    .then(chain => startMonitor(db, events, chain, 1500, rates))
     .catch(err => app.log.error({ err }, 'chain client unavailable — monitor not started'))
 }
 

@@ -44,11 +44,14 @@ export async function makeNimiqChainClient(): Promise<ChainClient> {
       if (watchHandle !== null) { await client.removeListener(watchHandle).catch(() => {}); watchHandle = null }
       if (addresses.length === 0) return
       watchHandle = await client.addTransactionListener(tx => {
+        // diagnostic: prove whether the network pushes inclusions to us
+        console.log('[chain] push', tx.state, tx.transactionHash.slice(0, 8), tx.blockHeight ?? '-')
         if (!tx.blockHeight || tx.blockHeight <= 0) return
         seen.push({ hash: tx.transactionHash, recipient: tx.recipient,
           dataRaw: tx.data.type === 'raw' ? tx.data.raw : '', height: tx.blockHeight })
         if (seen.length > 200) seen.splice(0, seen.length - 200)
       }, addresses)
+      console.log('[chain] watching', addresses.length, 'address(es)')
     },
     async getTransaction(hash) {
       const buffered = seen.find(x => x.hash === hash)
