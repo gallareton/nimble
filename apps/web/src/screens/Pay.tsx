@@ -70,6 +70,10 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
     setExpired(false)
     try {
       const s = await api.createSession()
+      // The server stamps expiresAt with ITS clock; a device clock a couple
+      // of seconds behind would show 2:02. Clamp to our own now + TTL.
+      s.expiresAt = new Date(
+        Math.min(new Date(s.expiresAt).getTime(), Date.now() + 120_000)).toISOString()
       sessionStorage.setItem(ACTIVE_PAY_KEY, JSON.stringify(s))
       setSession(s)
       await watch(s)

@@ -60,3 +60,16 @@ it('Home shows the browser landing when not inside Nimiq Pay', () => {
   expect(screen.getByRole('link', { name: /open in nimiq pay/i })
     .getAttribute('href')).toMatch(/^nimiqpay:\/\/miniapp/)
 })
+
+it('Pay clamps a skewed server expiry so the countdown starts at 2:00', async () => {
+  const api = {
+    createSession: vi.fn(async () => ({ sessionId: 's4', code: '555666',
+      expiresAt: new Date(Date.now() + 127_000).toISOString() })),
+    openEvents: vi.fn(async () => () => {}),
+  }
+  render(<MemoryRouter><Pay api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('555 666')).toBeTruthy())
+  expect(screen.getByText('2:00')).toBeTruthy()
+  const stored = JSON.parse(sessionStorage.getItem(ACTIVE_PAY_KEY)!)
+  expect(new Date(stored.expiresAt).getTime()).toBeLessThanOrEqual(Date.now() + 120_000)
+})
