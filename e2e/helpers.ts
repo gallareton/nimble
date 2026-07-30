@@ -22,7 +22,8 @@ export async function pairAndClaim(browser: Browser) {
   await connect(receiver)
 
   await payer.getByRole('button', { name: /^pay$/i }).click()
-  await payer.getByRole('button', { name: /generate code/i }).click()
+  // the code generates automatically on entering Pay
+  await payer.getByTestId('code').waitFor()
   const code = (await payer.getByTestId('code').innerText()).replace(/\s/g, '')
 
   await receiver.getByRole('button', { name: /charge/i }).click()

@@ -72,6 +72,7 @@ export function Charge() {
       </button>
       </div>
       {error && <p role="alert">{error}</p>}
+      <Link to="/" className="back-bottom"><button>‹ Back to home</button></Link>
     </main>
   )
 }

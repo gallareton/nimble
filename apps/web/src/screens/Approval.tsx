@@ -4,6 +4,7 @@ import { TERMINAL_STATES, lunaToNim, type SessionView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import { Countdown } from '../components/Countdown'
 import { StatusBadge } from '../components/StatusBadge'
+import { Spinner } from '../components/Spinner'
 import { WalletError, type WalletProvider } from '../wallet/types'
 import type { Api } from '../api/client'
 import { uuid } from '../lib/uuid'
@@ -86,7 +87,8 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
   return (
     <main>
       <h1>{isPayer ? 'Payment' : 'Charge status'}</h1>
-      <p><StatusBadge status={view.status} /></p>
+      <p><StatusBadge status={view.status} />{' '}
+        {!TERMINAL_STATES.has(view.status) && <Spinner />}</p>
 
       {isPayer && view.status === 'AWAITING_PAYER_APPROVAL' && view.charge && view.counterpart && (
         <section aria-label="approval" className="sheet">

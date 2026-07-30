@@ -43,17 +43,21 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
     })
   }
 
-  // Restore an active code after a reload: trust the server, not the cache.
+  // On entry: restore an active code after a reload (trust the server, not
+  // the cache) — or go straight to a fresh code. No extra tap to generate.
+  const bootedRef = useRef(false)
   useEffect(() => {
+    if (bootedRef.current) return
+    bootedRef.current = true
     const stored = readStored()
-    if (!stored) return
+    if (!stored) { void generate(); return }
     let cancelled = false
     void api.getSession(stored.sessionId).then(async (view) => {
       if (cancelled) return
       if (view.status === 'AVAILABLE') { setSession(stored); await watch(stored) }
-      else if (view.status === 'EXPIRED' || view.status === 'CANCELLED') clearStored()
+      else if (view.status === 'EXPIRED' || view.status === 'CANCELLED') { clearStored(); await generate() }
       else { clearStored(); navigate(`/session/${stored.sessionId}`) }
-    }).catch(clearStored)
+    }).catch(() => { clearStored(); void generate() })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -86,7 +90,12 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
         </>
       ) : (
         <>
-          <div className="code-ring" ref={ringRef}>
+          <div
+            className="code-ring"
+            ref={ringRef}
+            style={{ ['--frac' as string]: String(
+              Math.max(0, Math.min(1, (new Date(session.expiresAt).getTime() - Date.now()) / 120_000))) }}
+          >
             <div className="code-ring__inner">
               <span className="brand-chip">Nimble</span>
               <CodeDisplay code={session.code} />
@@ -106,6 +115,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
         </>
       )}
       {error && <p role="alert">{error}</p>}
+      <Link to="/" className="back-bottom"><button>‹ Back to home</button></Link>
     </main>
   )
 }

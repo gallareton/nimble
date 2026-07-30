@@ -15,6 +15,7 @@ it('Pay restores an active code from sessionStorage after a reload', async () =>
     JSON.stringify({ sessionId: 's1', code: '482731', expiresAt: future() }))
   const api = {
     getSession: vi.fn(async () => ({ sessionId: 's1', status: 'AVAILABLE' })),
+    createSession: vi.fn(),
     openEvents: vi.fn(async () => () => {}),
   }
   render(<MemoryRouter><Pay api={api as never} /></MemoryRouter>)
@@ -22,16 +23,27 @@ it('Pay restores an active code from sessionStorage after a reload', async () =>
   expect(api.openEvents).toHaveBeenCalledWith('s1', expect.any(Function))
 })
 
-it('Pay drops a stored session the server no longer reports as AVAILABLE', async () => {
+it('Pay drops a dead stored session and auto-generates a fresh code', async () => {
   sessionStorage.setItem(ACTIVE_PAY_KEY,
     JSON.stringify({ sessionId: 's1', code: '482731', expiresAt: future() }))
   const api = {
     getSession: vi.fn(async () => ({ sessionId: 's1', status: 'EXPIRED' })),
+    createSession: vi.fn(async () => ({ sessionId: 's2', code: '111222', expiresAt: future() })),
     openEvents: vi.fn(async () => () => {}),
   }
   render(<MemoryRouter><Pay api={api as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByRole('button', { name: /generate code/i })).toBeTruthy())
-  expect(sessionStorage.getItem(ACTIVE_PAY_KEY)).toBeNull()
+  await waitFor(() => expect(screen.getByText('111 222')).toBeTruthy())
+  expect(JSON.parse(sessionStorage.getItem(ACTIVE_PAY_KEY)!).sessionId).toBe('s2')
+})
+
+it('Pay auto-generates a code on entry with no stored session', async () => {
+  const api = {
+    createSession: vi.fn(async () => ({ sessionId: 's3', code: '333444', expiresAt: future() })),
+    openEvents: vi.fn(async () => () => {}),
+  }
+  render(<MemoryRouter><Pay api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('333 444')).toBeTruthy())
+  expect(api.createSession).toHaveBeenCalledOnce()
 })
 
 it('Settings pre-fills the saved display name', async () => {

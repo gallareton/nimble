@@ -31,7 +31,9 @@ export function Receipt() {
         <dt>Confirmed</dt><dd>{new Date(String(s.confirmedAt)).toLocaleString()}</dd>
         <dt>Transaction</dt>
         <dd>
-          …{hash.slice(-8)}{' '}
+          <a href={`https://test.nimiq.watch/#${hash}`} target="_blank" rel="noreferrer">
+            …{hash.slice(-8)} ↗
+          </a>{' '}
           <button className="chip" onClick={() => {
             void copyText(hash).then(ok => {
               if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) }

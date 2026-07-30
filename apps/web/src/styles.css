@@ -45,10 +45,10 @@ body {
 main {
   max-width: 480px;
   margin: 0 auto;
-  padding: 20px 18px 32px;
+  padding: 24px 20px 36px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 22px;
 }
 
 h1, h2 {
@@ -56,7 +56,7 @@ h1, h2 {
   letter-spacing: -0.01em;
   margin: 0;
 }
-h1 { font-size: 24px; }
+h1 { font-size: 28px; }
 h2 { font-size: 13px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; }
 
 p { margin: 0; }
@@ -106,7 +106,7 @@ button.chip {
 }
 
 /* ── brand ── */
-.brand { font-weight: 800; font-size: 24px; letter-spacing: -0.02em; color: var(--ink); }
+.brand { font-weight: 800; font-size: 28px; letter-spacing: -0.02em; color: var(--ink); }
 .brand em { font-style: normal; color: var(--action); }
 
 .brand-chip {
@@ -121,13 +121,13 @@ button.chip {
 
 /* ── buttons (nimiq-style pills) ── */
 button, .btn {
-  font: 700 15px/1.2 var(--body);
+  font: 700 16px/1.2 var(--body);
   color: var(--ink);
   background: var(--card);
   border: none;
   border-radius: 999px;
-  padding: 14px 24px;
-  min-height: 48px;
+  padding: 15px 26px;
+  min-height: 52px;
   cursor: pointer;
   box-shadow: var(--shadow);
   transition: box-shadow 0.2s, transform 0.15s, opacity 0.15s;
@@ -200,7 +200,7 @@ input.code-input {
 /* ── the signature: payment code inside a depleting ring ── */
 .code-ring {
   --frac: 1;
-  width: min(78vw, 300px);
+  width: min(84vw, 340px);
   aspect-ratio: 1;
   margin: 10px auto 0;
   border-radius: 50%;
@@ -223,7 +223,7 @@ input.code-input {
 }
 
 .code-display {
-  font-size: 44px;
+  font-size: 50px;
   font-weight: 800;
   letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
@@ -266,7 +266,7 @@ input.code-input {
   gap: 16px;
 }
 .amount {
-  font-size: 42px;
+  font-size: 46px;
   font-weight: 800;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
@@ -274,9 +274,30 @@ input.code-input {
 }
 .amount small { font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 6px; }
 
-dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 14px; }
+dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 15px; }
 dt { color: var(--muted); }
 dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+
+/* thumb-zone back: a full-width quiet pill at the bottom of the screen */
+.back-bottom { text-decoration: none; display: block; margin-top: 6px; }
+.back-bottom button {
+  width: 100%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-weight: 600;
+}
+.back-bottom button:hover { box-shadow: none; color: var(--ink); }
+
+/* Nimiq hexagon spinner for waiting states */
+.spinner {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  vertical-align: -5px;
+  animation: spin 1.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── landing (plain browser) ── */
 .btn-link { text-decoration: none; }
@@ -286,23 +307,23 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 
 /* ── home ── */
 .hero { text-align: center; padding: 36px 0 10px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
-.hero .brand { font-size: 40px; }
+.hero .brand { font-size: 54px; }
 .hero p { color: var(--muted); }
 
 .home-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .home-actions a { text-decoration: none; }
 .home-actions button {
   width: 100%;
-  min-height: 96px;
-  font-size: 19px;
+  min-height: 128px;
+  font-size: 23px;
   font-weight: 800;
   border-radius: var(--radius);
 }
-.home-actions button.primary { text-transform: none; letter-spacing: 0; font-size: 19px; }
+.home-actions button.primary { text-transform: none; letter-spacing: 0; font-size: 23px; }
 .home-actions .sub {
   display: block;
   margin-top: 4px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   opacity: 0.75;
   text-transform: none;
@@ -318,13 +339,13 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   background: var(--card);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 13px 15px;
+  padding: 16px 18px;
   text-decoration: none;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--ink);
 }
 .list a:hover { box-shadow: var(--shadow-lift); text-decoration: none; }
-.list .dir { color: var(--muted); font-size: 13px; }
+.list .dir { color: var(--muted); font-size: 14px; }
 .list .amt { font-weight: 800; font-variant-numeric: tabular-nums; }
 
 .footer-nav { color: var(--muted); font-size: 14px; text-align: center; }
@@ -334,7 +355,7 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 [role='status'] { color: var(--nimiq-green); font-size: 14px; font-weight: 600; }
 
 .center { text-align: center; }
-.quiet { color: var(--muted); font-size: 14px; }
+.quiet { color: var(--muted); font-size: 15px; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }

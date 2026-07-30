@@ -47,7 +47,8 @@ export function Home() {
             {recent.map(r => (
               <li key={r.receiptId}>
                 <Link to={`/receipt/${r.receiptId}`}>
-                  <span className="dir">{r.role === 'payer' ? 'Sent' : 'Received'}</span>
+                  <span className="dir">{r.role === 'payer' ? 'Sent' : 'Received'}
+                    {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}</span>
                   <span className="amt">{String(r.snapshot.amountNim)} NIM</span>
                 </Link>
               </li>
