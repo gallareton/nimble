@@ -5,6 +5,7 @@ import type { HistoryItem } from '../api/client'
 import { Landing } from '../components/Landing'
 import { inNimiqPay } from '../lib/host'
 import { t } from '../i18n'
+import { formatUsdValue } from '../lib/fiat'
 
 export function Home() {
   const { api, token, login } = useApp()
@@ -50,7 +51,9 @@ export function Home() {
                 <Link to={`/receipt/${r.receiptId}`}>
                   <span className="dir">{r.role === 'payer' ? t('Sent') : t('Received')}
                     {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}</span>
-                  <span className="amt">{String(r.snapshot.amountNim)} NIM</span>
+                  <span className="amt">{String(r.snapshot.amountNim)} NIM
+                    {typeof r.snapshot.amountUsd === 'number' &&
+                      <small className="fiat">{formatUsdValue(r.snapshot.amountUsd)}</small>}</span>
                 </Link>
               </li>
             ))}

@@ -6,6 +6,7 @@ import { Countdown } from '../components/Countdown'
 import { StatusBadge } from '../components/StatusBadge'
 import { Spinner } from '../components/Spinner'
 import { t } from '../i18n'
+import { formatUsd, useUsdRate } from '../lib/fiat'
 import { WalletError, type WalletProvider } from '../wallet/types'
 import type { Api } from '../api/client'
 import { uuid } from '../lib/uuid'
@@ -15,9 +16,11 @@ import { uuid } from '../lib/uuid'
 // passes context values.
 export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
   const ctx = useAppOptional()
+  // NOTE: all hooks stay above the early returns below
   const api = props.api ?? ctx?.api
   const wallet = props.wallet ?? ctx?.wallet
   if (!api || !wallet) throw new Error('Approval needs api+wallet via props or AppProvider')
+  const usdRate = useUsdRate(api)
   const { id } = useParams<{ id: string }>()
   const [view, setView] = useState<SessionView | null>(null)
   const [busy, setBusy] = useState(false)
@@ -96,7 +99,9 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
           <div>
             <p className="quiet"><strong>{view.counterpart.displayName}</strong> <em>{t('(Unverified profile)')}</em> asks for</p>
             <p className="amount">{lunaToNim(BigInt(view.charge.amountLuna))} NIM
-              <small>{view.charge.amountLuna} luna</small></p>
+              <small>{view.charge.amountLuna} luna</small>
+              {formatUsd(Number(lunaToNim(BigInt(view.charge.amountLuna))), usdRate) &&
+                <small>{formatUsd(Number(lunaToNim(BigInt(view.charge.amountLuna))), usdRate)}</small>}</p>
             {view.charge.reference && <p className="quiet"><span>{view.charge.reference}</span></p>}
           </div>
           <dl>
@@ -128,7 +133,9 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
       {!isPayer && (
         <section className="sheet">
           {view.charge && <p className="amount">{lunaToNim(BigInt(view.charge.amountLuna))} NIM
-            {view.charge.reference ? <small>{view.charge.reference}</small> : null}</p>}
+            {view.charge.reference ? <small>{view.charge.reference}</small> : null}
+            {formatUsd(Number(lunaToNim(BigInt(view.charge.amountLuna))), usdRate) &&
+              <small>{formatUsd(Number(lunaToNim(BigInt(view.charge.amountLuna))), usdRate)}</small>}</p>}
           {view.status !== 'CONFIRMED' && <p><strong>{t('Do not release goods until Confirmed.')}</strong></p>}
           {view.status === 'CLAIMED' && view.chargeDeadlineAt && (
             <p>Submit the charge within <Countdown until={view.chargeDeadlineAt} /></p>

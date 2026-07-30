@@ -7,6 +7,7 @@ import { startSweeper } from './services/sweeper'
 import { startMonitor } from './services/monitor'
 import { makeNimiqChainClient } from './services/nimiqChain'
 import { FakeChainClient } from './services/fakeChain'
+import { makeCoingeckoRates } from './services/rates'
 
 if ((env.mockAuth || env.fakeChain) && process.env.NODE_ENV === 'production')
   throw new Error('MOCK_AUTH / FAKE_CHAIN must never be enabled in production')
@@ -25,12 +26,13 @@ const mockVerifier = {
 
 const { db } = makeDb(env.databaseUrl)
 const events = new SessionEvents()
-const app = buildApp({ db, verifier: env.mockAuth ? mockVerifier : nimiqVerifier, events })
+const rates = makeCoingeckoRates()
+const app = buildApp({ db, verifier: env.mockAuth ? mockVerifier : nimiqVerifier, events, rates })
 startSweeper(db, events)
 
 if (env.fakeChain) {
   const fake = new FakeChainClient()
-  startMonitor(db, events, fake, 500)
+  startMonitor(db, events, fake, 500, rates)
   app.post('/__test/chain/advance', async req => {
     const body = (req.body ?? {}) as { blocks?: number; macro?: boolean; reset?: boolean }
     return fake.advance(body)
@@ -38,7 +40,7 @@ if (env.fakeChain) {
 } else {
   // Chain consensus can take a while or fail — the API must serve regardless.
   void makeNimiqChainClient()
-    .then(chain => startMonitor(db, events, chain))
+    .then(chain => startMonitor(db, events, chain, 3000, rates))
     .catch(err => app.log.error({ err }, 'chain client unavailable — monitor not started'))
 }
 

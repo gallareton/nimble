@@ -12,6 +12,7 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Value at confirmation': 'Wartość w chwili potwierdzenia',
   'Pay or get paid with a 6-digit code.': 'Płać i przyjmuj płatności 6-cyfrowym kodem.',
   'Connect wallet': 'Połącz portfel',
   'Pay': 'Zapłać',
@@ -90,6 +91,7 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Value at confirmation': 'Wert bei Bestätigung',
   'Pay or get paid with a 6-digit code.': 'Zahle oder kassiere mit einem 6-stelligen Code.',
   'Connect wallet': 'Wallet verbinden',
   'Pay': 'Zahlen',
@@ -168,6 +170,7 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Value at confirmation': 'Valor al confirmar',
   'Pay or get paid with a 6-digit code.': 'Paga o cobra con un código de 6 dígitos.',
   'Connect wallet': 'Conectar wallet',
   'Pay': 'Pagar',
@@ -246,6 +249,7 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Value at confirmation': 'Valeur à la confirmation',
   'Pay or get paid with a 6-digit code.': 'Payez ou encaissez avec un code à 6 chiffres.',
   'Connect wallet': 'Connecter le wallet',
   'Pay': 'Payer',
@@ -324,6 +328,7 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Value at confirmation': 'Valor na confirmação',
   'Pay or get paid with a 6-digit code.': 'Pague ou receba com um código de 6 dígitos.',
   'Connect wallet': 'Conectar carteira',
   'Pay': 'Pagar',

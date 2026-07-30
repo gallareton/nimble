@@ -4,6 +4,7 @@ import { useApp } from '../AppContext'
 import type { HistoryItem } from '../api/client'
 import { copyText } from '../lib/copy'
 import { t } from '../i18n'
+import { formatUsdValue } from '../lib/fiat'
 
 export function Receipt() {
   const { api } = useApp()
@@ -25,6 +26,9 @@ export function Receipt() {
       <dl>
         <dt>{t('Direction')}</dt><dd>{item.role === 'payer' ? t('Sent') : t('Received')}</dd>
         <dt>{t('Amount')}</dt><dd>{String(s.amountNim)} NIM <small>({String(s.amountLuna)} luna)</small></dd>
+        {typeof s.amountUsd === 'number' && (<>
+          <dt>{t('Value at confirmation')}</dt><dd>{formatUsdValue(s.amountUsd)}</dd>
+        </>)}
         <dt>{t('Asset / network')}</dt><dd>{String(s.asset)} · {String(s.network)}</dd>
         <dt>{t('From')}</dt><dd>…{String(s.sender).slice(-4)}</dd>
         <dt>{t('To')}</dt><dd>…{String(s.recipient).slice(-4)}</dd>

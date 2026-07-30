@@ -3,6 +3,7 @@ import { lunaToNim } from '@nimble/shared'
 import { chainTransaction, charge, paymentSession, receipt, userProfile } from '../db/schema'
 import type { Db } from '../db/client'
 import type { SessionEvents } from './events'
+import type { RateProvider } from './rates'
 
 export interface ChainClient {
   getTransaction(hash: string): Promise<null | { includedAtHeight: number | null; expired: boolean }>
@@ -23,7 +24,7 @@ async function setStatus(db: Db, events: SessionEvents, tx: typeof chainTransact
 }
 
 export async function monitorTick(db: Db, events: SessionEvents, chain: ChainClient,
-  opts: { delayedAfterMs?: number } = {}): Promise<void> {
+  opts: { delayedAfterMs?: number; rates?: RateProvider } = {}): Promise<void> {
   const delayedAfterMs = opts.delayedAfterMs ?? 120_000
 
   // Reconciliation pass: payer approved (token issued) but hash never
@@ -76,10 +77,14 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
     if (lastMacro >= info.includedAtHeight) {
       await setStatus(db, events, tx, c.sessionId, tx.status, 'CONFIRMED', { hash: tx.hash })
       const [s] = await db.select().from(paymentSession).where(eq(paymentSession.id, c.sessionId))
+      // Freeze the fiat value at confirmation time — history must not
+      // drift with the exchange rate afterwards.
+      const usdPerNim = (await opts.rates?.getUsdPerNim().catch(() => null)) ?? null
       const snapshot = {
         amountLuna: tx.amountAtomic.toString(), amountNim: lunaToNim(tx.amountAtomic),
         asset: 'NIM', network: 'nimiq', hash: tx.hash, sender: tx.sender, recipient: tx.recipient,
         reference: c.reference, confirmedAt: new Date().toISOString(),
+        ...(usdPerNim ? { usdPerNim, amountUsd: Number(lunaToNim(tx.amountAtomic)) * usdPerNim } : {}),
       }
       await db.insert(receipt).values([
         { transactionId: tx.id, ownerUserId: s.payerUserId, role: 'payer', snapshotJson: snapshot },
@@ -91,7 +96,8 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
   }
 }
 
-export function startMonitor(db: Db, events: SessionEvents, chain: ChainClient, intervalMs = 3000) {
-  const h = setInterval(() => { void monitorTick(db, events, chain).catch(() => {}) }, intervalMs)
+export function startMonitor(db: Db, events: SessionEvents, chain: ChainClient,
+  intervalMs = 3000, rates?: RateProvider) {
+  const h = setInterval(() => { void monitorTick(db, events, chain, { rates }).catch(() => {}) }, intervalMs)
   return () => clearInterval(h)
 }

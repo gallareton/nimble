@@ -13,7 +13,8 @@ import { chargeRoutes } from './routes/charges'
 import { sseRoutes } from './routes/sse'
 import { historyRoutes } from './routes/history'
 
-export interface AppDeps { db: Db; verifier: SignatureVerifier; events: SessionEvents }
+import { nullRates, type RateProvider } from './services/rates'
+export interface AppDeps { db: Db; verifier: SignatureVerifier; events: SessionEvents; rates?: RateProvider }
 
 export function buildApp(deps: AppDeps) {
   const app = Fastify({ logger: true })
@@ -50,6 +51,10 @@ export function buildApp(deps: AppDeps) {
   }
 
   app.get('/healthz', async () => ({ ok: true }))
+  app.get('/v1/rate', async () => ({
+    usdPerNim: await (deps.rates ?? nullRates).getUsdPerNim(),
+    asOf: new Date().toISOString(),
+  }))
   app.register(authRoutes)
   app.register(sessionRoutes)
   app.register(chargeRoutes)

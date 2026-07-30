@@ -345,7 +345,8 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 }
 .list a:hover { box-shadow: var(--shadow-lift); text-decoration: none; }
 .list .dir { color: var(--muted); font-size: 14px; }
-.list .amt { font-weight: 800; font-variant-numeric: tabular-nums; }
+.list .amt { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+.list .amt .fiat { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
 
 .footer-nav { color: var(--muted); font-size: 14px; text-align: center; }
 .footer-nav a { color: var(--muted); font-weight: 600; }

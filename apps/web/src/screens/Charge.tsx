@@ -4,6 +4,7 @@ import { nimToLuna } from '@nimble/shared'
 import { useApp } from '../AppContext'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
+import { formatUsd, useUsdRate } from '../lib/fiat'
 
 // BLIK-style: the receiver fills in what they are asking for FIRST; the code
 // is the last thing entered, and the payer gets the approval prompt the
@@ -16,6 +17,7 @@ export function Charge() {
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const usdRate = useUsdRate(api)
 
   const submit = async () => {
     setError(null)
@@ -48,6 +50,8 @@ export function Charge() {
       <label>
         Amount (NIM)
         <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="2.5" />
+        {formatUsd(Number(amount.replace(',', '.')), usdRate) &&
+          <span className="quiet">{formatUsd(Number(amount.replace(',', '.')), usdRate)}</span>}
       </label>
       <label>
         Reference

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../AppContext'
 import type { HistoryItem } from '../api/client'
 import { t } from '../i18n'
+import { formatUsdValue } from '../lib/fiat'
 
 export function History() {
   const { api } = useApp()
@@ -23,7 +24,9 @@ export function History() {
                 <span className="dir">{r.role === 'payer' ? t('Sent') : t('Received')}
                   {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}<br />
                   {new Date(r.createdAt).toLocaleString()}</span>
-                <span className="amt">{String(r.snapshot.amountNim)} NIM</span>
+                <span className="amt">{String(r.snapshot.amountNim)} NIM
+                    {typeof r.snapshot.amountUsd === 'number' &&
+                      <small className="fiat">{formatUsdValue(r.snapshot.amountUsd)}</small>}</span>
               </Link>
             </li>
           ))}
