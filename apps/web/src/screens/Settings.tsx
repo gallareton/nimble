@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
+import { t } from '../i18n'
 
 export function Settings({ api: apiProp }: { api?: Api } = {}) {
   const ctx = useAppOptional()
@@ -26,20 +27,20 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
 
   return (
     <main>
-      <h1>Settings</h1>
+      <h1>{t('Settings')}</h1>
       <div className="form-card">
       <label>
         Display name
         <input value={name} maxLength={50} onChange={e => { setName(e.target.value); setSaved(false) }} />
       </label>
-      <button onClick={save} disabled={!name}>Save</button>
-      {saved && <p role="status">Saved.</p>}
+      <button onClick={save} disabled={!name}>{t('Save')}</button>
+      {saved && <p role="status">{t('Saved.')}</p>}
       </div>
       <p className="quiet">
-        Receiving address (your wallet): <code>{address ?? '—'}</code>
+        {t('Receiving address (your wallet):')} <code>{address ?? '—'}</code>
       </p>
-      {ctx && <button onClick={ctx.logout}>Disconnect</button>}
-      <p className="footer-nav"><Link to="/">Home</Link></p>
+      {ctx && <button onClick={ctx.logout}>{t('Disconnect')}</button>}
+      <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
     </main>
   )
 }

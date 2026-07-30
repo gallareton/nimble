@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { t } from '../i18n'
 
 function fmt(secs: number) {
   const m = Math.floor(secs / 60)
@@ -30,7 +31,7 @@ export function Countdown({ until, onExpired, onTick }:
   return (
     <span className="countdown">
       <span aria-hidden>{fmt(secs)}</span>
-      <span className="sr-only" aria-live="polite">{announced} seconds left</span>
+      <span className="sr-only" aria-live="polite">{t('{n} seconds left').replace('{n}', String(announced))}</span>
     </span>
   )
 }

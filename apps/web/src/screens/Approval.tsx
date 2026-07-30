@@ -5,6 +5,7 @@ import { useAppOptional } from '../AppContext'
 import { Countdown } from '../components/Countdown'
 import { StatusBadge } from '../components/StatusBadge'
 import { Spinner } from '../components/Spinner'
+import { t } from '../i18n'
 import { WalletError, type WalletProvider } from '../wallet/types'
 import type { Api } from '../api/client'
 import { uuid } from '../lib/uuid'
@@ -34,7 +35,7 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
     return () => close?.()
   }, [api, id, refresh])
 
-  if (!view) return <main><p>Loading…</p></main>
+  if (!view) return <main><p>{t('Loading…')}</p></main>
 
   const confirm = async () => {
     if (!view.charge) return
@@ -53,7 +54,7 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
     } catch (e) {
       if (e instanceof WalletError && e.code === 'PERMISSION_DENIED') {
         await api.reject(view.charge.chargeId).catch(() => {})
-        setNotice('Payment cancelled.')
+        setNotice(t('Payment cancelled.'))
         refresh()
       } else {
         setNotice(e instanceof Error ? e.message : String(e))
@@ -72,7 +73,7 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
   const rejectCharge = async () => {
     if (!view.charge) return
     await api.reject(view.charge.chargeId).catch(() => {})
-    setNotice('Payment cancelled.')
+    setNotice(t('Payment cancelled.'))
     refresh()
   }
 
@@ -86,29 +87,29 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
 
   return (
     <main>
-      <h1>{isPayer ? 'Payment' : 'Charge status'}</h1>
+      <h1>{isPayer ? t('Payment') : t('Charge status')}</h1>
       <p><StatusBadge status={view.status} />{' '}
         {!TERMINAL_STATES.has(view.status) && <Spinner />}</p>
 
       {isPayer && view.status === 'AWAITING_PAYER_APPROVAL' && view.charge && view.counterpart && (
         <section aria-label="approval" className="sheet">
           <div>
-            <p className="quiet"><strong>{view.counterpart.displayName}</strong> <em>(Unverified profile)</em> asks for</p>
+            <p className="quiet"><strong>{view.counterpart.displayName}</strong> <em>{t('(Unverified profile)')}</em> asks for</p>
             <p className="amount">{lunaToNim(BigInt(view.charge.amountLuna))} NIM
               <small>{view.charge.amountLuna} luna</small></p>
             {view.charge.reference && <p className="quiet"><span>{view.charge.reference}</span></p>}
           </div>
           <dl>
-            <dt>Recipient wallet</dt>
+            <dt>{t('Recipient wallet')}</dt>
             <dd>…{view.counterpart.addressTail}</dd>
-            <dt>Asset / network</dt>
+            <dt>{t('Asset / network')}</dt>
             <dd>NIM · Nimiq</dd>
-            <dt>Network fee</dt>
-            <dd>shown by wallet on confirmation</dd>
+            <dt>{t('Network fee')}</dt>
+            <dd>{t('shown by wallet on confirmation')}</dd>
           </dl>
           <div className="actions">
-            <button onClick={rejectCharge} disabled={busy}>Reject</button>
-            <button className="primary" onClick={confirm} disabled={busy}>Confirm</button>
+            <button onClick={rejectCharge} disabled={busy}>{t('Reject')}</button>
+            <button className="primary" onClick={confirm} disabled={busy}>{t('Confirm')}</button>
           </div>
         </section>
       )}
@@ -116,11 +117,11 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
       {isPayer && view.status === 'AWAITING_WALLET_AUTH' && (
         <section className="sheet">
           {hashRef.current ? (
-            <button className="primary" onClick={retryRegister}>Finish registration</button>
+            <button className="primary" onClick={retryRegister}>{t('Finish registration')}</button>
           ) : (
-            <p className="quiet">If you approved the payment in your wallet, it will be matched automatically.</p>
+            <p className="quiet">{t('If you approved the payment in your wallet, it will be matched automatically.')}</p>
           )}
-          <button onClick={rejectCharge} disabled={busy}>Start over</button>
+          <button onClick={rejectCharge} disabled={busy}>{t('Start over')}</button>
         </section>
       )}
 
@@ -128,12 +129,12 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
         <section className="sheet">
           {view.charge && <p className="amount">{lunaToNim(BigInt(view.charge.amountLuna))} NIM
             {view.charge.reference ? <small>{view.charge.reference}</small> : null}</p>}
-          {view.status !== 'CONFIRMED' && <p><strong>Do not release goods until Confirmed.</strong></p>}
+          {view.status !== 'CONFIRMED' && <p><strong>{t('Do not release goods until Confirmed.')}</strong></p>}
           {view.status === 'CLAIMED' && view.chargeDeadlineAt && (
             <p>Submit the charge within <Countdown until={view.chargeDeadlineAt} /></p>
           )}
           {(view.status === 'CLAIMED' || view.status === 'AWAITING_PAYER_APPROVAL') && (
-            <button onClick={cancelSession}>Cancel</button>
+            <button onClick={cancelSession}>{t('Cancel')}</button>
           )}
         </section>
       )}
@@ -144,7 +145,7 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
       {notice && <p role="alert">{notice}</p>}
       {TERMINAL_STATES.has(view.status) && (
         <nav aria-label="after payment">
-          <p className="footer-nav"><Link to="/">Back to home</Link> · <Link to="/history">History</Link></p>
+          <p className="footer-nav"><Link to="/">{t('Back to home')}</Link> · <Link to="/history">{t('History')}</Link></p>
         </nav>
       )}
     </main>

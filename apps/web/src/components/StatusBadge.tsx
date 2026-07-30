@@ -1,4 +1,5 @@
 import type { SessionStatus } from '@nimble/shared'
+import { t } from '../i18n'
 
 const LABELS: Record<SessionStatus, { label: string; icon: string }> = {
   AVAILABLE: { label: 'Waiting for claim', icon: '⏳' },
@@ -20,7 +21,7 @@ export function StatusBadge({ status }: { status: SessionStatus }) {
   const { label, icon } = LABELS[status]
   return (
     <span className={`status status--${status.toLowerCase()}`}>
-      <span aria-hidden>{icon}</span> {label}
+      <span aria-hidden>{icon}</span> {t(label)}
     </span>
   )
 }

@@ -6,6 +6,7 @@ import { Spinner } from '../components/Spinner'
 import { Countdown } from '../components/Countdown'
 import type { Api } from '../api/client'
 import { copyText } from '../lib/copy'
+import { t } from '../i18n'
 
 export const ACTIVE_PAY_KEY = 'nimble:activePay'
 
@@ -85,8 +86,8 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
   return (
     <main>
       <header className="top-bar">
-        <Link to="/" className="back" aria-label="Back to home">‹ Home</Link>
-        <h1>Pay</h1>
+        <Link to="/" className="back" aria-label={t('Back to home')}>‹ {t('Home')}</Link>
+        <h1>{t('Pay')}</h1>
       </header>
       <div
         className="code-ring"
@@ -99,8 +100,8 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
           <span className="brand-chip">Nimble</span>
           {expired ? (
             <>
-              <p className="quiet">Code expired</p>
-              <button className="primary" onClick={generate}>New code</button>
+              <p className="quiet">{t('Code expired')}</p>
+              <button className="primary" onClick={generate}>{t('New code')}</button>
             </>
           ) : session ? (
             <>
@@ -121,13 +122,13 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
           <p className="center">
             <button className="chip" onClick={() => {
               void copyText(session.code).then(ok => { if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) } })
-            }}>{copied ? 'Copied' : 'Copy code'}</button>
+            }}>{copied ? t('Copied') : t('Copy code')}</button>
           </p>
-          <p className="center quiet">Tell this code to the receiver. Waiting for them to claim…</p>
+          <p className="center quiet">{t('Tell this code to the receiver. Waiting for them to claim…')}</p>
         </>
       )}
       {error && <p role="alert">{error}</p>}
-      <Link to="/" className="back-bottom"><button>‹ Back to home</button></Link>
+      <Link to="/" className="back-bottom"><button>‹ {t('Back to home')}</button></Link>
     </main>
   )
 }

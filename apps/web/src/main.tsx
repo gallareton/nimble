@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router-dom'
 import { App } from './App'
 import '@fontsource-variable/mulish'
 import './styles.css'
+import { locale } from './i18n'
+
+document.documentElement.lang = locale
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

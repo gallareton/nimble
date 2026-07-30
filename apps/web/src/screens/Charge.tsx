@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { nimToLuna } from '@nimble/shared'
 import { useApp } from '../AppContext'
 import { ApiError } from '../api/client'
+import { t } from '../i18n'
 
 // BLIK-style: the receiver fills in what they are asking for FIRST; the code
 // is the last thing entered, and the payer gets the approval prompt the
@@ -22,7 +23,7 @@ export function Charge() {
     try {
       amountLuna = nimToLuna(amount).toString()
     } catch {
-      setError('Enter a valid NIM amount (max 5 decimals).')
+      setError(t('Enter a valid NIM amount (max 5 decimals).'))
       return
     }
     setBusy(true)
@@ -30,8 +31,8 @@ export function Charge() {
       const res = await api.claim(code.replace(/\s/g, ''), { amountLuna, reference: reference || undefined })
       navigate(`/session/${res.sessionId}`)
     } catch (e) {
-      if (e instanceof ApiError && e.code === 'RATE_LIMITED') setError('Too many attempts. Wait a moment.')
-      else setError('Code unavailable. Check and try again.')
+      if (e instanceof ApiError && e.code === 'RATE_LIMITED') setError(t('Too many attempts. Wait a moment.'))
+      else setError(t('Code unavailable. Check and try again.'))
     } finally {
       setBusy(false)
     }
@@ -40,8 +41,8 @@ export function Charge() {
   return (
     <main>
       <header className="top-bar">
-        <Link to="/" className="back" aria-label="Back to home">‹ Home</Link>
-        <h1>Charge</h1>
+        <Link to="/" className="back" aria-label={t('Back to home')}>‹ {t('Home')}</Link>
+        <h1>{t('Charge')}</h1>
       </header>
       <div className="form-card">
       <label>
@@ -72,7 +73,7 @@ export function Charge() {
       </button>
       </div>
       {error && <p role="alert">{error}</p>}
-      <Link to="/" className="back-bottom"><button>‹ Back to home</button></Link>
+      <Link to="/" className="back-bottom"><button>‹ {t('Back to home')}</button></Link>
     </main>
   )
 }
