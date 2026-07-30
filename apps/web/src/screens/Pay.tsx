@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppOptional } from '../AppContext'
 import { CodeDisplay } from '../components/CodeDisplay'
+import { Spinner } from '../components/Spinner'
 import { Countdown } from '../components/Countdown'
 import type { Api } from '../api/client'
 import { copyText } from '../lib/copy'
@@ -83,29 +84,36 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
         <Link to="/" className="back" aria-label="Back to home">‹ Home</Link>
         <h1>Pay</h1>
       </header>
-      {!session || expired ? (
-        <>
-          {expired && <p role="alert">Code expired. Generate a new one.</p>}
-          <button className="primary" onClick={generate}>Generate code</button>
-        </>
-      ) : (
-        <>
-          <div
-            className="code-ring"
-            ref={ringRef}
-            style={{ ['--frac' as string]: String(
-              Math.max(0, Math.min(1, (new Date(session.expiresAt).getTime() - Date.now()) / 120_000))) }}
-          >
-            <div className="code-ring__inner">
-              <span className="brand-chip">Nimble</span>
+      <div
+        className="code-ring"
+        ref={ringRef}
+        style={{ ['--frac' as string]: session && !expired
+          ? String(Math.max(0, Math.min(1, (new Date(session.expiresAt).getTime() - Date.now()) / 120_000)))
+          : '0' }}
+      >
+        <div className="code-ring__inner">
+          <span className="brand-chip">Nimble</span>
+          {expired ? (
+            <>
+              <p className="quiet">Code expired</p>
+              <button className="primary" onClick={generate}>New code</button>
+            </>
+          ) : session ? (
+            <>
               <CodeDisplay code={session.code} />
               <Countdown
                 until={session.expiresAt}
                 onExpired={() => { clearStored(); setExpired(true) }}
                 onTick={secs => ringRef.current?.style.setProperty('--frac', String(secs / 120))}
               />
-            </div>
-          </div>
+            </>
+          ) : (
+            <Spinner size={36} />
+          )}
+        </div>
+      </div>
+      {!expired && session && (
+        <>
           <p className="center">
             <button className="chip" onClick={() => {
               void copyText(session.code).then(ok => { if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) } })
