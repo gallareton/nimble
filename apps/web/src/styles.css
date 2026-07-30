@@ -278,6 +278,12 @@ dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; f
 dt { color: var(--muted); }
 dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 
+/* ── landing (plain browser) ── */
+.btn-link { text-decoration: none; }
+.qr-block { display: none; margin-top: 18px; text-align: center; }
+.qr-block canvas { border-radius: 8px; box-shadow: var(--shadow); }
+@media (min-width: 700px) { .qr-block { display: block; } }
+
 /* ── home ── */
 .hero { text-align: center; padding: 36px 0 10px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
 .hero .brand { font-size: 40px; }

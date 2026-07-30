@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../AppContext'
 import type { HistoryItem } from '../api/client'
+import { Landing } from '../components/Landing'
+import { inNimiqPay } from '../lib/host'
 
 export function Home() {
   const { api, token, login } = useApp()
@@ -14,6 +16,7 @@ export function Home() {
   }, [api, token])
 
   if (!token) {
+    if (!inNimiqPay()) return <Landing />
     return (
       <main>
         <div className="hero">
