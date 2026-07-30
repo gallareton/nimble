@@ -5,6 +5,7 @@ import type { HistoryItem } from '../api/client'
 import { Landing } from '../components/Landing'
 import { inNimiqPay } from '../lib/host'
 import { t } from '../i18n'
+import { describeError } from '../lib/errors'
 import { formatUsdValue } from '../lib/fiat'
 
 export function Home() {
@@ -24,7 +25,7 @@ export function Home() {
         <div className="hero">
           <h1 className="brand">Nim<em>ble</em></h1>
           <p>{t('Pay or get paid with a 6-digit code.')}</p>
-          <button className="primary" onClick={() => { setError(null); login().catch(e => setError(String(e.message ?? e))) }}>
+          <button className="primary" onClick={() => { setError(null); login().catch(e => setError(describeError(e))) }}>
             Connect wallet
           </button>
           {error && <p role="alert">{error}</p>}

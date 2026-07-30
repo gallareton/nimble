@@ -6,6 +6,7 @@ import { Countdown } from '../components/Countdown'
 import { StatusBadge } from '../components/StatusBadge'
 import { Spinner } from '../components/Spinner'
 import { t } from '../i18n'
+import { describeError } from '../lib/errors'
 import { formatUsd, useUsdRate } from '../lib/fiat'
 import { WalletError, type WalletProvider } from '../wallet/types'
 import type { Api } from '../api/client'
@@ -60,7 +61,7 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
         setNotice(t('Payment cancelled.'))
         refresh()
       } else {
-        setNotice(e instanceof Error ? e.message : String(e))
+        setNotice(describeError(e))
       }
     } finally {
       setBusy(false)

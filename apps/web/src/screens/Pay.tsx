@@ -7,6 +7,7 @@ import { Countdown } from '../components/Countdown'
 import type { Api } from '../api/client'
 import { copyText } from '../lib/copy'
 import { t } from '../i18n'
+import { describeError } from '../lib/errors'
 
 export const ACTIVE_PAY_KEY = 'nimble:activePay'
 
@@ -79,7 +80,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
       setSession(s)
       await watch(s)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(describeError(e))
     }
   }
 
