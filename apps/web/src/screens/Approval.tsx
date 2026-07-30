@@ -88,12 +88,19 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
   }
 
   const isPayer = view.role === 'payer'
+  // Product-wise the payment is done at inclusion (CONFIRMING): the user
+  // gets closure immediately; macro-block finality and the receipt land in
+  // the background.
+  const settled = view.status === 'CONFIRMING' || TERMINAL_STATES.has(view.status)
 
   return (
     <main>
       <h1>{isPayer ? t('Payment') : t('Charge status')}</h1>
       <p><StatusBadge status={view.status} />{' '}
-        {!TERMINAL_STATES.has(view.status) && <Spinner />}</p>
+        {!settled && <Spinner />}</p>
+      {view.status === 'CONFIRMING' && (
+        <p className="quiet">{t('Finalizing in the background — the receipt will appear in History shortly.')}</p>
+      )}
 
       {isPayer && view.status === 'AWAITING_PAYER_APPROVAL' && view.charge && view.counterpart && (
         <section aria-label="approval" className="sheet">
@@ -152,7 +159,7 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
         <p className="quiet"><small>tx …{view.transaction.hash.slice(-8)}</small></p>
       )}
       {notice && <p role="alert">{notice}</p>}
-      {TERMINAL_STATES.has(view.status) && (
+      {settled && (
         <nav aria-label="after payment">
           <p className="footer-nav"><Link to="/">{t('Back to home')}</Link> · <Link to="/history">{t('History')}</Link></p>
         </nav>

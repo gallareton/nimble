@@ -12,6 +12,7 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Finalizing in the background — the receipt will appear in History shortly.': 'Finalizacja trwa w tle — paragon pojawi się w Historii za chwilę.',
   'Value at confirmation': 'Wartość w chwili potwierdzenia',
   'Pay or get paid with a 6-digit code.': 'Płać i przyjmuj płatności 6-cyfrowym kodem.',
   'Connect wallet': 'Połącz portfel',
@@ -92,6 +93,7 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Finalizing in the background — the receipt will appear in History shortly.': 'Finalisierung im Hintergrund — der Beleg erscheint gleich im Verlauf.',
   'Value at confirmation': 'Wert bei Bestätigung',
   'Pay or get paid with a 6-digit code.': 'Zahle oder kassiere mit einem 6-stelligen Code.',
   'Connect wallet': 'Wallet verbinden',
@@ -172,6 +174,7 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Finalizing in the background — the receipt will appear in History shortly.': 'Finalizando en segundo plano — el recibo aparecerá en el Historial en breve.',
   'Value at confirmation': 'Valor al confirmar',
   'Pay or get paid with a 6-digit code.': 'Paga o cobra con un código de 6 dígitos.',
   'Connect wallet': 'Conectar wallet',
@@ -252,6 +255,7 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Finalizing in the background — the receipt will appear in History shortly.': "Finalisation en arrière-plan — le reçu apparaîtra bientôt dans l'Historique.",
   'Value at confirmation': 'Valeur à la confirmation',
   'Pay or get paid with a 6-digit code.': 'Payez ou encaissez avec un code à 6 chiffres.',
   'Connect wallet': 'Connecter le wallet',
@@ -332,6 +336,7 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Finalizing in the background — the receipt will appear in History shortly.': 'Finalizando em segundo plano — o recibo aparecerá no Histórico em instantes.',
   'Value at confirmation': 'Valor na confirmação',
   'Pay or get paid with a 6-digit code.': 'Pague ou receba com um código de 6 dígitos.',
   'Connect wallet': 'Conectar carteira',
