@@ -4,7 +4,7 @@ import { chainTransaction, charge, paymentSession, receipt } from '../src/db/sch
 import { SessionEvents } from '../src/services/events'
 import { monitorTick } from '../src/services/monitor'
 import { freshDb } from './helpers/db'
-import { makeUser } from './helpers/actors'
+import { authedApp, makeUser } from './helpers/actors'
 
 const { db, close } = await freshDb()
 afterAll(close)
@@ -83,4 +83,28 @@ it('reconciles a lost hash by recipient + data token', async () => {
   const txs = await db.select().from(chainTransaction).where(eq(chainTransaction.hash, 'recovered-hash'))
   expect(txs).toHaveLength(1)
   expect(txs[0].sender).toBe(p.walletAddress)
+})
+
+it('history lists an in-flight payment as pending before the receipt exists', async () => {
+  const { app, tokenFor } = authedApp(db)
+  const payer = await makeUser(db, `NQ50 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ51 ${crypto.randomUUID().slice(0, 8)}`)
+  const [s] = await db.insert(paymentSession).values({
+    payerUserId: payer.id, receiverUserId: receiver.id, codeHash: 'x',
+    status: 'CONFIRMING', expiresAt: new Date(),
+  }).returning()
+  const [c] = await db.insert(charge).values({
+    sessionId: s.id, amountAtomic: 250000n, recipientAddress: receiver.walletAddress,
+  }).returning()
+  await db.insert(chainTransaction).values({
+    chargeId: c.id, sender: payer.walletAddress, recipient: receiver.walletAddress,
+    amountAtomic: 250000n, hash: 'ff'.repeat(32), status: 'CONFIRMING',
+  })
+  const r = await app.inject({ url: '/v1/history',
+    headers: { authorization: `Bearer ${await tokenFor(payer)}` } })
+  const item = r.json().items[0]
+  expect(item.pending).toBe(true)
+  expect(item.sessionId).toBe(s.id)
+  expect(item.role).toBe('payer')
+  expect(item.snapshot.amountNim).toBe('2.5')
 })

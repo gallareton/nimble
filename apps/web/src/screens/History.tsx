@@ -19,11 +19,11 @@ export function History() {
       {items.length === 0 ? <p className="quiet">{t('No confirmed payments yet.')}</p> : (
         <ul className="list">
           {items.map(r => (
-            <li key={r.receiptId}>
-              <Link to={`/receipt/${r.receiptId}`}>
+            <li key={r.receiptId ?? r.sessionId} className={r.pending ? 'pending' : undefined}>
+              <Link to={r.pending ? `/session/${r.sessionId}` : `/receipt/${r.receiptId}`}>
                 <span className="dir">{r.role === 'payer' ? t('Sent') : t('Received')}
                   {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}<br />
-                  {new Date(r.createdAt).toLocaleString()}</span>
+                  {r.pending ? t('Paid — finalizing…') : new Date(r.createdAt).toLocaleString()}</span>
                 <span className="amt">{String(r.snapshot.amountNim)} NIM
                     {typeof r.snapshot.amountUsd === 'number' &&
                       <small className="fiat">{formatUsdValue(r.snapshot.amountUsd)}</small>}</span>

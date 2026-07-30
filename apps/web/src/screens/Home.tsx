@@ -48,10 +48,11 @@ export function Home() {
           <h2>{t('Recent')}</h2>
           <ul className="list">
             {recent.map(r => (
-              <li key={r.receiptId}>
-                <Link to={`/receipt/${r.receiptId}`}>
+              <li key={r.receiptId ?? r.sessionId} className={r.pending ? 'pending' : undefined}>
+                <Link to={r.pending ? `/session/${r.sessionId}` : `/receipt/${r.receiptId}`}>
                   <span className="dir">{r.role === 'payer' ? t('Sent') : t('Received')}
-                    {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}</span>
+                    {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}
+                    {r.pending ? <><br />{t('Paid — finalizing…')}</> : null}</span>
                   <span className="amt">{String(r.snapshot.amountNim)} NIM
                     {typeof r.snapshot.amountUsd === 'number' &&
                       <small className="fiat">{formatUsdValue(r.snapshot.amountUsd)}</small>}</span>

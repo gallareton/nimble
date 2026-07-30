@@ -3,7 +3,10 @@ import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
 export interface HistoryItem {
-  receiptId: string
+  receiptId?: string
+  pending?: boolean
+  sessionId?: string
+  status?: string
   role: string
   snapshot: Record<string, unknown>
   createdAt: string
