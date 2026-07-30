@@ -250,7 +250,7 @@ input.code-input {
   box-shadow: var(--shadow);
   color: var(--ink);
 }
-.status--confirmed { color: var(--nimiq-green); }
+.status--confirmed, .status--confirming { color: var(--nimiq-green); }
 .status--failed { color: var(--nimiq-red); }
 .status--rejected, .status--cancelled, .status--expired { color: var(--muted); }
 .status--delayed { color: var(--nimiq-orange); }

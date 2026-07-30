@@ -137,7 +137,8 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
             {view.charge.reference ? <small>{view.charge.reference}</small> : null}
             {formatUsd(Number(lunaToNim(BigInt(view.charge.amountLuna))), usdRate) &&
               <small>{formatUsd(Number(lunaToNim(BigInt(view.charge.amountLuna))), usdRate)}</small>}</p>}
-          {view.status !== 'CONFIRMED' && <p><strong>{t('Do not release goods until Confirmed.')}</strong></p>}
+          {!['CONFIRMING', 'CONFIRMED'].includes(view.status) && !TERMINAL_STATES.has(view.status) &&
+            <p><strong>{t('Do not release goods before it says Paid.')}</strong></p>}
           {view.status === 'CLAIMED' && view.chargeDeadlineAt && (
             <p>Submit the charge within <Countdown until={view.chargeDeadlineAt} /></p>
           )}
