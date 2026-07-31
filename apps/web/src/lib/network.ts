@@ -21,12 +21,19 @@ async function probe(base: string): Promise<{ network: string; height: number | 
 
 async function walletHeight(): Promise<number | null> {
   if (!inNimiqPay()) return null
-  try {
-    const w = getWallet()
-    if (!w.getBlockNumber) return null
-    if (w.isConsensusEstablished && !(await w.isConsensusEstablished())) return null
-    return await w.getBlockNumber()
-  } catch { return null }
+  // A transaction MUST go to the wallet's own network, so inside Nimiq Pay
+  // we never guess: retry until the wallet's consensus answers (its client
+  // usually settles within a few seconds of opening the Mini App).
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      const w = getWallet()
+      if (!w.getBlockNumber) return null
+      const ready = !w.isConsensusEstablished || (await w.isConsensusEstablished())
+      if (ready) return await w.getBlockNumber()
+    } catch { /* retry */ }
+    await new Promise(r => setTimeout(r, 2000))
+  }
+  return null
 }
 
 async function resolve(): Promise<NetworkChoice> {

@@ -4,6 +4,9 @@
 > the [README](README.md). This document is for developers testing local
 > builds against real devices.
 
+Production auto-detects the wallet's network (mainnet or testnet behind
+one URL); this protocol uses **testnet** so no real funds are at risk.
+
 A repeatable manual test protocol: a real NIM payment between two physical
 devices running Nimiq Pay, confirmed on testnet. The checklist at the
 bottom is the pass criteria for each run — work through it whenever the

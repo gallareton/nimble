@@ -2,7 +2,8 @@
 
 Where Nimble goes after the MVP. Ordered by horizon; each item says *why*
 and names the hard part honestly. Shipped so far: the full BLIK-style
-payment loop on NIM testnet — instant "Paid" at micro-block inclusion,
+payment loop on NIM (mainnet + testnet behind one URL, auto-detected
+per wallet) — instant "Paid" at micro-block inclusion,
 receipts with USD frozen at finality, six languages, wallet-signature auth
 with silent session refresh, on-chain reconciliation, production deploy.
 
@@ -65,9 +66,10 @@ a rework. What it actually takes, with eyes open:
   micro/macro semantics; the two-tier "Paid → final" UX carries over with
   different thresholds.
 
-## Mainnet
+## Mainnet — shipped
 
-Testnet is where the competition lives; mainnet needs: production
-hardening review, real-fee UX (still near-zero on Nimiq), a status page,
-and the merchant fee ledger (receiver-side, settled periodically — the
-app never custodies funds and never adds a fee to P2P payments).
+One URL serves both networks: the app compares the wallet's chain height
+(consensus-gated) with both backends and picks the match, re-checking on
+every return to the Mini App. Remaining mainnet work: a status page and
+the merchant fee ledger (receiver-side, settled periodically — the app
+never custodies funds and never adds a fee to P2P payments).

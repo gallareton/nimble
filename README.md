@@ -18,15 +18,17 @@ never signs anything.
 
 ## Try it (no setup)
 
-1. Install [Nimiq Pay](https://www.nimiq.com/nimiq-pay/) and switch it to
-   **Testnet**: long-press the settings button for ~10 s to reveal the
-   developer menu, pick Testnet, then tap **Get free NIM** (faucet — no
-   real funds anywhere).
-2. Open **Mini Apps → Custom URL** and enter:
-   `https://nimble.gallareton.pl`
-3. Connect the wallet, tap **Pay** to show a code — and have a second
+1. Install [Nimiq Pay](https://www.nimiq.com/nimiq-pay/), open
+   **Mini Apps → Custom URL** and enter: `https://nimble.gallareton.pl`
+2. Connect the wallet, tap **Pay** to show a code — and have a second
    person (or your second device) claim it under **Charge**. Watch both
    screens follow the payment live until **Confirmed**.
+
+Nimble detects your wallet's network and serves the matching backend:
+regular wallets pay with real NIM on **mainnet**; if you'd rather test
+with play money, long-press the settings button in Nimiq Pay (~10 s),
+switch to **Testnet**, tap **Get free NIM** (faucet) — the app follows
+your wallet automatically, with a separate testnet history.
 
 ## Repo layout
 
@@ -66,7 +68,7 @@ pnpm test                     # unit + integration (needs the postgres container
 pnpm --filter @nimble/e2e test   # Playwright end-to-end
 ```
 
-## Real devices (testnet)
+## Real devices (developer protocol)
 
 See [DEVICE_TESTING.md](DEVICE_TESTING.md) — Nimiq Pay has a hidden
 developer menu with a testnet switch and a faucet; the Mini App loads

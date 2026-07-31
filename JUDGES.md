@@ -2,7 +2,10 @@
 
 A self-assessment against the [competition scoring guide](https://miniappscompetition.com/scoring),
 question by question, with pointers to verify every claim. Try everything
-live at **https://nimble.gallareton.pl** (testnet — no real funds).
+live at **https://nimble.gallareton.pl**. The app detects your wallet's
+network: mainnet wallets pay with real NIM out of the box; switch Nimiq
+Pay to Testnet (long-press settings) for faucet money — same URL, separate
+per-network history.
 
 ## Design & UX
 
@@ -39,7 +42,8 @@ screen. Re-opening later needs no re-login (silent refresh-token session).
 ## Functionality
 
 **Does the main function of the Mini App actually work reliably?**
-The full payer↔receiver flow runs on Nimiq testnet today, verified on two
+The full payer↔receiver flow runs on both Nimiq networks (mainnet and
+testnet, auto-detected per wallet), verified on two
 physical phones (protocol in [DEVICE_TESTING.md](DEVICE_TESTING.md)), plus
 100+ automated tests: unit/integration across API, web and shared packages
 and a Playwright E2E suite that walks two browser contexts through the

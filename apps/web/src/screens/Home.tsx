@@ -60,10 +60,12 @@ export function Home() {
             : t('Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.')}
         </p>
       )}
-      <nav className="home-actions">
-        <Link to="/pay"><button className="primary" aria-label="Pay">
-          {t('Pay')}<span className="sub" aria-hidden>{t('show a code')}</span></button></Link>
-        <Link to="/charge"><button aria-label="Charge">
+      <nav className="home-actions" aria-disabled={wrongNetwork !== null}>
+        <Link to="/pay" style={wrongNetwork ? { pointerEvents: 'none' } : undefined}>
+          <button className="primary" aria-label="Pay" disabled={wrongNetwork !== null}>
+            {t('Pay')}<span className="sub" aria-hidden>{t('show a code')}</span></button></Link>
+        <Link to="/charge" style={wrongNetwork ? { pointerEvents: 'none' } : undefined}>
+          <button aria-label="Charge" disabled={wrongNetwork !== null}>
           {t('Charge')}<span className="sub" aria-hidden>{t('enter a code')}</span></button></Link>
       </nav>
       {recent.length > 0 && (
