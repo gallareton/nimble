@@ -31,6 +31,44 @@ export function Landing() {
           <p className="quiet">{t('On desktop? Scan with your phone.')}</p>
         </div>
       </div>
+
+      <section className="roadmap" aria-label={t('Roadmap')}>
+        <h2>{t('Roadmap')}</h2>
+        <ul>
+          <li className="rm-done">
+            <strong>{t('Live today')}</strong>
+            <span>{t('Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.')}</span>
+          </li>
+          <li className="rm-next">
+            <strong>{t('Request by link')}</strong>
+            <span>{t('Share a payment request through any messenger.')}</span>
+          </li>
+          <li className="rm-next">
+            <strong>{t('Bill splitting')}</strong>
+            <span>{t('One amount, many friends, settled live.')}</span>
+          </li>
+          <li className="rm-next">
+            <strong>{t('Vendor mode')}</strong>
+            <span>{t('A professional POS: daily totals, exports, verified business profile.')}</span>
+          </li>
+          <li className="rm-later">
+            <strong>{t('Cashlink cheques')}</strong>
+            <span>{t('Prepaid codes anyone can redeem — even without the app.')}</span>
+          </li>
+          <li className="rm-later">
+            <strong>{t('Phone-number transfers')}</strong>
+            <span>{t('Pay a contact by number; SMS invites for newcomers.')}</span>
+          </li>
+          <li className="rm-later">
+            <strong>{t('Merchant API')}</strong>
+            <span>{t('Webshops and cash registers create charges via API and webhooks.')}</span>
+          </li>
+          <li className="rm-later">
+            <strong>{t('USDT on Polygon')}</strong>
+            <span>{t('Same flow, stable value — the session model is asset-agnostic.')}</span>
+          </li>
+        </ul>
+      </section>
     </main>
   )
 }
