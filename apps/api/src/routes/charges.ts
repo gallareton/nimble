@@ -74,6 +74,19 @@ export async function chargeRoutes(app: FastifyInstance) {
     const found = await loadChargeWithSession(db, (req.params as any).id)
     if (!found || found.s.payerUserId !== req.user.userId)
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'not found' } })
+
+    // Pre-flight: fail with a friendly error BEFORE the wallet opens when
+    // the payer cannot cover the amount. Nimiq fees are zero, so amount
+    // alone is the right bound; unknown balance (chain hiccup) lets the
+    // wallet stay the authority.
+    const chain = app.deps.chainRef?.current
+    if (chain?.getBalance) {
+      const [payer] = await db.select().from(userProfile).where(eq(userProfile.id, found.s.payerUserId))
+      const balance = payer ? await chain.getBalance(payer.walletAddress) : null
+      if (balance !== null && balance < found.c.amountAtomic)
+        return reply.code(409).send({ error: { code: 'INSUFFICIENT_FUNDS',
+          message: 'Not enough NIM in your wallet for this amount.' } })
+    }
     const token = randomBytes(16).toString('hex')
     const result = await db.transaction(async tx => {
       const [locked] = await tx.update(paymentSession).set({ status: 'AWAITING_WALLET_AUTH' })

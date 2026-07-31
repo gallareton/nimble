@@ -105,3 +105,31 @@ it('claim with amount creates the charge atomically — payer sees approval imme
   expect(view.charge.amountLuna).toBe('250000')
   expect(view.charge.reference).toBe('Soda')
 })
+
+it('payer view flags an uncoverable amount; intent refuses before the wallet opens', async () => {
+  const payer = await makeUser(db, `NQ34 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ35 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer); const rt = await tokenFor(receiver)
+  const { code } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+  const claim = (await app.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload: { code, amountLuna: '5000000' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+
+  app.deps.chainRef = { current: {
+    getTransaction: async () => null,
+    getLastMacroHeight: async () => 0,
+    findIncomingByData: async () => null,
+    getBalance: async () => 100n, // far below 5,000,000 luna
+  } }
+
+  const view = (await app.inject({ url: `/v1/sessions/${claim.sessionId}`,
+    headers: { authorization: `Bearer ${pt}` } })).json()
+  expect(view.payerCanCover).toBe(false)
+
+  const intent = await app.inject({ method: 'POST', url: `/v1/charges/${claim.chargeId}/intent`,
+    headers: { authorization: `Bearer ${pt}` } })
+  expect(intent.statusCode).toBe(409)
+  expect(intent.json().error.code).toBe('INSUFFICIENT_FUNDS')
+  app.deps.chainRef = undefined
+})

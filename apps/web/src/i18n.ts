@@ -12,6 +12,7 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Not enough NIM in your wallet for this amount.': 'Za mało NIM w portfelu na tę kwotę.',
   'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Twój Nimiq Pay jest w innej sieci niż ten serwer Nimble (mainnet). Przytrzymaj przycisk ustawień w Nimiq Pay i przełącz na Mainnet przed płaceniem.',
   'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Twój Nimiq Pay jest w innej sieci niż ten serwer Nimble (testnet). Przytrzymaj przycisk ustawień w Nimiq Pay i przełącz na Testnet przed płaceniem.',
   'How it works': 'Jak to działa',
@@ -99,6 +100,7 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Not enough NIM in your wallet for this amount.': 'Nicht genug NIM in der Wallet für diesen Betrag.',
   'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Deine Nimiq Pay ist in einem anderen Netzwerk als dieser Nimble-Server (Mainnet). Halte in Nimiq Pay die Einstellungen gedrückt und wechsle vor dem Zahlen zu Mainnet.',
   'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Deine Nimiq Pay ist in einem anderen Netzwerk als dieser Nimble-Server (Testnet). Halte in Nimiq Pay die Einstellungen gedrückt und wechsle vor dem Zahlen zu Testnet.',
   'How it works': 'So funktioniert es',
@@ -186,6 +188,7 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Not enough NIM in your wallet for this amount.': 'No hay suficiente NIM en tu wallet para este importe.',
   'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Tu Nimiq Pay está en una red distinta a este servidor de Nimble (mainnet). Mantén pulsados los ajustes en Nimiq Pay y cambia a Mainnet antes de pagar.',
   'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Tu Nimiq Pay está en una red distinta a este servidor de Nimble (testnet). Mantén pulsados los ajustes en Nimiq Pay y cambia a Testnet antes de pagar.',
   'How it works': 'Cómo funciona',
@@ -273,6 +276,7 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Not enough NIM in your wallet for this amount.': 'Pas assez de NIM dans votre wallet pour ce montant.',
   'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Votre Nimiq Pay est sur un autre réseau que ce serveur Nimble (mainnet). Appuyez longuement sur les réglages dans Nimiq Pay pour passer en Mainnet avant de payer.',
   'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Votre Nimiq Pay est sur un autre réseau que ce serveur Nimble (testnet). Appuyez longuement sur les réglages dans Nimiq Pay pour passer en Testnet avant de payer.',
   'How it works': 'Comment ça marche',
@@ -360,6 +364,7 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Not enough NIM in your wallet for this amount.': 'NIM insuficiente na carteira para este valor.',
   'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Seu Nimiq Pay está em uma rede diferente deste servidor Nimble (mainnet). Segure as configurações no Nimiq Pay e mude para Mainnet antes de pagar.',
   'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Seu Nimiq Pay está em uma rede diferente deste servidor Nimble (testnet). Segure as configurações no Nimiq Pay e mude para Testnet antes de pagar.',
   'How it works': 'Como funciona',

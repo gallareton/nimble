@@ -11,6 +11,8 @@ export interface ChainClient {
   // Optional realtime inclusion feed: subscribe to these recipients so
   // getTransaction/findIncomingByData can answer at micro-block speed.
   watchAddresses?(addresses: string[]): Promise<void>
+  // Optional balance lookup (luna) for pre-flight checks.
+  getBalance?(address: string): Promise<bigint | null>
   // Reconciliation (design §6, lost-hash mitigation b): find an incoming
   // transaction to `recipient` carrying `dataHex` in its data field.
   findIncomingByData(recipient: string, dataHex: string): Promise<{ hash: string } | null>

@@ -133,6 +133,15 @@ export async function sessionRoutes(app: FastifyInstance) {
     const [c] = await db.select().from(charge).where(eq(charge.sessionId, id))
     const [tx] = c ? await db.select().from(chainTransaction).where(eq(chainTransaction.chargeId, c.id)) : []
 
+    let payerCanCover: boolean | undefined
+    if (role === 'payer' && s.status === 'AWAITING_PAYER_APPROVAL' && c) {
+      const chain = app.deps.chainRef?.current
+      if (chain?.getBalance) {
+        const balance = await chain.getBalance(req.user.address)
+        if (balance !== null) payerCanCover = balance >= c.amountAtomic
+      }
+    }
+
     let counterpart
     if (role === 'payer' && s.receiverUserId) {
       const [r] = await db.select().from(userProfile).where(eq(userProfile.id, s.receiverUserId))
@@ -149,6 +158,7 @@ export async function sessionRoutes(app: FastifyInstance) {
       charge: c ? { chargeId: c.id, version: c.version, amountLuna: c.amountAtomic.toString(),
         asset: 'NIM', network: 'nimiq', reference: c.reference, recipientAddress: c.recipientAddress } : undefined,
       transaction: tx ? { hash: tx.hash, status: tx.status, confirmations: tx.confirmations } : undefined,
+      ...(payerCanCover !== undefined ? { payerCanCover } : {}),
     }
   })
 

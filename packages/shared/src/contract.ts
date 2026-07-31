@@ -28,6 +28,9 @@ export interface SessionView {
   charge?: { chargeId: string; version: number; amountLuna: string; asset: 'NIM'
              network: 'nimiq'; reference: string | null; recipientAddress: string }
   transaction?: { hash: string; status: SessionStatus; confirmations: number }
+  // payer-only, AWAITING_PAYER_APPROVAL: false when the on-chain balance
+  // cannot cover the amount; absent when unknown (wallet stays authoritative)
+  payerCanCover?: boolean
 }
 export interface CreateSessionResponse { sessionId: string; code: string; expiresAt: string }
 export interface ClaimResponse { sessionId: string; chargeId?: string }

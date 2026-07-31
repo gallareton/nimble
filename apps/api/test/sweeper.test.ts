@@ -25,11 +25,11 @@ it('closes expired codes and timed-out claims, emits events', async () => {
   events.subscribe(timedOut.id, e => seen.push(e.eventType))
 
   const res = await sweepOnce(db, events)
-  expect(res).toEqual({ expired: 1, cancelled: 1 })
+  expect(res).toEqual({ expired: 1, cancelled: 1, timedOut: 0 })
   expect(seen.sort()).toEqual(['CLAIM_TIMEOUT', 'CODE_EXPIRED'])
   const [e2] = await db.select().from(paymentSession).where(eq(paymentSession.id, expired.id))
   expect(e2.status).toBe('EXPIRED')
   const [c2] = await db.select().from(paymentSession).where(eq(paymentSession.id, timedOut.id))
   expect(c2.status).toBe('CANCELLED')
-  expect(await sweepOnce(db, events)).toEqual({ expired: 0, cancelled: 0 })
+  expect(await sweepOnce(db, events)).toEqual({ expired: 0, cancelled: 0, timedOut: 0 })
 })
