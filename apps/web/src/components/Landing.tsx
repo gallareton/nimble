@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { toCanvas } from 'qrcode'
 import { APP_STORE, DEEPLINK, PLAY_STORE } from '../lib/host'
 import { t } from '../i18n'
+import { DemoVideo } from './DemoVideo'
 
 // Shown when the page is opened in a plain browser instead of Nimiq Pay.
 export function Landing() {
@@ -31,6 +32,8 @@ export function Landing() {
           <p className="quiet">{t('On desktop? Scan with your phone.')}</p>
         </div>
       </div>
+
+      <DemoVideo />
 
       <section className="roadmap" aria-label={t('Roadmap')}>
         <h2>{t('Roadmap')}</h2>

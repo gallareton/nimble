@@ -12,6 +12,7 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Watch the demo': 'Zobacz demo',
   'Roadmap': 'Plany rozwoju',
   'Live today': 'Działa już dziś',
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Płatności 6-cyfrowym kodem — natychmiastowe na mainnecie i testnecie, paragony, sześć języków.',
@@ -117,6 +118,7 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Watch the demo': 'Demo ansehen',
   'Roadmap': 'Roadmap',
   'Live today': 'Heute live',
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Zahlen per 6-stelligem Code — sofort auf Mainnet und Testnet, Belege, sechs Sprachen.',
@@ -222,6 +224,7 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Watch the demo': 'Ver la demo',
   'Roadmap': 'Hoja de ruta',
   'Live today': 'Disponible hoy',
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Pagos con código de 6 dígitos — instantáneos en mainnet y testnet, recibos, seis idiomas.',
@@ -327,6 +330,7 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Watch the demo': 'Voir la démo',
   'Roadmap': 'Feuille de route',
   'Live today': "Déjà disponible",
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Paiement par code à 6 chiffres — instantané sur mainnet et testnet, reçus, six langues.',
@@ -432,6 +436,7 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Watch the demo': 'Ver a demo',
   'Roadmap': 'Roteiro',
   'Live today': 'Disponível hoje',
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Pagamentos com código de 6 dígitos — instantâneos na mainnet e testnet, recibos, seis idiomas.',
