@@ -9,18 +9,26 @@ cd "$(dirname "$0")/.."
 git pull --ff-only
 cd deploy
 
+wait_healthy() { # $1=port $2=label — app boot takes up to ~90s (cold imports)
+  for _ in $(seq 1 45); do
+    if curl -sf "http://127.0.0.1:$1/healthz" > /dev/null; then echo "[$2] healthy on :$1"; return 0; fi
+    sleep 2
+  done
+  echo "[$2] FAILED health check on :$1" >&2; return 1
+}
+
 one() {
   local stack="$1"
   sudo docker compose -p "nimble-$stack" -f docker-compose.prod.yml --env-file ".env.$stack" up -d --build
   local port
   port=$(grep '^APP_PORT=' ".env.$stack" | cut -d= -f2)
-  curl -sf "http://127.0.0.1:${port}/healthz" > /dev/null && echo "[$stack] healthy on :$port"
+  wait_healthy "$port" "$stack"
 }
 
 case "${1:-both}" in
   both) one main; one test ;;
   legacy) sudo docker compose -f docker-compose.prod.yml --env-file .env up -d --build
-          curl -sf http://127.0.0.1:3001/healthz > /dev/null && echo "[legacy] healthy on :3001" ;;
+          wait_healthy 3001 legacy ;;
   *) one "$1" ;;
 esac
 sudo docker image prune -f > /dev/null
