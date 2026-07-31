@@ -120,13 +120,9 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
             <dt>{t('Network fee')}</dt>
             <dd>{t('shown by wallet on confirmation')}</dd>
           </dl>
-          {view.payerCanCover === false && (
-            <p role="alert">{t('Not enough NIM in your wallet for this amount.')}</p>
-          )}
           <div className="actions">
             <button onClick={rejectCharge} disabled={busy}>{t('Reject')}</button>
-            <button className="primary" onClick={confirm}
-              disabled={busy || view.payerCanCover === false}>{t('Confirm')}</button>
+            <button className="primary" onClick={confirm} disabled={busy}>{t('Confirm')}</button>
           </div>
         </section>
       )}

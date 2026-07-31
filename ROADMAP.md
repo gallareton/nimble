@@ -66,6 +66,16 @@ a rework. What it actually takes, with eyes open:
   micro/macro semantics; the two-tier "Paid → final" UX carries over with
   different thresholds.
 
+## Known limits
+
+**No server-side balance checks.** The embedded Nimiq client runs Pico
+sync: it has no accounts tree and returns `balance: 0` for any address it
+doesn't own (device-verified — an address holding 200k NIM reported zero,
+before and after subscribing it). Affordability is therefore the wallet's
+call: it knows the balance, refuses to sign, and Nimble surfaces that
+refusal verbatim. A pre-flight check could return if we ever run a full
+node or query an RPC/explorer for balances.
+
 ## Mainnet — shipped
 
 One URL serves both networks: the app compares the wallet's chain height

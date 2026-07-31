@@ -64,12 +64,6 @@ export async function makeNimiqChainClient(): Promise<ChainClient> {
         return { includedAtHeight: tx.blockHeight && tx.blockHeight > 0 ? tx.blockHeight : null, expired: false }
       } catch { return null }
     },
-    async getBalance(address) {
-      try {
-        const account = await client.getAccount(address)
-        return BigInt(account.balance)
-      } catch { return null }
-    },
     async getLastMacroHeight() {
       const head = await client.getHeadHeight()
       return Math.floor(head / BATCH) * BATCH

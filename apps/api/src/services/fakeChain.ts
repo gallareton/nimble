@@ -26,11 +26,6 @@ export class FakeChainClient implements ChainClient {
     return { includedAtHeight: null, expired: false }
   }
 
-  balanceLuna: bigint | null = null // null = unlimited (pre-check passes)
-  async getBalance(_address: string) {
-    return this.balanceLuna
-  }
-
   async getLastMacroHeight() {
     return this.#macroHeight
   }
