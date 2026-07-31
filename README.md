@@ -13,6 +13,9 @@ Nimiq Pay, talking to the wallet through the injected `window.nimiq`
 provider (`@nimiq/mini-app-sdk`). Keys never leave the wallet; the backend
 never signs anything.
 
+> **Judging the competition?** [JUDGES.md](JUDGES.md) answers the scoring
+> checklist question by question, with pointers to verify every claim.
+
 ## Try it (no setup)
 
 1. Install [Nimiq Pay](https://www.nimiq.com/nimiq-pay/) and switch it to
