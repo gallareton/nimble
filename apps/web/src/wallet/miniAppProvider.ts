@@ -29,6 +29,10 @@ export class MiniAppWalletProvider implements WalletProvider {
     return unwrap(await (await this.#provider()).getBlockNumber())
   }
 
+  async isConsensusEstablished() {
+    return unwrap(await (await this.#provider()).isConsensusEstablished())
+  }
+
   async connect() {
     const accounts = unwrap(await (await this.#provider()).listAccounts())
     if (!accounts.length) throw new WalletError('UNAVAILABLE', 'no accounts')

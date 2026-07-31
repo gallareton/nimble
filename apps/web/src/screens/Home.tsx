@@ -24,12 +24,14 @@ export function Home() {
   const { wallet } = useApp()
   useEffect(() => {
     if (!token || !wallet.getBlockNumber) return
-    void Promise.all([wallet.getBlockNumber(), api.getNetwork()])
-      .then(([walletHeight, srv]) => {
-        if (srv.height !== null && Math.abs(walletHeight - srv.height) > 100_000)
-          setWrongNetwork(srv.network.startsWith('Test') ? 'test' : 'main')
-      })
-      .catch(() => {})
+    void (async () => {
+      // A syncing wallet could report a stale height — only compare once
+      // its consensus is established (tip from the competition community).
+      if (wallet.isConsensusEstablished && !(await wallet.isConsensusEstablished())) return
+      const [walletHeight, srv] = await Promise.all([wallet.getBlockNumber!(), api.getNetwork()])
+      if (srv.height !== null && Math.abs(walletHeight - srv.height) > 100_000)
+        setWrongNetwork(srv.network.startsWith('Test') ? 'test' : 'main')
+    })().catch(() => {})
   }, [api, token, wallet])
 
   if (!token) {

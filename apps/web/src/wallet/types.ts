@@ -1,6 +1,7 @@
 export interface WalletProvider {
   connect(): Promise<{ address: string }>
   getBlockNumber?(): Promise<number>
+  isConsensusEstablished?(): Promise<boolean>
   signMessage(msg: string): Promise<{ publicKey: string; signature: string }>
   sendTransaction(tx: {
     recipient: string
