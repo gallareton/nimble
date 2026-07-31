@@ -5,13 +5,17 @@ import { App } from './App'
 import '@fontsource-variable/mulish'
 import './styles.css'
 import { locale } from './i18n'
+import { detectNetwork, watchNetworkFlips } from './lib/network'
 
 document.documentElement.lang = locale
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
-)
+void detectNetwork().then(() => {
+  watchNetworkFlips()
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </StrictMode>,
+  )
+})
