@@ -99,6 +99,11 @@ In Nimiq Pay: **Mini Apps → Custom URL** → your deployment URL.
 - "Paid" means **finalized**: a transaction is CONFIRMED only after the
   including block is sealed by a macro block (Albatross finality).
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) — request-by-link, bill splitting, merchant
+POS mode, Cashlink cheques, phone-number transfers, USDT on Polygon.
+
 ## License
 
 [MIT](LICENSE)
