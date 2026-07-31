@@ -12,6 +12,10 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Search: reference, amount or date (e.g. 31.07.2026)': 'Szukaj: tytuł, kwota lub data (np. 31.07.2026)',
+  'Search history': 'Szukaj w historii',
+  'All': 'Wszystkie',
+  'Nothing matches your search.': 'Nic nie pasuje do wyszukiwania.',
   'Watch the demo': 'Zobacz demo',
   'Roadmap': 'Plany rozwoju',
   'Live today': 'Działa już dziś',
@@ -118,6 +122,10 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Search: reference, amount or date (e.g. 31.07.2026)': 'Suche: Verwendungszweck, Betrag oder Datum (z. B. 31.07.2026)',
+  'Search history': 'Verlauf durchsuchen',
+  'All': 'Alle',
+  'Nothing matches your search.': 'Nichts passt zu deiner Suche.',
   'Watch the demo': 'Demo ansehen',
   'Roadmap': 'Roadmap',
   'Live today': 'Heute live',
@@ -224,6 +232,10 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Search: reference, amount or date (e.g. 31.07.2026)': 'Buscar: concepto, importe o fecha (p. ej. 31.07.2026)',
+  'Search history': 'Buscar en el historial',
+  'All': 'Todos',
+  'Nothing matches your search.': 'Nada coincide con tu búsqueda.',
   'Watch the demo': 'Ver la demo',
   'Roadmap': 'Hoja de ruta',
   'Live today': 'Disponible hoy',
@@ -330,6 +342,10 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Search: reference, amount or date (e.g. 31.07.2026)': 'Rechercher : référence, montant ou date (ex. 31.07.2026)',
+  'Search history': "Rechercher dans l'historique",
+  'All': 'Tous',
+  'Nothing matches your search.': 'Aucun résultat pour votre recherche.',
   'Watch the demo': 'Voir la démo',
   'Roadmap': 'Feuille de route',
   'Live today': "Déjà disponible",
@@ -436,6 +452,10 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Search: reference, amount or date (e.g. 31.07.2026)': 'Buscar: descrição, valor ou data (ex. 31.07.2026)',
+  'Search history': 'Buscar no histórico',
+  'All': 'Todos',
+  'Nothing matches your search.': 'Nada corresponde à sua busca.',
   'Watch the demo': 'Ver a demo',
   'Roadmap': 'Roteiro',
   'Live today': 'Disponível hoje',

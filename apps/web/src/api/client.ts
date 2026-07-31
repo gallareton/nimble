@@ -84,7 +84,15 @@ export class Api {
   registerTx(chargeId: string, hash: string, idemKey?: string) {
     return this.#post<{ transactionId: string }>(`/v1/charges/${chargeId}/transactions`, { hash }, idemKey)
   }
-  history() { return this.#get<{ items: HistoryItem[]; nextCursor: null }>('/v1/history') }
+  history(params?: { cursor?: string; q?: string; role?: string; limit?: number }) {
+    const qs = new URLSearchParams()
+    if (params?.cursor) qs.set('cursor', params.cursor)
+    if (params?.q) qs.set('q', params.q)
+    if (params?.role) qs.set('role', params.role)
+    if (params?.limit) qs.set('limit', String(params.limit))
+    const suffix = qs.size ? `?${qs}` : ''
+    return this.#get<{ items: HistoryItem[]; nextCursor: string | null }>(`/v1/history${suffix}`)
+  }
   getNetwork() { return this.#get<{ network: string; height: number | null }>('/v1/network') }
   getRate() { return this.#get<{ usdPerNim: number | null; asOf: string }>('/v1/rate') }
   getMe() { return this.#get<{ walletAddress: string; displayName: string | null }>('/v1/me') }

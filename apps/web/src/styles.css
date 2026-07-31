@@ -368,6 +368,12 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .center { text-align: center; }
 .quiet { color: var(--muted); font-size: 15px; }
 
+/* ── history filters ── */
+.filters { display: flex; flex-direction: column; gap: 10px; }
+.chips { display: flex; gap: 8px; }
+.chips .chip { color: var(--muted); }
+.chips .chip--on { color: #fff; background: var(--nimiq-light-blue); background-image: var(--action-bg); }
+
 /* ── landing demo videos (lite embeds) ── */
 .demo-video { text-align: center; }
 .demo-video__grid { display: flex; flex-direction: column; gap: 20px; align-items: center; }
