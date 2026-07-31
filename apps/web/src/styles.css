@@ -298,6 +298,10 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.howto { color: var(--muted); font-size: 14px; }
+.howto h2 { margin-bottom: 6px; }
+.howto ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+
 /* ── landing (plain browser) ── */
 .btn-link { text-decoration: none; }
 .qr-block { display: none; margin-top: 18px; text-align: center; }

@@ -63,6 +63,14 @@ export function Home() {
         </section>
       )}
       <p className="footer-nav"><Link to="/history">{t('History')}</Link> · <Link to="/settings">{t('Settings')}</Link></p>
+      <section className="howto" aria-label={t('How it works')}>
+        <h2>{t('How it works')}</h2>
+        <ol>
+          <li>{t('Paying? Tap Pay and tell the receiver your 6-digit code.')}</li>
+          <li>{t('Charging? Tap Charge, enter the amount and their code.')}</li>
+          <li>{t('The payer approves in the wallet — both screens turn green in seconds.')}</li>
+        </ol>
+      </section>
     </main>
   )
 }

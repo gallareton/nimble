@@ -79,7 +79,10 @@ coverage and one-command production deploys.
 Face-to-face crypto payments today mean QR codes (swappable with a
 sticker), links (phishable) or 40-character addresses (unreadable). BLIK
 proved a one-time code beats all three — it moves no value itself, can be
-spoken aloud, and dies after one use or 120 seconds.
+spoken aloud, and dies after one use or 120 seconds. The buyer stays
+physically separated from the seller the whole time: no device changes
+hands, nothing is scanned or tapped, so there is nothing to snatch, skim
+or tamper with at the point of sale.
 
 **Is it clear who this Mini App is for?**
 Two people settling in person: friends splitting a bill, a market vendor
@@ -101,8 +104,11 @@ recurs by nature.
 users?**
 It gives Nimiq Pay the payment UX that made BLIK a national standard in
 Poland — and NIM's near-instant finality is precisely the ingredient that
-makes it work on a blockchain. Roadmap (request-by-link, bill splitting,
-Cashlink cheques) deepens that.
+makes it work on a blockchain. For vendors it grows into a professional
+POS: the Charge screen already is a terminal, and the session/charge API
+is designed for future integration with external systems (webshops, cash
+registers) — the roadmap adds request-by-link, bill splitting and
+Cashlink-style cheques on top.
 
 ## Marketing & distribution
 

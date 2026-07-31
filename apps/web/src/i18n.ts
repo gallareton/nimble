@@ -12,6 +12,10 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'How it works': 'Jak to działa',
+  'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Płacisz? Wybierz Zapłać i podaj odbiorcy swój 6-cyfrowy kod.',
+  'Charging? Tap Charge, enter the amount and their code.': 'Pobierasz? Wybierz Pobierz, wpisz kwotę i kod płacącego.',
+  'The payer approves in the wallet — both screens turn green in seconds.': 'Płacący zatwierdza w portfelu — oba ekrany robią się zielone w kilka sekund.',
   'Finalizing in the background — the receipt will appear in History shortly.': 'Finalizacja trwa w tle — paragon pojawi się w Historii za chwilę.',
   'Value at confirmation': 'Wartość w chwili potwierdzenia',
   'Pay or get paid with a 6-digit code.': 'Płać i przyjmuj płatności 6-cyfrowym kodem.',
@@ -93,6 +97,10 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'How it works': 'So funktioniert es',
+  'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Du zahlst? Tippe auf Zahlen und nenne dem Empfänger deinen 6-stelligen Code.',
+  'Charging? Tap Charge, enter the amount and their code.': 'Du kassierst? Tippe auf Kassieren, gib Betrag und Code ein.',
+  'The payer approves in the wallet — both screens turn green in seconds.': 'Der Zahlende bestätigt in der Wallet — beide Bildschirme werden in Sekunden grün.',
   'Finalizing in the background — the receipt will appear in History shortly.': 'Finalisierung im Hintergrund — der Beleg erscheint gleich im Verlauf.',
   'Value at confirmation': 'Wert bei Bestätigung',
   'Pay or get paid with a 6-digit code.': 'Zahle oder kassiere mit einem 6-stelligen Code.',
@@ -174,6 +182,10 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'How it works': 'Cómo funciona',
+  'Paying? Tap Pay and tell the receiver your 6-digit code.': '¿Pagas? Toca Pagar y dile al receptor tu código de 6 dígitos.',
+  'Charging? Tap Charge, enter the amount and their code.': '¿Cobras? Toca Cobrar e introduce el importe y su código.',
+  'The payer approves in the wallet — both screens turn green in seconds.': 'El pagador aprueba en la wallet — ambas pantallas se ponen verdes en segundos.',
   'Finalizing in the background — the receipt will appear in History shortly.': 'Finalizando en segundo plano — el recibo aparecerá en el Historial en breve.',
   'Value at confirmation': 'Valor al confirmar',
   'Pay or get paid with a 6-digit code.': 'Paga o cobra con un código de 6 dígitos.',
@@ -255,6 +267,10 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'How it works': 'Comment ça marche',
+  'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Vous payez ? Touchez Payer et donnez votre code à 6 chiffres.',
+  'Charging? Tap Charge, enter the amount and their code.': 'Vous encaissez ? Touchez Encaisser, saisissez le montant et le code.',
+  'The payer approves in the wallet — both screens turn green in seconds.': 'Le payeur approuve dans le wallet — les deux écrans passent au vert en quelques secondes.',
   'Finalizing in the background — the receipt will appear in History shortly.': "Finalisation en arrière-plan — le reçu apparaîtra bientôt dans l'Historique.",
   'Value at confirmation': 'Valeur à la confirmation',
   'Pay or get paid with a 6-digit code.': 'Payez ou encaissez avec un code à 6 chiffres.',
@@ -336,6 +352,10 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'How it works': 'Como funciona',
+  'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Pagando? Toque em Pagar e diga seu código de 6 dígitos.',
+  'Charging? Tap Charge, enter the amount and their code.': 'Cobrando? Toque em Cobrar, insira o valor e o código.',
+  'The payer approves in the wallet — both screens turn green in seconds.': 'O pagador aprova na carteira — as duas telas ficam verdes em segundos.',
   'Finalizing in the background — the receipt will appear in History shortly.': 'Finalizando em segundo plano — o recibo aparecerá no Histórico em instantes.',
   'Value at confirmation': 'Valor na confirmação',
   'Pay or get paid with a 6-digit code.': 'Pague ou receba com um código de 6 dígitos.',
