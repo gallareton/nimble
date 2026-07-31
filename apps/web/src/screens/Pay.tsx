@@ -9,13 +9,16 @@ import { copyText } from '../lib/copy'
 import { t } from '../i18n'
 import { describeError } from '../lib/errors'
 
+import { networkChoice } from '../lib/network'
+
 export const ACTIVE_PAY_KEY = 'nimble:activePay'
+const payKey = () => `${ACTIVE_PAY_KEY}${networkChoice().suffix}`
 
 type ActivePay = { sessionId: string; code: string; expiresAt: string }
 
 function readStored(): ActivePay | null {
   try {
-    const raw = sessionStorage.getItem(ACTIVE_PAY_KEY)
+    const raw = sessionStorage.getItem(payKey())
     if (!raw) return null
     const s = JSON.parse(raw) as ActivePay
     if (!s.sessionId || !s.code || new Date(s.expiresAt).getTime() <= Date.now()) return null
@@ -34,7 +37,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
   const closeRef = useRef<(() => void) | null>(null)
   const ringRef = useRef<HTMLDivElement>(null)
 
-  const clearStored = () => sessionStorage.removeItem(ACTIVE_PAY_KEY)
+  const clearStored = () => sessionStorage.removeItem(payKey())
 
   const watch = async (s: ActivePay) => {
     closeRef.current?.()
@@ -76,7 +79,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
       // of seconds behind would show 2:02. Clamp to our own now + TTL.
       s.expiresAt = new Date(
         Math.min(new Date(s.expiresAt).getTime(), Date.now() + 120_000)).toISOString()
-      sessionStorage.setItem(ACTIVE_PAY_KEY, JSON.stringify(s))
+      sessionStorage.setItem(payKey(), JSON.stringify(s))
       setSession(s)
       await watch(s)
     } catch (e) {

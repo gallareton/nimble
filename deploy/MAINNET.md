@@ -1,4 +1,17 @@
-# Launching the second stack (mainnet + testnet subdomain)
+# Launching the second stack
+
+Two variants prepared; pick ONE when Cycle I judging concludes:
+
+- **A. Unified single URL (preferred, branch `feature/unified-network`)**:
+  both stacks behind the apex; the app detects the wallet's network and
+  picks `/api/main` or `/api/test` itself, re-checking on every return to
+  the app (flip-flopping networks in Nimiq Pay just works — sessions are
+  kept per network). Use `nginx-nimble-unified.conf` for the apex vhost;
+  no testnet subdomain needed. Merge the branch, `./update.sh main` and
+  `./update.sh test`, swap the vhost, done.
+- **B. Subdomain split (fallback, already on main)**: steps below.
+
+# B: mainnet apex + testnet subdomain
 
 Prepared, NOT launched. The competition demo (legacy stack, port 3001,
 testnet, `deploy/.env`) keeps running untouched until we decide to flip.
