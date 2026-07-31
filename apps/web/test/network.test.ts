@@ -48,3 +48,21 @@ it('picks the stack whose height matches the wallet', async () => {
   delete (window as never as { nimiqPay?: object }).nimiqPay
   vi.doUnmock('../src/wallet')
 })
+
+it('never routes a mainnet wallet to testnet while mainnet is still syncing', async () => {
+  vi.resetModules()
+  localStorage.setItem('nimble.network', 'test') // stale memory must not win
+  mockFetch({
+    '/api/main/v1/network': { network: 'MainAlbatross', height: null }, // syncing
+    '/api/test/v1/network': { network: 'TestAlbatross', height: 7_400_000 },
+  })
+  ;(window as never as { nimiqPay: object }).nimiqPay = {}
+  vi.doMock('../src/wallet', () => ({ getWallet: () => ({
+    getBlockNumber: async () => 57_000_000, // mainnet wallet
+    isConsensusEstablished: async () => true,
+  }) }))
+  const { detectNetwork } = await import('../src/lib/network')
+  expect((await detectNetwork()).net).toBe('main') // by elimination, not memory
+  delete (window as never as { nimiqPay?: object }).nimiqPay
+  vi.doUnmock('../src/wallet')
+})

@@ -41,22 +41,45 @@ async function resolve(): Promise<NetworkChoice> {
   // dev/E2E: explicit API URL → single backend, legacy storage keys
   if (configured) return { base: configured, suffix: '', net: 'single' }
 
-  const [main, test] = await Promise.all([probe('/api/main'), probe('/api/test')])
+  const MAIN: NetworkChoice = { base: '/api/main', suffix: '.main', net: 'main' }
+  const TEST: NetworkChoice = { base: '/api/test', suffix: '.test', net: 'test' }
+  const near = (a: number, b: number) => Math.abs(a - b) < 100_000
+
+  let main = await probe('/api/main')
+  let test = await probe('/api/test')
   // legacy production (no prefixes yet) → same-origin single backend
   if (!main && !test) return { base: '', suffix: '', net: 'single' }
 
   const height = await walletHeight()
-  if (height !== null) {
-    if (main?.height != null && Math.abs(height - main.height) < 100_000)
-      return { base: '/api/main', suffix: '.main', net: 'main' }
-    if (test?.height != null && Math.abs(height - test.height) < 100_000)
-      return { base: '/api/test', suffix: '.test', net: 'test' }
+
+  // No wallet (browser landing): nothing can be signed here, so the
+  // remembered choice or mainnet — the norm per Nimiq — is safe.
+  if (height === null) {
+    const remembered = localStorage.getItem(REMEMBER_KEY)
+    if (remembered === 'test' && test) return TEST
+    return main ? MAIN : TEST
   }
-  // no wallet signal: last remembered choice, else mainnet (the norm)
-  const remembered = localStorage.getItem(REMEMBER_KEY)
-  if (remembered === 'test' && test) return { base: '/api/test', suffix: '.test', net: 'test' }
-  if (main) return { base: '/api/main', suffix: '.main', net: 'main' }
-  return { base: '/api/test', suffix: '.test', net: 'test' }
+
+  // With a wallet we must NEVER guess: a payment has to reach the chain the
+  // wallet is on. Match by height, or eliminate: a backend whose known
+  // height rules it out proves the wallet is on the other network. A stack
+  // still syncing (height null) resolves after a retry.
+  for (let attempt = 0; attempt < 6; attempt++) {
+    if (main?.height != null && near(height, main.height)) return MAIN
+    if (test?.height != null && near(height, test.height)) return TEST
+    const mainRuledOut = main?.height != null
+    const testRuledOut = test?.height != null
+    if (testRuledOut && !mainRuledOut && main) return MAIN // by elimination
+    if (mainRuledOut && !testRuledOut && test) return TEST // by elimination
+    await new Promise(r => setTimeout(r, 2000))
+    main = await probe('/api/main')
+    test = await probe('/api/test')
+  }
+
+  // Both backends answered and neither matches the wallet: routing is
+  // genuinely undecidable. Land on mainnet, where the in-app guard sees the
+  // height mismatch and blocks paying rather than sending to a wrong chain.
+  return main ? MAIN : TEST
 }
 
 export async function detectNetwork(): Promise<NetworkChoice> {
