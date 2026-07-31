@@ -368,10 +368,18 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .center { text-align: center; }
 .quiet { color: var(--muted); font-size: 15px; }
 
-/* ── landing demo video (lite embed) ── */
+/* ── landing demo videos (lite embeds) ── */
 .demo-video { text-align: center; }
-.demo-video h2 { margin-bottom: 12px; }
-.demo-video__poster {
+.demo-video__grid { display: flex; flex-direction: column; gap: 20px; align-items: center; }
+@media (min-width: 700px) {
+  .demo-video__grid { flex-direction: row; justify-content: center; align-items: flex-start; }
+}
+.demo-video__item { margin: 0; width: 100%; }
+.demo-video__caption {
+  font-size: 13px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 10px;
+}
+.demo-video__media {
   position: relative;
   display: block;
   width: 100%;
@@ -380,8 +388,13 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   overflow: hidden;
   min-height: 0;
   line-height: 0;
+  box-shadow: var(--shadow);
 }
-.demo-video__poster img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.demo-video__media img, .demo-video__media iframe {
+  width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 0; display: block;
+}
+.demo-video__media--vertical { max-width: 230px; margin: 0 auto; }
+.demo-video__media--vertical img, .demo-video__media--vertical iframe { aspect-ratio: 9 / 16; }
 .demo-video__play {
   position: absolute;
   inset: 0;
@@ -391,6 +404,7 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   font-size: 26px;
   color: #fff;
   line-height: 1;
+  z-index: 0;
 }
 .demo-video__play::before {
   content: '';
@@ -401,9 +415,6 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   box-shadow: var(--shadow-lift);
   z-index: -1;
 }
-.demo-video__play { z-index: 0; }
-.demo-video__frame { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
-.demo-video__frame iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; display: block; }
 
 /* ── landing roadmap timeline ── */
 .roadmap { padding: 8px 0 24px; }
