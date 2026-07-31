@@ -12,7 +12,7 @@ export function Home() {
   const { api, token, login } = useApp()
   const [recent, setRecent] = useState<HistoryItem[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [wrongNetwork, setWrongNetwork] = useState(false)
+  const [wrongNetwork, setWrongNetwork] = useState<null | 'test' | 'main'>(null)
 
   useEffect(() => {
     if (!token) return
@@ -27,7 +27,7 @@ export function Home() {
     void Promise.all([wallet.getBlockNumber(), api.getNetwork()])
       .then(([walletHeight, srv]) => {
         if (srv.height !== null && Math.abs(walletHeight - srv.height) > 100_000)
-          setWrongNetwork(true)
+          setWrongNetwork(srv.network.startsWith('Test') ? 'test' : 'main')
       })
       .catch(() => {})
   }, [api, token, wallet])
@@ -53,7 +53,9 @@ export function Home() {
       <h1 className="brand">Nim<em>ble</em></h1>
       {wrongNetwork && (
         <p role="alert" className="banner">
-          {t('Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.')}
+          {wrongNetwork === 'test'
+            ? t('Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.')
+            : t('Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.')}
         </p>
       )}
       <nav className="home-actions">

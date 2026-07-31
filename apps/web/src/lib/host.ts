@@ -8,7 +8,11 @@ export function inNimiqPay(): boolean {
   return Boolean(w.nimiqPay || w.nimiq)
 }
 
-export const APP_URL = 'https://nimble.gallareton.pl'
+// Each deployment (mainnet at the apex, testnet on a subdomain) must
+// deep-link to itself, so derive from the page origin.
+export const APP_URL = typeof window !== 'undefined' && window.location.origin.startsWith('http')
+  ? window.location.origin
+  : 'https://nimble.gallareton.pl'
 export const DEEPLINK = `nimiqpay://miniapp?url=${encodeURIComponent(APP_URL)}`
 export const PLAY_STORE = 'https://play.google.com/store/apps/details?id=com.nimiq.pay'
 export const APP_STORE = 'https://apps.apple.com/app/nimiq-pay/id6471844738'
