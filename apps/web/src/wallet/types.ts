@@ -1,5 +1,6 @@
 export interface WalletProvider {
   connect(): Promise<{ address: string }>
+  getBlockNumber?(): Promise<number>
   signMessage(msg: string): Promise<{ publicKey: string; signature: string }>
   sendTransaction(tx: {
     recipient: string

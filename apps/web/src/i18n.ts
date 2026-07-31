@@ -12,6 +12,7 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Twój Nimiq Pay jest w innej sieci niż ten serwer Nimble (testnet). Przytrzymaj przycisk ustawień w Nimiq Pay i przełącz na Testnet przed płaceniem.',
   'How it works': 'Jak to działa',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Płacisz? Wybierz Zapłać i podaj odbiorcy swój 6-cyfrowy kod.',
   'Charging? Tap Charge, enter the amount and their code.': 'Pobierasz? Wybierz Pobierz, wpisz kwotę i kod płacącego.',
@@ -97,6 +98,7 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Deine Nimiq Pay ist in einem anderen Netzwerk als dieser Nimble-Server (Testnet). Halte in Nimiq Pay die Einstellungen gedrückt und wechsle vor dem Zahlen zu Testnet.',
   'How it works': 'So funktioniert es',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Du zahlst? Tippe auf Zahlen und nenne dem Empfänger deinen 6-stelligen Code.',
   'Charging? Tap Charge, enter the amount and their code.': 'Du kassierst? Tippe auf Kassieren, gib Betrag und Code ein.',
@@ -182,6 +184,7 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Tu Nimiq Pay está en una red distinta a este servidor de Nimble (testnet). Mantén pulsados los ajustes en Nimiq Pay y cambia a Testnet antes de pagar.',
   'How it works': 'Cómo funciona',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': '¿Pagas? Toca Pagar y dile al receptor tu código de 6 dígitos.',
   'Charging? Tap Charge, enter the amount and their code.': '¿Cobras? Toca Cobrar e introduce el importe y su código.',
@@ -267,6 +270,7 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Votre Nimiq Pay est sur un autre réseau que ce serveur Nimble (testnet). Appuyez longuement sur les réglages dans Nimiq Pay pour passer en Testnet avant de payer.',
   'How it works': 'Comment ça marche',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Vous payez ? Touchez Payer et donnez votre code à 6 chiffres.',
   'Charging? Tap Charge, enter the amount and their code.': 'Vous encaissez ? Touchez Encaisser, saisissez le montant et le code.',
@@ -352,6 +356,7 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Seu Nimiq Pay está em uma rede diferente deste servidor Nimble (testnet). Segure as configurações no Nimiq Pay e mude para Testnet antes de pagar.',
   'How it works': 'Como funciona',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Pagando? Toque em Pagar e diga seu código de 6 dígitos.',
   'Charging? Tap Charge, enter the amount and their code.': 'Cobrando? Toque em Cobrar, insira o valor e o código.',

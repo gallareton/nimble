@@ -14,7 +14,12 @@ import { sseRoutes } from './routes/sse'
 import { historyRoutes } from './routes/history'
 
 import { nullRates, type RateProvider } from './services/rates'
-export interface AppDeps { db: Db; verifier: SignatureVerifier; events: SessionEvents; rates?: RateProvider }
+import type { ChainClient } from './services/monitor'
+export interface AppDeps {
+  db: Db; verifier: SignatureVerifier; events: SessionEvents; rates?: RateProvider
+  // late-bound: the chain client connects after listen()
+  chainRef?: { current: ChainClient | null }
+}
 
 export function buildApp(deps: AppDeps) {
   const app = Fastify({ logger: true })
@@ -51,6 +56,12 @@ export function buildApp(deps: AppDeps) {
   }
 
   app.get('/healthz', async () => ({ ok: true }))
+  app.get('/v1/network', async () => {
+    const chain = deps.chainRef?.current
+    let height: number | null = null
+    if (chain) { try { height = await chain.getLastMacroHeight() } catch { /* still syncing */ } }
+    return { network: env.nimiqNetwork, height }
+  })
   app.get('/v1/rate', async () => ({
     usdPerNim: await (deps.rates ?? nullRates).getUsdPerNim(),
     asOf: new Date().toISOString(),

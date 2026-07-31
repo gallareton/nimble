@@ -27,11 +27,13 @@ const mockVerifier = {
 const { db } = makeDb(env.databaseUrl)
 const events = new SessionEvents()
 const rates = makeCoingeckoRates()
-const app = buildApp({ db, verifier: env.mockAuth ? mockVerifier : nimiqVerifier, events, rates })
+const chainRef = { current: null as import('./services/monitor').ChainClient | null }
+const app = buildApp({ db, verifier: env.mockAuth ? mockVerifier : nimiqVerifier, events, rates, chainRef })
 startSweeper(db, events)
 
 if (env.fakeChain) {
   const fake = new FakeChainClient()
+  chainRef.current = fake
   startMonitor(db, events, fake, 500, rates)
   app.post('/__test/chain/advance', async req => {
     const body = (req.body ?? {}) as { blocks?: number; macro?: boolean; reset?: boolean }
@@ -40,7 +42,7 @@ if (env.fakeChain) {
 } else {
   // Chain consensus can take a while or fail — the API must serve regardless.
   void makeNimiqChainClient()
-    .then(chain => startMonitor(db, events, chain, 1500, rates))
+    .then(chain => { chainRef.current = chain; startMonitor(db, events, chain, 1500, rates) })
     .catch(err => app.log.error({ err }, 'chain client unavailable — monitor not started'))
 }
 

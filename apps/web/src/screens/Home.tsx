@@ -12,11 +12,25 @@ export function Home() {
   const { api, token, login } = useApp()
   const [recent, setRecent] = useState<HistoryItem[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [wrongNetwork, setWrongNetwork] = useState(false)
 
   useEffect(() => {
     if (!token) return
     api.history().then(h => setRecent(h.items.slice(0, 3))).catch(() => {})
   }, [api, token])
+
+  // Wallet on mainnet + server on testnet (or vice versa) would broadcast
+  // payments our monitor can never confirm — detect it via chain height.
+  const { wallet } = useApp()
+  useEffect(() => {
+    if (!token || !wallet.getBlockNumber) return
+    void Promise.all([wallet.getBlockNumber(), api.getNetwork()])
+      .then(([walletHeight, srv]) => {
+        if (srv.height !== null && Math.abs(walletHeight - srv.height) > 100_000)
+          setWrongNetwork(true)
+      })
+      .catch(() => {})
+  }, [api, token, wallet])
 
   if (!token) {
     if (!inNimiqPay()) return <Landing />
@@ -37,6 +51,11 @@ export function Home() {
   return (
     <main>
       <h1 className="brand">Nim<em>ble</em></h1>
+      {wrongNetwork && (
+        <p role="alert" className="banner">
+          {t('Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.')}
+        </p>
+      )}
       <nav className="home-actions">
         <Link to="/pay"><button className="primary" aria-label="Pay">
           {t('Pay')}<span className="sub" aria-hidden>{t('show a code')}</span></button></Link>
