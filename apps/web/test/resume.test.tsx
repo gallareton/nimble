@@ -73,3 +73,32 @@ it('Pay clamps a skewed server expiry so the countdown starts at 2:00', async ()
   const stored = JSON.parse(sessionStorage.getItem(ACTIVE_PAY_KEY)!)
   expect(new Date(stored.expiresAt).getTime()).toBeLessThanOrEqual(Date.now() + 120_000)
 })
+
+it('History reads filters from the URL and swaps a finalized row on poll', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  const { History } = await import('../src/screens/History')
+  const pendingRow = { pending: true, sessionId: 's9', role: 'payer',
+    snapshot: { amountNim: '2.5', reference: 'Soda' }, createdAt: new Date().toISOString() }
+  const settledRow = { receiptId: 'r9', sessionId: 's9', role: 'payer',
+    snapshot: { amountNim: '2.5', reference: 'Soda' }, createdAt: new Date().toISOString() }
+  const calls: Array<Record<string, unknown> | undefined> = []
+  let settled = false
+  const api = {
+    history: vi.fn(async (p?: Record<string, unknown>) => {
+      calls.push(p)
+      return { items: [settled ? settledRow : pendingRow], nextCursor: null }
+    }),
+  }
+  render(
+    <MemoryRouter initialEntries={['/history?q=Soda&role=payer&from=2026-07-01&to=2026-07-31']}>
+      <AppProvider><History api={api as never} /></AppProvider>
+    </MemoryRouter>,
+  )
+  await waitFor(() => expect(screen.getByText(/Paid — finalizing/)).toBeTruthy())
+  expect(calls[0]).toMatchObject({ q: 'Soda', role: 'payer', from: '2026-07-01', to: '2026-07-31' })
+
+  settled = true
+  await vi.advanceTimersByTimeAsync(5100)
+  await waitFor(() => expect(screen.queryByText(/Paid — finalizing/)).toBeNull())
+  vi.useRealTimers()
+})

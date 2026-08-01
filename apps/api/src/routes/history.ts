@@ -5,40 +5,25 @@ import { chainTransaction, charge, paymentSession, receipt } from '../db/schema'
 
 const PAGE_LIMIT = 20
 
-// "2026-07-30" or "30.07.2026" → UTC day range, else null.
-function parseDayQuery(q: string): { from: Date; to: Date } | null {
-  let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(q)
-  let y: number, mo: number, d: number
-  if (m) { [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])] }
-  else {
-    m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(q)
-    if (!m) return null
-    ;[d, mo, y] = [Number(m[1]), Number(m[2]), Number(m[3])]
-  }
-  const from = new Date(Date.UTC(y, mo - 1, d))
-  if (Number.isNaN(from.getTime())) return null
-  return { from, to: new Date(from.getTime() + 24 * 3600_000) }
-}
-
 export async function historyRoutes(app: FastifyInstance) {
   app.get('/v1/history', { preHandler: app.authenticate }, async req => {
     const db = app.deps.db
-    const query = req.query as { cursor?: string; q?: string; role?: string; limit?: string }
+    const query = req.query as {
+      cursor?: string; q?: string; role?: string; limit?: string; from?: string; to?: string }
     const limit = Math.min(50, Math.max(1, Number(query.limit) || PAGE_LIMIT))
     const q = (query.q ?? '').trim()
     const roleFilter = query.role === 'payer' || query.role === 'receiver' ? query.role : null
 
     const conds = [eq(receipt.ownerUserId, req.user.userId)]
     if (roleFilter) conds.push(eq(receipt.role, roleFilter))
-    if (q) {
-      const day = parseDayQuery(q)
-      if (day) {
-        conds.push(sql`${receipt.createdAt} >= ${day.from.toISOString()}::timestamptz AND ${receipt.createdAt} < ${day.to.toISOString()}::timestamptz`)
-      } else {
-        conds.push(sql`(${receipt.snapshotJson}->>'reference' ILIKE ${'%' + q + '%'}
-          OR ${receipt.snapshotJson}->>'amountNim' = ${q})`)
-      }
-    }
+    if (q) conds.push(sql`(${receipt.snapshotJson}->>'reference' ILIKE ${'%' + q + '%'}
+      OR ${receipt.snapshotJson}->>'amountNim' = ${q})`)
+    // Inclusive day range from the UI's date pickers (YYYY-MM-DD, UTC days).
+    const dayStart = (d: string) => new Date(`${d}T00:00:00.000Z`)
+    if (query.from && !Number.isNaN(dayStart(query.from).getTime()))
+      conds.push(sql`${receipt.createdAt} >= ${dayStart(query.from).toISOString()}::timestamptz`)
+    if (query.to && !Number.isNaN(dayStart(query.to).getTime()))
+      conds.push(sql`${receipt.createdAt} < ${new Date(dayStart(query.to).getTime() + 86_400_000).toISOString()}::timestamptz`)
     // Cursor = "<createdAtISO>_<id>": receipts for both sides of a payment
     // share a timestamp, so paginate on the (created_at, id) tuple.
     if (query.cursor) {
@@ -49,13 +34,17 @@ export async function historyRoutes(app: FastifyInstance) {
         conds.push(sql`(${receipt.createdAt}, ${receipt.id}) < (${ts.toISOString()}::timestamptz, ${id}::uuid)`)
     }
 
-    const rows = await db.select().from(receipt).where(and(...conds))
+    const rows = await db.select({ r: receipt, sessionId: charge.sessionId })
+      .from(receipt)
+      .leftJoin(chainTransaction, eq(chainTransaction.id, receipt.transactionId))
+      .leftJoin(charge, eq(charge.id, chainTransaction.chargeId))
+      .where(and(...conds))
       .orderBy(desc(receipt.createdAt), desc(receipt.id)).limit(limit)
 
     // In-flight (paid, not yet finalized) rows lead the FIRST unfiltered
     // page; the receipt replaces them at finality.
     let pendingItems: object[] = []
-    if (!query.cursor && !q && !roleFilter) {
+    if (!query.cursor && !q && !roleFilter && !query.from && !query.to) {
       const inflight = await db.select({ tx: chainTransaction, c: charge, s: paymentSession })
         .from(chainTransaction)
         .innerJoin(charge, eq(charge.id, chainTransaction.chargeId))
@@ -77,12 +66,12 @@ export async function historyRoutes(app: FastifyInstance) {
         }))
     }
 
-    const last = rows[rows.length - 1]
+    const last = rows[rows.length - 1]?.r
     return {
       items: [
         ...pendingItems,
-        ...rows.map(r => ({ receiptId: r.id, role: r.role, snapshot: r.snapshotJson,
-          createdAt: r.createdAt.toISOString() })),
+        ...rows.map(({ r, sessionId }) => ({ receiptId: r.id, sessionId: sessionId ?? undefined,
+          role: r.role, snapshot: r.snapshotJson, createdAt: r.createdAt.toISOString() })),
       ],
       nextCursor: rows.length === limit ? `${last.createdAt.toISOString()}_${last.id}` : null,
     }

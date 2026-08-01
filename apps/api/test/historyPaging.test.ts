@@ -28,7 +28,7 @@ async function seed(ownerId: string, otherId: string, n: number) {
   }
 }
 
-it('paginates by cursor; filters by text, amount, role and date', async () => {
+it('paginates by cursor; filters by text, amount, role and date range', async () => {
   const owner = await makeUser(db, `NQ60 ${crypto.randomUUID().slice(0, 8)}`)
   const other = await makeUser(db, `NQ61 ${crypto.randomUUID().slice(0, 8)}`)
   await seed(owner.id, other.id, 25)
@@ -55,9 +55,12 @@ it('paginates by cursor; filters by text, amount, role and date', async () => {
   const sent = (await app.inject({ url: '/v1/history?role=payer', headers: h })).json()
   expect(sent.items.every((i: { role: string }) => i.role === 'payer')).toBe(true)
 
-  // seeded one receipt per day: 2026-06-21 is 10 days before Jul 1
-  const day = (await app.inject({ url: '/v1/history?q=2026-06-21', headers: h })).json()
-  expect(day.items).toHaveLength(1)
-  const dayPl = (await app.inject({ url: '/v1/history?q=21.06.2026', headers: h })).json()
-  expect(dayPl.items).toHaveLength(1)
+  // seeded one receipt per day going back from Jul 1
+  const oneDay = (await app.inject({
+    url: '/v1/history?from=2026-06-21&to=2026-06-21', headers: h })).json()
+  expect(oneDay.items).toHaveLength(1)
+  const range = (await app.inject({
+    url: '/v1/history?from=2026-06-25&to=2026-06-30', headers: h })).json()
+  expect(range.items).toHaveLength(6) // inclusive on both ends
+  expect(range.items.every((i: { sessionId?: string }) => typeof i.sessionId === 'string')).toBe(true)
 })

@@ -12,7 +12,8 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
-  'Search: reference, amount or date (e.g. 31.07.2026)': 'Szukaj: tytuł, kwota lub data (np. 31.07.2026)',
+  'Search by reference or amount': 'Szukaj po tytule lub kwocie',
+  'Clear': 'Wyczyść',
   'Search history': 'Szukaj w historii',
   'All': 'Wszystkie',
   'Nothing matches your search.': 'Nic nie pasuje do wyszukiwania.',
@@ -122,7 +123,8 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
-  'Search: reference, amount or date (e.g. 31.07.2026)': 'Suche: Verwendungszweck, Betrag oder Datum (z. B. 31.07.2026)',
+  'Search by reference or amount': 'Suche nach Verwendungszweck oder Betrag',
+  'Clear': 'Zurücksetzen',
   'Search history': 'Verlauf durchsuchen',
   'All': 'Alle',
   'Nothing matches your search.': 'Nichts passt zu deiner Suche.',
@@ -232,7 +234,8 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
-  'Search: reference, amount or date (e.g. 31.07.2026)': 'Buscar: concepto, importe o fecha (p. ej. 31.07.2026)',
+  'Search by reference or amount': 'Buscar por concepto o importe',
+  'Clear': 'Limpiar',
   'Search history': 'Buscar en el historial',
   'All': 'Todos',
   'Nothing matches your search.': 'Nada coincide con tu búsqueda.',
@@ -342,7 +345,8 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
-  'Search: reference, amount or date (e.g. 31.07.2026)': 'Rechercher : référence, montant ou date (ex. 31.07.2026)',
+  'Search by reference or amount': 'Rechercher par référence ou montant',
+  'Clear': 'Effacer',
   'Search history': "Rechercher dans l'historique",
   'All': 'Tous',
   'Nothing matches your search.': 'Aucun résultat pour votre recherche.',
@@ -452,7 +456,8 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
-  'Search: reference, amount or date (e.g. 31.07.2026)': 'Buscar: descrição, valor ou data (ex. 31.07.2026)',
+  'Search by reference or amount': 'Buscar por descrição ou valor',
+  'Clear': 'Limpar',
   'Search history': 'Buscar no histórico',
   'All': 'Todos',
   'Nothing matches your search.': 'Nada corresponde à sua busca.',

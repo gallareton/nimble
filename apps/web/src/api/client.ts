@@ -84,11 +84,14 @@ export class Api {
   registerTx(chargeId: string, hash: string, idemKey?: string) {
     return this.#post<{ transactionId: string }>(`/v1/charges/${chargeId}/transactions`, { hash }, idemKey)
   }
-  history(params?: { cursor?: string; q?: string; role?: string; limit?: number }) {
+  history(params?: { cursor?: string; q?: string; role?: string; limit?: number
+    from?: string; to?: string }) {
     const qs = new URLSearchParams()
     if (params?.cursor) qs.set('cursor', params.cursor)
     if (params?.q) qs.set('q', params.q)
     if (params?.role) qs.set('role', params.role)
+    if (params?.from) qs.set('from', params.from)
+    if (params?.to) qs.set('to', params.to)
     if (params?.limit) qs.set('limit', String(params.limit))
     const suffix = qs.size ? `?${qs}` : ''
     return this.#get<{ items: HistoryItem[]; nextCursor: string | null }>(`/v1/history${suffix}`)

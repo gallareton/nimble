@@ -370,7 +370,10 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 
 /* ── history filters ── */
 .filters { display: flex; flex-direction: column; gap: 10px; }
-.chips { display: flex; gap: 8px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.dates { display: flex; gap: 10px; }
+.dates label { flex: 1; font-size: 12px; }
+.dates input { padding: 10px 12px; font-size: 15px; }
 .chips .chip { color: var(--muted); }
 .chips .chip--on { color: #fff; background: var(--nimiq-light-blue); background-image: var(--action-bg); }
 
