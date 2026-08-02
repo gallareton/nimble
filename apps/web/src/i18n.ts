@@ -12,6 +12,10 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Nobody to pay yet? Nimble takes two — the other person enters your code.': 'Nie masz komu zapłacić? Nimble wymaga dwóch osób — druga wpisuje Twój kod.',
+  'Invite someone': 'Zaproś kogoś',
+  'Link copied': 'Skopiowano link',
+  'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Płać i przyjmuj płatności 6-cyfrowym kodem w Nimiq Pay.',
   'Search by reference or amount': 'Szukaj po tytule lub kwocie',
   'Clear': 'Wyczyść',
   'Search history': 'Szukaj w historii',
@@ -123,6 +127,10 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Nobody to pay yet? Nimble takes two — the other person enters your code.': 'Niemanden zum Zahlen? Nimble braucht zwei — die andere Person gibt deinen Code ein.',
+  'Invite someone': 'Jemanden einladen',
+  'Link copied': 'Link kopiert',
+  'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Zahle oder kassiere mit einem 6-stelligen Code in Nimiq Pay.',
   'Search by reference or amount': 'Suche nach Verwendungszweck oder Betrag',
   'Clear': 'Zurücksetzen',
   'Search history': 'Verlauf durchsuchen',
@@ -234,6 +242,10 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Nobody to pay yet? Nimble takes two — the other person enters your code.': '¿Nadie a quien pagar? Nimble necesita dos personas — la otra introduce tu código.',
+  'Invite someone': 'Invitar a alguien',
+  'Link copied': 'Enlace copiado',
+  'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Paga o cobra con un código de 6 dígitos en Nimiq Pay.',
   'Search by reference or amount': 'Buscar por concepto o importe',
   'Clear': 'Limpiar',
   'Search history': 'Buscar en el historial',
@@ -345,6 +357,10 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Nobody to pay yet? Nimble takes two — the other person enters your code.': "Personne à payer ? Nimble se joue à deux — l'autre saisit votre code.",
+  'Invite someone': 'Inviter quelqu\'un',
+  'Link copied': 'Lien copié',
+  'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Payez ou encaissez avec un code à 6 chiffres dans Nimiq Pay.',
   'Search by reference or amount': 'Rechercher par référence ou montant',
   'Clear': 'Effacer',
   'Search history': "Rechercher dans l'historique",
@@ -456,6 +472,10 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Nobody to pay yet? Nimble takes two — the other person enters your code.': 'Ninguém para pagar? O Nimble precisa de dois — a outra pessoa insere seu código.',
+  'Invite someone': 'Convidar alguém',
+  'Link copied': 'Link copiado',
+  'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Pague ou receba com um código de 6 dígitos no Nimiq Pay.',
   'Search by reference or amount': 'Buscar por descrição ou valor',
   'Clear': 'Limpar',
   'Search history': 'Buscar no histórico',

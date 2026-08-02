@@ -6,6 +6,7 @@ import { Spinner } from '../components/Spinner'
 import { Countdown } from '../components/Countdown'
 import type { Api } from '../api/client'
 import { copyText } from '../lib/copy'
+import { APP_URL } from '../lib/host'
 import { t } from '../i18n'
 import { describeError } from '../lib/errors'
 
@@ -34,6 +35,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
   const [expired, setExpired] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [invited, setInvited] = useState(false)
   const closeRef = useRef<(() => void) | null>(null)
   const ringRef = useRef<HTMLDivElement>(null)
 
@@ -69,6 +71,21 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
   }, [])
 
   useEffect(() => () => closeRef.current?.(), [])
+
+  // A code is useless alone: data shows solo visitors generate one and
+  // leave. Hand them a way to pull in the other person.
+  const invite = async () => {
+    const text = t('Pay or get paid with a 6-digit code in Nimiq Pay.')
+    if (navigator.share) {
+      // cancelling the sheet is not a failure — never fall through to copy
+      await navigator.share({ title: 'Nimble', text, url: APP_URL }).catch(() => {})
+      return
+    }
+    if (await copyText(`${text} ${APP_URL}`)) {
+      setInvited(true)
+      setTimeout(() => setInvited(false), 2000)
+    }
+  }
 
   const generate = async () => {
     setError(null)
@@ -129,6 +146,12 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
             }}>{copied ? t('Copied') : t('Copy code')}</button>
           </p>
           <p className="center quiet">{t('Tell this code to the receiver. Waiting for them to claim…')}</p>
+          <p className="center quiet">{t('Nobody to pay yet? Nimble takes two — the other person enters your code.')}</p>
+          <p className="center">
+            <button className="chip" onClick={invite}>
+              {invited ? t('Link copied') : t('Invite someone')}
+            </button>
+          </p>
         </>
       )}
       {error && <p role="alert">{error}</p>}

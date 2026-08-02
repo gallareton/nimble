@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, expect, it, vi } from 'vitest'
 import { Pay, ACTIVE_PAY_KEY } from '../src/screens/Pay'
@@ -101,4 +101,15 @@ it('History reads filters from the URL and swaps a finalized row on poll', async
   await vi.advanceTimersByTimeAsync(5100)
   await waitFor(() => expect(screen.queryByText(/Paid — finalizing/)).toBeNull())
   vi.useRealTimers()
+})
+
+it('Pay offers an invite once a code is on screen, without touching existing controls', async () => {
+  const api = {
+    createSession: vi.fn(async () => ({ sessionId: 's5', code: '777888', expiresAt: future() })),
+    openEvents: vi.fn(async () => () => {}),
+  }
+  const { container } = render(<MemoryRouter><Pay api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(within(container).getByText('777 888')).toBeTruthy())
+  expect(within(container).getByRole('button', { name: /invite someone/i })).toBeTruthy()
+  expect(within(container).getByRole('button', { name: /copy code/i })).toBeTruthy()
 })
