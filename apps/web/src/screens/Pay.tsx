@@ -78,7 +78,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
     const text = t('Pay or get paid with a 6-digit code in Nimiq Pay.')
     if (navigator.share) {
       // cancelling the sheet is not a failure — never fall through to copy
-      await navigator.share({ title: 'Nimble', text, url: APP_URL }).catch(() => {})
+      await navigator.share({ title: 'NIMble', text, url: APP_URL }).catch(() => {})
       return
     }
     if (await copyText(`${text} ${APP_URL}`)) {
@@ -118,7 +118,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
           : '0' }}
       >
         <div className="code-ring__inner">
-          <span className="brand-chip">Nimble</span>
+          <span className="brand-chip">NIMble</span>
           {expired ? (
             <>
               <p className="quiet">{t('Code expired')}</p>
@@ -146,7 +146,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
             }}>{copied ? t('Copied') : t('Copy code')}</button>
           </p>
           <p className="center quiet">{t('Tell this code to the receiver. Waiting for them to claim…')}</p>
-          <p className="center quiet">{t('Nobody to pay yet? Nimble takes two — the other person enters your code.')}</p>
+          <p className="center quiet">{t('Nobody to pay yet? NIMble takes two — the other person enters your code.')}</p>
           <p className="center">
             <button className="chip" onClick={invite}>
               {invited ? t('Link copied') : t('Invite someone')}

@@ -14,7 +14,7 @@ function signedMessageDigest(message: string): Uint8Array {
 }
 
 describe('nimiqVerifier', () => {
-  const msg = 'Nimble login dcf6750ed9a9e74b4850d4ade9b6a5f9'
+  const msg = 'NIMble login dcf6750ed9a9e74b4850d4ade9b6a5f9'
 
   it('accepts a Keyguard-style prefixed+hashed signature (Nimiq Pay)', async () => {
     const kp = KeyPair.generate()

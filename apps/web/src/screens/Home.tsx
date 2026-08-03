@@ -39,7 +39,7 @@ export function Home() {
     return (
       <main>
         <div className="hero">
-          <h1 className="brand">Nim<em>ble</em></h1>
+          <h1 className="brand">NIM<em>ble</em></h1>
           <p>{t('Pay or get paid with a 6-digit code.')}</p>
           <button className="primary" onClick={() => { setError(null); login().catch(e => setError(describeError(e))) }}>
             Connect wallet
@@ -52,12 +52,12 @@ export function Home() {
 
   return (
     <main>
-      <h1 className="brand">Nim<em>ble</em></h1>
+      <h1 className="brand">NIM<em>ble</em></h1>
       {wrongNetwork && (
         <p role="alert" className="banner">
           {wrongNetwork === 'test'
-            ? t('Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.')
-            : t('Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.')}
+            ? t('Your Nimiq Pay is on a different network than this NIMble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.')
+            : t('Your Nimiq Pay is on a different network than this NIMble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.')}
         </p>
       )}
       <nav className="home-actions" aria-disabled={wrongNetwork !== null}>

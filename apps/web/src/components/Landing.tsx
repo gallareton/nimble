@@ -16,9 +16,9 @@ export function Landing() {
   return (
     <main>
       <div className="hero">
-        <h1 className="brand">Nim<em>ble</em></h1>
+        <h1 className="brand">NIM<em>ble</em></h1>
         <p>{t('Pay or get paid with a 6-digit code.')}</p>
-        <p className="quiet">{t('Nimble is a Mini App — it runs inside the Nimiq Pay wallet.')}</p>
+        <p className="quiet">{t('NIMble is a Mini App — it runs inside the Nimiq Pay wallet.')}</p>
         <a className="btn-link" href={DEEPLINK}>
           <button className="primary">{t('Open in Nimiq Pay')}</button>
         </a>

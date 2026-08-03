@@ -23,7 +23,7 @@ export async function authRoutes(app: FastifyInstance) {
   app.post('/v1/auth/challenge', async () => {
     const nonce = randomBytes(16).toString('hex')
     await db.insert(authNonce).values({ nonce })
-    return { nonce, message: `Nimble login ${nonce}` }
+    return { nonce, message: `NIMble login ${nonce}` }
   })
 
   app.post('/v1/auth/verify', async (req, reply) => {
@@ -36,7 +36,7 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'invalid nonce' } })
 
     const { valid, address } = await verifier.verify(
-      `Nimble login ${body.nonce}`, body.publicKey, body.signature)
+      `NIMble login ${body.nonce}`, body.publicKey, body.signature)
     if (!valid || !address)
       return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'invalid signature' } })
 

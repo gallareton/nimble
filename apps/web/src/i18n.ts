@@ -12,7 +12,8 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
-  'Nobody to pay yet? Nimble takes two — the other person enters your code.': 'Nie masz komu zapłacić? Nimble wymaga dwóch osób — druga wpisuje Twój kod.',
+  'Close': 'Zamknij',
+  'Nobody to pay yet? NIMble takes two — the other person enters your code.': 'Nie masz komu zapłacić? NIMble wymaga dwóch osób — druga wpisuje Twój kod.',
   'Invite someone': 'Zaproś kogoś',
   'Link copied': 'Skopiowano link',
   'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Płać i przyjmuj płatności 6-cyfrowym kodem w Nimiq Pay.',
@@ -40,8 +41,8 @@ const pl: Record<string, string> = {
   'USDT on Polygon': 'USDT na Polygonie',
   'Same flow, stable value — the session model is asset-agnostic.': 'Ten sam przebieg, stabilna wartość — model sesji nie zależy od aktywa.',
   'Not enough NIM in your wallet for this amount.': 'Za mało NIM w portfelu na tę kwotę.',
-  'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Twój Nimiq Pay jest w innej sieci niż ten serwer Nimble (mainnet). Przytrzymaj przycisk ustawień w Nimiq Pay i przełącz na Mainnet przed płaceniem.',
-  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Twój Nimiq Pay jest w innej sieci niż ten serwer Nimble (testnet). Przytrzymaj przycisk ustawień w Nimiq Pay i przełącz na Testnet przed płaceniem.',
+  'Your Nimiq Pay is on a different network than this NIMble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Twój Nimiq Pay jest w innej sieci niż ten serwer NIMble (mainnet). Przytrzymaj przycisk ustawień w Nimiq Pay i przełącz na Mainnet przed płaceniem.',
+  'Your Nimiq Pay is on a different network than this NIMble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Twój Nimiq Pay jest w innej sieci niż ten serwer NIMble (testnet). Przytrzymaj przycisk ustawień w Nimiq Pay i przełącz na Testnet przed płaceniem.',
   'How it works': 'Jak to działa',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Płacisz? Wybierz Zapłać i podaj odbiorcy swój 6-cyfrowy kod.',
   'Charging? Tap Charge, enter the amount and their code.': 'Pobierasz? Wybierz Pobierz, wpisz kwotę i kod płacącego.',
@@ -61,7 +62,7 @@ const pl: Record<string, string> = {
   'Settings': 'Ustawienia',
   'Home': 'Start',
   'Back to home': 'Wróć na start',
-  'Nimble is a Mini App — it runs inside the Nimiq Pay wallet.': 'Nimble to Mini App — działa wewnątrz portfela Nimiq Pay.',
+  'NIMble is a Mini App — it runs inside the Nimiq Pay wallet.': 'NIMble to Mini App — działa wewnątrz portfela Nimiq Pay.',
   'Open in Nimiq Pay': 'Otwórz w Nimiq Pay',
   "Don't have it yet? Get Nimiq Pay for": 'Nie masz jeszcze? Pobierz Nimiq Pay na',
   'or': 'lub',
@@ -127,7 +128,8 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
-  'Nobody to pay yet? Nimble takes two — the other person enters your code.': 'Niemanden zum Zahlen? Nimble braucht zwei — die andere Person gibt deinen Code ein.',
+  'Close': 'Schließen',
+  'Nobody to pay yet? NIMble takes two — the other person enters your code.': 'Niemanden zum Zahlen? NIMble braucht zwei — die andere Person gibt deinen Code ein.',
   'Invite someone': 'Jemanden einladen',
   'Link copied': 'Link kopiert',
   'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Zahle oder kassiere mit einem 6-stelligen Code in Nimiq Pay.',
@@ -155,8 +157,8 @@ const de: Record<string, string> = {
   'USDT on Polygon': 'USDT auf Polygon',
   'Same flow, stable value — the session model is asset-agnostic.': 'Gleicher Ablauf, stabiler Wert — das Sitzungsmodell ist asset-agnostisch.',
   'Not enough NIM in your wallet for this amount.': 'Nicht genug NIM in der Wallet für diesen Betrag.',
-  'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Deine Nimiq Pay ist in einem anderen Netzwerk als dieser Nimble-Server (Mainnet). Halte in Nimiq Pay die Einstellungen gedrückt und wechsle vor dem Zahlen zu Mainnet.',
-  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Deine Nimiq Pay ist in einem anderen Netzwerk als dieser Nimble-Server (Testnet). Halte in Nimiq Pay die Einstellungen gedrückt und wechsle vor dem Zahlen zu Testnet.',
+  'Your Nimiq Pay is on a different network than this NIMble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Deine Nimiq Pay ist in einem anderen Netzwerk als dieser NIMble-Server (Mainnet). Halte in Nimiq Pay die Einstellungen gedrückt und wechsle vor dem Zahlen zu Mainnet.',
+  'Your Nimiq Pay is on a different network than this NIMble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Deine Nimiq Pay ist in einem anderen Netzwerk als dieser NIMble-Server (Testnet). Halte in Nimiq Pay die Einstellungen gedrückt und wechsle vor dem Zahlen zu Testnet.',
   'How it works': 'So funktioniert es',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Du zahlst? Tippe auf Zahlen und nenne dem Empfänger deinen 6-stelligen Code.',
   'Charging? Tap Charge, enter the amount and their code.': 'Du kassierst? Tippe auf Kassieren, gib Betrag und Code ein.',
@@ -176,7 +178,7 @@ const de: Record<string, string> = {
   'Settings': 'Einstellungen',
   'Home': 'Start',
   'Back to home': 'Zurück zum Start',
-  'Nimble is a Mini App — it runs inside the Nimiq Pay wallet.': 'Nimble ist eine Mini App — sie läuft in der Nimiq Pay Wallet.',
+  'NIMble is a Mini App — it runs inside the Nimiq Pay wallet.': 'NIMble ist eine Mini App — sie läuft in der Nimiq Pay Wallet.',
   'Open in Nimiq Pay': 'In Nimiq Pay öffnen',
   "Don't have it yet? Get Nimiq Pay for": 'Noch nicht installiert? Hol dir Nimiq Pay für',
   'or': 'oder',
@@ -242,7 +244,8 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
-  'Nobody to pay yet? Nimble takes two — the other person enters your code.': '¿Nadie a quien pagar? Nimble necesita dos personas — la otra introduce tu código.',
+  'Close': 'Cerrar',
+  'Nobody to pay yet? NIMble takes two — the other person enters your code.': '¿Nadie a quien pagar? NIMble necesita dos personas — la otra introduce tu código.',
   'Invite someone': 'Invitar a alguien',
   'Link copied': 'Enlace copiado',
   'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Paga o cobra con un código de 6 dígitos en Nimiq Pay.',
@@ -270,8 +273,8 @@ const es: Record<string, string> = {
   'USDT on Polygon': 'USDT en Polygon',
   'Same flow, stable value — the session model is asset-agnostic.': 'Mismo flujo, valor estable — el modelo de sesión es agnóstico al activo.',
   'Not enough NIM in your wallet for this amount.': 'No hay suficiente NIM en tu wallet para este importe.',
-  'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Tu Nimiq Pay está en una red distinta a este servidor de Nimble (mainnet). Mantén pulsados los ajustes en Nimiq Pay y cambia a Mainnet antes de pagar.',
-  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Tu Nimiq Pay está en una red distinta a este servidor de Nimble (testnet). Mantén pulsados los ajustes en Nimiq Pay y cambia a Testnet antes de pagar.',
+  'Your Nimiq Pay is on a different network than this NIMble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Tu Nimiq Pay está en una red distinta a este servidor de NIMble (mainnet). Mantén pulsados los ajustes en Nimiq Pay y cambia a Mainnet antes de pagar.',
+  'Your Nimiq Pay is on a different network than this NIMble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Tu Nimiq Pay está en una red distinta a este servidor de NIMble (testnet). Mantén pulsados los ajustes en Nimiq Pay y cambia a Testnet antes de pagar.',
   'How it works': 'Cómo funciona',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': '¿Pagas? Toca Pagar y dile al receptor tu código de 6 dígitos.',
   'Charging? Tap Charge, enter the amount and their code.': '¿Cobras? Toca Cobrar e introduce el importe y su código.',
@@ -291,7 +294,7 @@ const es: Record<string, string> = {
   'Settings': 'Ajustes',
   'Home': 'Inicio',
   'Back to home': 'Volver al inicio',
-  'Nimble is a Mini App — it runs inside the Nimiq Pay wallet.': 'Nimble es una Mini App — funciona dentro de la wallet Nimiq Pay.',
+  'NIMble is a Mini App — it runs inside the Nimiq Pay wallet.': 'NIMble es una Mini App — funciona dentro de la wallet Nimiq Pay.',
   'Open in Nimiq Pay': 'Abrir en Nimiq Pay',
   "Don't have it yet? Get Nimiq Pay for": '¿Aún no la tienes? Descarga Nimiq Pay para',
   'or': 'o',
@@ -357,7 +360,8 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
-  'Nobody to pay yet? Nimble takes two — the other person enters your code.': "Personne à payer ? Nimble se joue à deux — l'autre saisit votre code.",
+  'Close': 'Fermer',
+  'Nobody to pay yet? NIMble takes two — the other person enters your code.': "Personne à payer ? NIMble se joue à deux — l'autre saisit votre code.",
   'Invite someone': 'Inviter quelqu\'un',
   'Link copied': 'Lien copié',
   'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Payez ou encaissez avec un code à 6 chiffres dans Nimiq Pay.',
@@ -385,8 +389,8 @@ const fr: Record<string, string> = {
   'USDT on Polygon': 'USDT sur Polygon',
   'Same flow, stable value — the session model is asset-agnostic.': 'Même flux, valeur stable — le modèle de session est agnostique.',
   'Not enough NIM in your wallet for this amount.': 'Pas assez de NIM dans votre wallet pour ce montant.',
-  'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Votre Nimiq Pay est sur un autre réseau que ce serveur Nimble (mainnet). Appuyez longuement sur les réglages dans Nimiq Pay pour passer en Mainnet avant de payer.',
-  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Votre Nimiq Pay est sur un autre réseau que ce serveur Nimble (testnet). Appuyez longuement sur les réglages dans Nimiq Pay pour passer en Testnet avant de payer.',
+  'Your Nimiq Pay is on a different network than this NIMble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Votre Nimiq Pay est sur un autre réseau que ce serveur NIMble (mainnet). Appuyez longuement sur les réglages dans Nimiq Pay pour passer en Mainnet avant de payer.',
+  'Your Nimiq Pay is on a different network than this NIMble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Votre Nimiq Pay est sur un autre réseau que ce serveur NIMble (testnet). Appuyez longuement sur les réglages dans Nimiq Pay pour passer en Testnet avant de payer.',
   'How it works': 'Comment ça marche',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Vous payez ? Touchez Payer et donnez votre code à 6 chiffres.',
   'Charging? Tap Charge, enter the amount and their code.': 'Vous encaissez ? Touchez Encaisser, saisissez le montant et le code.',
@@ -406,7 +410,7 @@ const fr: Record<string, string> = {
   'Settings': 'Réglages',
   'Home': 'Accueil',
   'Back to home': "Retour à l'accueil",
-  'Nimble is a Mini App — it runs inside the Nimiq Pay wallet.': 'Nimble est une Mini App — elle fonctionne dans le wallet Nimiq Pay.',
+  'NIMble is a Mini App — it runs inside the Nimiq Pay wallet.': 'NIMble est une Mini App — elle fonctionne dans le wallet Nimiq Pay.',
   'Open in Nimiq Pay': 'Ouvrir dans Nimiq Pay',
   "Don't have it yet? Get Nimiq Pay for": 'Pas encore installé ? Téléchargez Nimiq Pay pour',
   'or': 'ou',
@@ -472,7 +476,8 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
-  'Nobody to pay yet? Nimble takes two — the other person enters your code.': 'Ninguém para pagar? O Nimble precisa de dois — a outra pessoa insere seu código.',
+  'Close': 'Fechar',
+  'Nobody to pay yet? NIMble takes two — the other person enters your code.': 'Ninguém para pagar? O NIMble precisa de dois — a outra pessoa insere seu código.',
   'Invite someone': 'Convidar alguém',
   'Link copied': 'Link copiado',
   'Pay or get paid with a 6-digit code in Nimiq Pay.': 'Pague ou receba com um código de 6 dígitos no Nimiq Pay.',
@@ -500,8 +505,8 @@ const pt: Record<string, string> = {
   'USDT on Polygon': 'USDT na Polygon',
   'Same flow, stable value — the session model is asset-agnostic.': 'Mesmo fluxo, valor estável — o modelo de sessão é agnóstico de ativo.',
   'Not enough NIM in your wallet for this amount.': 'NIM insuficiente na carteira para este valor.',
-  'Your Nimiq Pay is on a different network than this Nimble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Seu Nimiq Pay está em uma rede diferente deste servidor Nimble (mainnet). Segure as configurações no Nimiq Pay e mude para Mainnet antes de pagar.',
-  'Your Nimiq Pay is on a different network than this Nimble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Seu Nimiq Pay está em uma rede diferente deste servidor Nimble (testnet). Segure as configurações no Nimiq Pay e mude para Testnet antes de pagar.',
+  'Your Nimiq Pay is on a different network than this NIMble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.': 'Seu Nimiq Pay está em uma rede diferente deste servidor NIMble (mainnet). Segure as configurações no Nimiq Pay e mude para Mainnet antes de pagar.',
+  'Your Nimiq Pay is on a different network than this NIMble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.': 'Seu Nimiq Pay está em uma rede diferente deste servidor NIMble (testnet). Segure as configurações no Nimiq Pay e mude para Testnet antes de pagar.',
   'How it works': 'Como funciona',
   'Paying? Tap Pay and tell the receiver your 6-digit code.': 'Pagando? Toque em Pagar e diga seu código de 6 dígitos.',
   'Charging? Tap Charge, enter the amount and their code.': 'Cobrando? Toque em Cobrar, insira o valor e o código.',
@@ -521,7 +526,7 @@ const pt: Record<string, string> = {
   'Settings': 'Definições',
   'Home': 'Início',
   'Back to home': 'Voltar ao início',
-  'Nimble is a Mini App — it runs inside the Nimiq Pay wallet.': 'O Nimble é uma Mini App — funciona dentro da carteira Nimiq Pay.',
+  'NIMble is a Mini App — it runs inside the Nimiq Pay wallet.': 'O NIMble é uma Mini App — funciona dentro da carteira Nimiq Pay.',
   'Open in Nimiq Pay': 'Abrir no Nimiq Pay',
   "Don't have it yet? Get Nimiq Pay for": 'Ainda não tem? Baixe o Nimiq Pay para',
   'or': 'ou',

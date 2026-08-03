@@ -377,7 +377,7 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .chips .chip { color: var(--muted); }
 .chips .chip--on { color: #fff; background: var(--nimiq-light-blue); background-image: var(--action-bg); }
 
-/* ── landing demo videos (lite embeds) ── */
+/* ── landing demo videos (posters → lightbox) ── */
 .demo-video { text-align: center; }
 .demo-video__grid { display: flex; flex-direction: column; gap: 20px; align-items: center; }
 @media (min-width: 700px) {
@@ -388,7 +388,7 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   font-size: 13px; font-weight: 700; color: var(--muted);
   text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 10px;
 }
-.demo-video__media {
+.demo-video__poster {
   position: relative;
   display: block;
   width: 100%;
@@ -399,11 +399,9 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   line-height: 0;
   box-shadow: var(--shadow);
 }
-.demo-video__media img, .demo-video__media iframe {
-  width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 0; display: block;
-}
-.demo-video__media--vertical { max-width: 230px; margin: 0 auto; }
-.demo-video__media--vertical img, .demo-video__media--vertical iframe { aspect-ratio: 9 / 16; }
+.demo-video__poster img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+.demo-video__poster--vertical { max-width: 230px; margin: 0 auto; }
+.demo-video__poster--vertical img { aspect-ratio: 9 / 16; }
 .demo-video__play {
   position: absolute;
   inset: 0;
@@ -423,6 +421,39 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   background: var(--action-bg);
   box-shadow: var(--shadow-lift);
   z-index: -1;
+}
+
+/* lightbox: the clip gets the whole screen */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 17, 34, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.lightbox__frame { width: min(94vw, 960px); }
+.lightbox__frame iframe {
+  width: 100%; aspect-ratio: 16 / 9; border: 0; display: block;
+  border-radius: var(--radius); box-shadow: var(--shadow-lift);
+}
+.lightbox__frame--vertical { width: auto; height: min(86vh, 900px); }
+.lightbox__frame--vertical iframe {
+  height: 100%; width: auto; aspect-ratio: 9 / 16;
+}
+.lightbox__close {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 44px; height: 44px;
+  min-height: 0;
+  padding: 0;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink);
+  background: #fff;
+  border-radius: 50%;
 }
 
 /* ── landing roadmap timeline ── */

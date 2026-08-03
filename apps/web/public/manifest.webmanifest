@@ -1,6 +1,6 @@
 {
-  "name": "Nimble",
-  "short_name": "Nimble",
+  "name": "NIMble",
+  "short_name": "NIMble",
   "description": "Pay or get paid with a 6-digit code. BLIK-style NIM payments inside Nimiq Pay.",
   "start_url": "/",
   "display": "standalone",
