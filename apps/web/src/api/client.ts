@@ -1,4 +1,4 @@
-import type { ClaimResponse, CreateSessionResponse, IntentResponse, SessionView } from '@nimble/shared'
+import type { ClaimResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftReport, ShiftView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
@@ -95,6 +95,35 @@ export class Api {
     if (params?.limit) qs.set('limit', String(params.limit))
     const suffix = qs.size ? `?${qs}` : ''
     return this.#get<{ items: HistoryItem[]; nextCursor: string | null }>(`/v1/history${suffix}`)
+  }
+  async getCurrentShift(): Promise<ShiftView | null> {
+    try {
+      return await this.#get<ShiftView>('/v1/shifts/current')
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return null
+      throw e
+    }
+  }
+  openShift(operatorLabel: string): Promise<ShiftView> {
+    return this.#post<ShiftView>('/v1/shifts', { operatorLabel })
+  }
+  closeShift(id: string): Promise<ShiftReport> {
+    return this.#post<ShiftReport>(`/v1/shifts/${id}/close`)
+  }
+  getShiftReport(id: string): Promise<ShiftReport> {
+    return this.#get<ShiftReport>(`/v1/shifts/${id}/report`)
+  }
+  // A plain <a href> cannot carry the bearer token the API requires, so the
+  // export is fetched with auth and handed to the browser as a blob URL —
+  // the caller is responsible for revoking it once the download starts.
+  async fetchShiftExport(id: string, format: 'csv' | 'json'): Promise<{ url: string; filename: string }> {
+    const token = this.getToken()
+    const headers: Record<string, string> = {}
+    if (token) headers.authorization = `Bearer ${token}`
+    const res = await fetch(`${this.baseUrl}/v1/shifts/${id}/export?format=${format}`, { headers })
+    if (!res.ok) throw new ApiError('UNKNOWN', `HTTP ${res.status}`, res.status)
+    const blob = await res.blob()
+    return { url: URL.createObjectURL(blob), filename: `shift-${id}.${format}` }
   }
   getNetwork() { return this.#get<{ network: string; height: number | null }>('/v1/network') }
   getRate() { return this.#get<{ usdPerNim: number | null; asOf: string }>('/v1/rate') }

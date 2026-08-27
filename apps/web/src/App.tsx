@@ -7,6 +7,7 @@ import { Home } from './screens/Home'
 import { Pay } from './screens/Pay'
 import { Receipt } from './screens/Receipt'
 import { Settings } from './screens/Settings'
+import { Shift } from './screens/Shift'
 import type { ReactNode } from 'react'
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -25,6 +26,7 @@ export function App() {
         <Route path="/receipt/:id" element={<RequireAuth><Receipt /></RequireAuth>} />
         <Route path="/history" element={<RequireAuth><History /></RequireAuth>} />
         <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+        <Route path="/shift" element={<RequireAuth><Shift /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppProvider>

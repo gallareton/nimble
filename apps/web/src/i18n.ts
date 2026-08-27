@@ -141,6 +141,16 @@ const pl: Record<string, string> = {
   'The guide will show next time you open the home screen.': 'Przewodnik pokaże się przy następnym otwarciu ekranu głównego.',
   'Nothing yet — your last payments will appear here.': 'Jeszcze nic — tu pojawią się Twoje ostatnie płatności.',
   'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'NIMble nadrabia zaległości w łańcuchu i nie może teraz potwierdzać płatności. Z Twoim portfelem wszystko w porządku — spróbuj za chwilę.',
+  'Shift': 'Zmiana',
+  'Who is on the till?': 'Kto jest na kasie?',
+  'Open a shift': 'Otwórz zmianę',
+  'Close the shift': 'Zamknij zmianę',
+  'sales': 'sprzedaży',
+  'failed': 'nieudanych',
+  'Download CSV': 'Pobierz CSV',
+  'Download JSON': 'Pobierz JSON',
+  'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble prowadzi jedno stanowisko. Utargu z innego telefonu nie ma w tym raporcie.',
+  'Some sales had no exchange rate, so the fiat total is partial.': 'Część sprzedaży nie miała kursu, więc suma w walucie jest niepełna.',
 }
 
 const de: Record<string, string> = {
@@ -273,6 +283,16 @@ const de: Record<string, string> = {
   'The guide will show next time you open the home screen.': 'Die Anleitung erscheint beim nächsten Öffnen des Startbildschirms.',
   'Nothing yet — your last payments will appear here.': 'Noch nichts — hier erscheinen deine letzten Zahlungen.',
   'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'NIMble holt die Chain auf und kann Zahlungen gerade nicht bestätigen. Mit deiner Wallet ist alles in Ordnung — bitte gleich noch einmal versuchen.',
+  'Shift': 'Schicht',
+  'Who is on the till?': 'Wer ist an der Kasse?',
+  'Open a shift': 'Schicht eröffnen',
+  'Close the shift': 'Schicht schließen',
+  'sales': 'Verkäufe',
+  'failed': 'fehlgeschlagen',
+  'Download CSV': 'CSV herunterladen',
+  'Download JSON': 'JSON herunterladen',
+  'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble erfasst nur eine Kasse. Einnahmen von einem anderen Handy stehen nicht in diesem Bericht.',
+  'Some sales had no exchange rate, so the fiat total is partial.': 'Für manche Verkäufe gab es keinen Wechselkurs, daher ist die Fiat-Summe unvollständig.',
 }
 
 const es: Record<string, string> = {
@@ -405,6 +425,16 @@ const es: Record<string, string> = {
   'The guide will show next time you open the home screen.': 'La guía aparecerá la próxima vez que abras la pantalla de inicio.',
   'Nothing yet — your last payments will appear here.': 'Nada aún: aquí aparecerán tus últimos pagos.',
   'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'NIMble se está poniendo al día con la cadena y ahora no puede confirmar pagos. Tu monedero está bien: inténtalo dentro de un momento.',
+  'Shift': 'Turno',
+  'Who is on the till?': '¿Quién está en la caja?',
+  'Open a shift': 'Abrir turno',
+  'Close the shift': 'Cerrar el turno',
+  'sales': 'ventas',
+  'failed': 'fallidas',
+  'Download CSV': 'Descargar CSV',
+  'Download JSON': 'Descargar JSON',
+  'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble solo controla un puesto. Los cobros de otro teléfono no están en este informe.',
+  'Some sales had no exchange rate, so the fiat total is partial.': 'Algunas ventas no tenían tipo de cambio, así que el total en moneda local es parcial.',
 }
 
 const fr: Record<string, string> = {
@@ -537,6 +567,16 @@ const fr: Record<string, string> = {
   'The guide will show next time you open the home screen.': 'Le guide s\u2019affichera à la prochaine ouverture de l\u2019accueil.',
   'Nothing yet — your last payments will appear here.': 'Rien pour l\u2019instant — vos derniers paiements apparaîtront ici.',
   'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'NIMble rattrape la chaîne et ne peut pas confirmer de paiement pour le moment. Votre portefeuille n\u2019a aucun problème — réessayez dans un instant.',
+  'Shift': 'Poste',
+  'Who is on the till?': 'Qui est à la caisse ?',
+  'Open a shift': 'Ouvrir un poste',
+  'Close the shift': 'Fermer le poste',
+  'sales': 'ventes',
+  'failed': 'échouées',
+  'Download CSV': 'Télécharger le CSV',
+  'Download JSON': 'Télécharger le JSON',
+  'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble ne suit qu\u2019une seule caisse. Les recettes d\u2019un autre téléphone ne figurent pas dans ce rapport.',
+  'Some sales had no exchange rate, so the fiat total is partial.': 'Certaines ventes n\u2019avaient pas de taux de change, le total en devise est donc partiel.',
 }
 
 const pt: Record<string, string> = {
@@ -669,6 +709,16 @@ const pt: Record<string, string> = {
   'The guide will show next time you open the home screen.': 'O guia aparecerá da próxima vez que abrir o ecrã inicial.',
   'Nothing yet — your last payments will appear here.': 'Ainda nada — os seus últimos pagamentos aparecerão aqui.',
   'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'O NIMble está a recuperar o atraso na cadeia e não consegue confirmar pagamentos agora. A sua carteira está bem — tente novamente daqui a pouco.',
+  'Shift': 'Turno',
+  'Who is on the till?': 'Quem está no caixa?',
+  'Open a shift': 'Abrir turno',
+  'Close the shift': 'Fechar o turno',
+  'sales': 'vendas',
+  'failed': 'falhadas',
+  'Download CSV': 'Baixar CSV',
+  'Download JSON': 'Baixar JSON',
+  'NIMble tracks one station. Takings from another phone are not in this report.': 'O NIMble controla apenas um caixa. Os valores recebidos noutro telemóvel não entram neste relatório.',
+  'Some sales had no exchange rate, so the fiat total is partial.': 'Algumas vendas não tinham taxa de câmbio, por isso o total em moeda local está incompleto.',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }
