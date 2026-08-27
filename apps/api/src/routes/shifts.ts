@@ -13,6 +13,16 @@ function csvField(value: string | number | null): string {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
+/** Prefix free-text fields with apostrophe if they begin with formula injection characters. */
+function csvFreeText(value: string | null): string {
+  if (value === null) return ''
+  const s = String(value)
+  // Prefix with ' if the value begins with =, +, -, or @ to neutralize spreadsheet formula injection.
+  // The apostrophe is preserved in quoted fields per RFC 4180 and removed when unquoted.
+  const prefixed = /^[=+\-@]/.test(s) ? `'${s}` : s
+  return csvField(prefixed)
+}
+
 const CSV_COLUMNS = [
   'local_number', 'occurred_at_utc', 'status', 'amount_fiat_minor', 'fiat_currency',
   'amount_crypto', 'asset', 'network', 'tx_hash', 'fx_rate', 'fx_rate_at',
@@ -25,8 +35,11 @@ function toCsv(report: ShiftReport): string {
     lines.push([
       e.localNumber, e.occurredAt, e.status, e.amountFiatMinor, e.fiatCurrency,
       e.amountNim, e.asset, e.network, e.hash, e.fxRate, e.fxRateAt,
-      e.fxSource, e.reference, report.shift.operatorLabel, report.shift.id,
-    ].map(csvField).join(','))
+      e.fxSource,
+      csvFreeText(e.reference), // Protect against formula injection
+      csvFreeText(report.shift.operatorLabel), // Protect against formula injection
+      report.shift.id,
+    ].join(','))
   }
   // Excel reads UTF-8 as the local codepage without this, mangling every accent.
   return '﻿' + lines.join('\r\n') + '\r\n'

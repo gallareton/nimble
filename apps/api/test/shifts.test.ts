@@ -91,3 +91,47 @@ it('open shifts get -open suffix in export filename, closed shifts do not', asyn
   expect(closedRes.statusCode).toBe(200)
   expect(closedRes.headers['content-disposition']).not.toContain('-open')
 })
+
+it('neutralizes spreadsheet formula injection in reference and operator columns', async () => {
+  const { t: operatorToken } = await vendor()
+  const { t: customerToken } = await vendor() // Different user as customer
+  const { id: shiftId } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: '=cmd|"/c calc"' }, headers: auth(operatorToken) })).json()
+
+  // Create a session: payer (customer) creates, receiver (operator) claims
+  const sessionRes = await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${customerToken}`, 'idempotency-key': crypto.randomUUID() } })
+  const { code, sessionId } = sessionRes.json()
+
+  // Operator claims the session with code
+  await app.inject({ method: 'POST', url: '/v1/sessions/claim', payload: { code },
+    headers: { authorization: `Bearer ${operatorToken}`, 'idempotency-key': crypto.randomUUID() } })
+
+  // Operator creates a charge with dangerous reference containing =, comma, and quote
+  const chargeRef = '=cmd|"/c calc","inject'
+  await app.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload: { amountLuna: '100000', reference: chargeRef },
+    headers: { authorization: `Bearer ${operatorToken}`, 'idempotency-key': crypto.randomUUID() } })
+
+  // Operator confirms the payment to close the session
+  await app.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/confirm`,
+    payload: {}, headers: { authorization: `Bearer ${operatorToken}`, 'idempotency-key': crypto.randomUUID() } })
+
+  // Close the shift to finalize it
+  await app.inject({ method: 'POST', url: `/v1/shifts/${shiftId}/close`, headers: auth(operatorToken) })
+
+  // Export to CSV
+  const res = await app.inject({ url: `/v1/shifts/${shiftId}/export`, headers: auth(operatorToken) })
+  expect(res.statusCode).toBe(200)
+  expect(res.headers['content-type']).toContain('text/csv')
+
+  const lines = res.body.split('\r\n')
+  expect(lines.length).toBeGreaterThan(2) // Header + at least one data row
+
+  // Check the data row contains the neutralized reference and operator
+  const dataRow = lines[1]
+  // The dangerous reference should be prefixed with apostrophe and RFC 4180 quoted (inner quotes escaped)
+  expect(dataRow).toContain(`"'=cmd|""/c calc"",""inject"`)
+  // The dangerous operator should be prefixed with apostrophe and RFC 4180 quoted
+  expect(dataRow).toContain(`"'=cmd|""/c calc"""`)
+})
