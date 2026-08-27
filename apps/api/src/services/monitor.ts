@@ -96,12 +96,16 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
       const [s] = await db.select().from(paymentSession).where(eq(paymentSession.id, c.sessionId))
       // Freeze the fiat value at confirmation time — history must not
       // drift with the exchange rate afterwards.
-      const usdPerNim = (await opts.rates?.getUsdPerNim().catch(() => null)) ?? null
+      const quote = (await opts.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
+      const usdPerNim = quote?.value ?? (await opts.rates?.getUsdPerNim().catch(() => null)) ?? null
       const snapshot = {
         amountLuna: tx.amountAtomic.toString(), amountNim: lunaToNim(tx.amountAtomic),
         asset: 'NIM', network: 'nimiq', hash: tx.hash, sender: tx.sender, recipient: tx.recipient,
         reference: c.reference, confirmedAt: new Date().toISOString(),
         ...(usdPerNim ? { usdPerNim, amountUsd: Number(lunaToNim(tx.amountAtomic)) * usdPerNim } : {}),
+        // Provenance travels with the receipt: an export has to say which rate
+        // was used, when it was taken and by whom.
+        ...(quote ? { fxRateAt: quote.at, fxSource: quote.source } : {}),
       }
       await db.insert(receipt).values([
         { transactionId: tx.id, ownerUserId: s.payerUserId, role: 'payer', snapshotJson: snapshot },
