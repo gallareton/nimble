@@ -73,3 +73,38 @@ using other secure-context APIs, it will break here first.
 - [ ] **Recovery**: kill the app on A after wallet confirmation but before
       the success screen; reopen — the payment must reach CONFIRMED via
       reconciliation (or the "Finish registration" screen).
+
+## Vendor POS — shift, daily report, export
+
+Added with the shift work. Everything here runs against the testnet stack.
+**Not yet performed** — it needs two wallets on real devices, so it is a
+handover checklist, not a record of a passed run.
+
+- [ ] **Opening a shift**: Shift screen offers the form, an operator name
+      opens it, and a second attempt on the same wallet is refused rather
+      than silently opening a second one.
+- [ ] **Pricing in money**: the Charge screen asks for an amount in USD,
+      not in NIM. Enter 1.00, take the payment, then 2.50 and take another.
+      The wallet's own confirmation window must show the converted NIM
+      amount — that window is the payer's only trustworthy view of what
+      they are paying, and nothing in the Mini App can alter it.
+- [ ] **Running total**: mid-shift, the Shift screen shows the takings so
+      far. The report is provisional until the shift closes, and the file
+      exported before closing is named `…-open.csv` for exactly that reason.
+- [ ] **Closing**: closing the shift returns the day's totals — two
+      confirmed sales, the gross in NIM, the average ticket.
+- [ ] **Every sale is in the report**: this is the one that would have been
+      missed. Take one payment priced in USD and one priced in NIM if the
+      UI still allows it; both must appear in the closed report. A report
+      containing only the money-priced sale means the shift stamp regressed.
+- [ ] **The file an accountant gets**: open the CSV in a spreadsheet.
+      Accented characters in the operator name must survive (the BOM),
+      amounts must land in separate columns, `amount_fiat_minor` must be an
+      integer, and every confirmed row's `tx_hash` must resolve on a testnet
+      explorer with `fx_rate_at` no older than the sale.
+- [ ] **Formula safety**: set a reference to `=1+1`, export, open in a
+      spreadsheet. The cell must show the text, not a computed 2.
+- [ ] **Backend down**: stop the API and open the Shift screen. It must say
+      the shift could not be loaded — it must NOT show the "open a shift"
+      form, which would tell a vendor with a live shift that their day is
+      empty.
