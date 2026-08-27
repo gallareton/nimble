@@ -6,7 +6,9 @@ import { randomBytes } from 'node:crypto'
 import { charge, paymentSession, userProfile, chainTransaction } from '../db/schema'
 import type { Db } from '../db/client'
 import { withIdempotency } from '../plugins/idempotency'
+import { priceInLuna } from '../services/pricing'
 import { requireIdemKey } from './sessions'
+import { openShiftFor } from './shifts'
 
 async function loadChargeWithSession(db: Db, chargeId: string) {
   const [c] = await db.select().from(charge).where(eq(charge.id, chargeId))
@@ -29,9 +31,22 @@ export async function chargeRoutes(app: FastifyInstance) {
     if (s.receiverUserId !== req.user.userId)
       return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'only receiver creates charges' } })
 
+    // Priced in fiat? Freeze a quote now and keep it on the row — the export
+    // has to state the rate that applied at the moment of sale, not today's.
+    let quote = null
+    let amountAtomic: bigint
+    if (body.fiatAmountMinor !== undefined) {
+      quote = (await app.deps.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
+      if (!quote)
+        return reply.code(503).send({ error: { code: 'NO_RATE', message: 'no exchange rate available' } })
+      amountAtomic = priceInLuna(body.fiatAmountMinor, quote)
+    } else {
+      amountAtomic = parseLunaString(body.amountLuna!)
+    }
+
     type ChargeResponseBody = { error?: { code: string; message: string }; chargeId?: string; version?: number }
     const { code, body: resBody } = await withIdempotency<ChargeResponseBody>(
-      db, `charge:${sessionId}`, key, body.amountLuna, async () => {
+      db, `charge:${sessionId}`, key, amountAtomic.toString(), async () => {
         // state transition + charge insert are atomic: a crash between them must
         // not leave the session in AWAITING_PAYER_APPROVAL without a charge
         const result = await db.transaction(async tx => {
@@ -40,8 +55,15 @@ export async function chargeRoutes(app: FastifyInstance) {
               gt(paymentSession.chargeDeadlineAt, new Date()))).returning()
           if (!locked) return null
           const [receiver] = await tx.select().from(userProfile).where(eq(userProfile.id, req.user.userId))
+          const openShift = await openShiftFor(tx as unknown as Db, req.user.userId)
           const [c] = await tx.insert(charge).values({
-            sessionId, amountAtomic: parseLunaString(body.amountLuna),
+            sessionId, amountAtomic,
+            shiftId: openShift?.id ?? null,
+            fiatAmountMinor: body.fiatAmountMinor ?? null,
+            fiatCurrency: body.fiatCurrency ?? null,
+            fxRate: quote ? String(quote.value) : null,
+            fxRateAt: quote ? new Date(quote.at) : null,
+            fxSource: quote?.source ?? null,
             recipientAddress: receiver.walletAddress, reference: body.reference ?? null,
           }).returning()
           return c

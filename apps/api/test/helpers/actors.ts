@@ -3,6 +3,7 @@ import { buildApp } from '../../src/app'
 import { userProfile } from '../../src/db/schema'
 import { env } from '../../src/env'
 import { SessionEvents } from '../../src/services/events'
+import type { RateProvider } from '../../src/services/rates'
 import type { Db } from '../../src/db/client'
 
 export async function makeUser(db: Db, address: string) {
@@ -10,9 +11,9 @@ export async function makeUser(db: Db, address: string) {
     .onConflictDoUpdate({ target: userProfile.walletAddress, set: { walletAddress: address } }).returning()
   return u
 }
-export function authedApp(db: Db, verifiedAddress = 'NQ00') {
+export function authedApp(db: Db, verifiedAddress = 'NQ00', opts: { rates?: RateProvider } = {}) {
   const app = buildApp({ db, verifier: { verify: async () => ({ valid: true, address: verifiedAddress }) },
-    events: new SessionEvents() })
+    events: new SessionEvents(), rates: opts.rates })
   const tokenFor = (u: { id: string; walletAddress: string }) =>
     new SignJWT({ addr: u.walletAddress }).setProtectedHeader({ alg: 'HS256' })
       .setSubject(u.id).setExpirationTime('1h').sign(new TextEncoder().encode(env.jwtSecret))

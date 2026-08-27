@@ -11,10 +11,20 @@ export const ClaimRequest = z.object({
   amountLuna: PositiveLunaString.optional(),
   reference: z.string().max(100).optional(),
 })
+/** A charge is priced either directly in luna, or in fiat minor units which the
+ *  server converts with a quote it then stores. Exactly one of the two. */
 export const CreateChargeRequest = z.object({
-  amountLuna: PositiveLunaString,
+  amountLuna: PositiveLunaString.optional(),
+  fiatAmountMinor: z.number().int().positive().optional(),
+  fiatCurrency: z.string().length(3).optional(),
   reference: z.string().max(100).optional(),
-})
+}).refine(
+  b => (b.amountLuna === undefined) !== (b.fiatAmountMinor === undefined),
+  'provide either amountLuna or fiatAmountMinor',
+).refine(
+  b => b.fiatAmountMinor === undefined || b.fiatCurrency !== undefined,
+  'fiatCurrency is required with fiatAmountMinor',
+)
 export const RegisterTxRequest = z.object({ hash: z.string().min(16).max(128) })
 export const AuthChallengeResponse = z.object({ nonce: z.string(), message: z.string() })
 export const AuthVerifyRequest = z.object({

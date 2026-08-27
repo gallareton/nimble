@@ -1,9 +1,18 @@
+import { eq } from 'drizzle-orm'
 import { afterAll, expect, it } from 'vitest'
+import { charge } from '../src/db/schema'
+import { nullRates } from '../src/services/rates'
 import { freshDb } from './helpers/db'
 import { authedApp, makeUser } from './helpers/actors'
 
 const { db, close } = await freshDb()
 const { app, tokenFor } = authedApp(db)
+// Give the default test app a working rate so fiat-priced charges have a quote
+// to freeze; the "no rate available" test builds its own app with nullRates.
+app.deps.rates = {
+  getUsdPerNim: async () => 0.005,
+  quoteUsdPerNim: async () => ({ value: 0.005, at: new Date().toISOString(), source: 'test-fixture' }),
+}
 afterAll(close)
 
 async function pairedSession() {
@@ -20,6 +29,16 @@ const postCharge = (sid: string, t: string, amountLuna = '250000') =>
   app.inject({ method: 'POST', url: `/v1/sessions/${sid}/charges`,
     payload: { amountLuna, reference: 'Soda' },
     headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
+
+async function claimedSessionFor(receiver: Awaited<ReturnType<typeof makeUser>>, rt: string) {
+  const payer = await makeUser(db, `NQ42 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer)
+  const { code, sessionId } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+  await app.inject({ method: 'POST', url: '/v1/sessions/claim', payload: { code },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+  return { payer, pt, sessionId }
+}
 
 it('receiver creates charge; session moves to AWAITING_PAYER_APPROVAL; recipient copied', async () => {
   const { rt, pt, sessionId, receiver } = await pairedSession()
@@ -50,4 +69,36 @@ it('receiver view hides payer profile, shows neutral state', async () => {
     headers: { authorization: `Bearer ${rt}` } })).json()
   expect(view.role).toBe('receiver')
   expect(view.counterpart.displayName).toBe('Payer connected')
+})
+
+it('prices a charge from fiat and stamps the open shift', async () => {
+  const receiver = await makeUser(db, `NQ44 ${crypto.randomUUID().slice(0, 8)}`)
+  const rt = await tokenFor(receiver)
+  const openShift = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: { authorization: `Bearer ${rt}` } })).json()
+
+  const { sessionId } = await claimedSessionFor(receiver, rt)
+  const res = await app.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload: { fiatAmountMinor: 1234, fiatCurrency: 'USD' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+
+  expect(res.statusCode).toBe(201)
+  const [row] = await db.select().from(charge).where(eq(charge.id, res.json().chargeId))
+  expect(row.shiftId).toBe(openShift.id)
+  expect(row.fiatAmountMinor).toBe(1234)
+  expect(row.fiatCurrency).toBe('USD')
+  expect(row.fxRate).toBeTruthy()
+  expect(row.amountAtomic).toBeGreaterThan(0n)
+})
+
+it('refuses a fiat price when no rate is available', async () => {
+  const receiver = await makeUser(db, `NQ45 ${crypto.randomUUID().slice(0, 8)}`)
+  const rt = await tokenFor(receiver)
+  const { sessionId } = await claimedSessionFor(receiver, rt)
+  const noRateApp = authedApp(db, 'NQ45', { rates: nullRates }).app
+  const res = await noRateApp.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload: { fiatAmountMinor: 1234, fiatCurrency: 'USD' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(res.statusCode).toBe(503)
+  expect(res.json().error.code).toBe('NO_RATE')
 })
