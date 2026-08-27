@@ -26,6 +26,17 @@ export async function withIdempotency<T>(
   }
 
   const result = await handler()
+  if (result.code >= 500) {
+    // A 5xx describes a failed attempt, not a completed effect — the whole
+    // point of a 5xx is "retry this". Persisting it would latch a transient
+    // failure (e.g. an unreachable rate provider) onto this key for the full
+    // TTL, permanently killing a sale a correct client would otherwise retry
+    // successfully once the dependency recovers. Delete the reservation
+    // instead of finalizing it, so the same key gets a fresh attempt.
+    await db.delete(idempotencyRecord)
+      .where(and(eq(idempotencyRecord.scope, scope), eq(idempotencyRecord.key, key)))
+    return { ...result, replayed: false }
+  }
   await db.update(idempotencyRecord)
     .set({ responseCode: result.code, responseBody: result.body as object })
     .where(and(eq(idempotencyRecord.scope, scope), eq(idempotencyRecord.key, key)))

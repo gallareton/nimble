@@ -251,3 +251,31 @@ it('a claim priced in an unsupported currency is rejected and creates nothing', 
   expect(s.status).toBe('AVAILABLE')
 })
 
+
+it('a fiat claim that 503s when the rate feed blips succeeds on retry with the same key once it recovers', async () => {
+  const payer = await makeUser(db, `NQ62 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ63 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer); const rt = await tokenFor(receiver)
+  const { code, sessionId } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+  const idemKey = crypto.randomUUID()
+  const payload = { code, fiatAmountMinor: 1234, fiatCurrency: 'USD' }
+
+  // The rate feed is down for the first attempt — 503, and (this is the bug
+  // fixed here) that must NOT get latched onto the idempotency key.
+  const noRateApp = authedApp(db, receiver.walletAddress, { rates: nullRates }).app
+  const first = await noRateApp.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+  expect(first.statusCode).toBe(503)
+  expect(first.json().error.code).toBe('NO_RATE')
+
+  // Till retries with the SAME key once the feed is back — this must be a
+  // real, fresh 200, not a replayed 503.
+  const retry = await app.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+  expect(retry.statusCode).toBe(200)
+  expect(retry.json().chargeId).toBeTruthy()
+
+  const rows = await db.select().from(charge).where(eq(charge.sessionId, sessionId))
+  expect(rows.length).toBe(1)
+})
