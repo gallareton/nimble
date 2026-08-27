@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { expect, it, vi } from 'vitest'
 import { CodeDisplay } from '../src/components/CodeDisplay'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { Approval } from '../src/screens/Approval'
+import { Charge } from '../src/screens/Charge'
 
 it('CodeDisplay groups digits and is screen-reader friendly', () => {
   render(<CodeDisplay code="482731" />)
@@ -50,4 +51,19 @@ it('Approval shows all mandatory fields and drives intent→send→register on c
   await waitFor(() => expect(api.registerTx).toHaveBeenCalledWith('c1', 'deadbeef', expect.any(String)))
   expect(wallet.sendTransaction).toHaveBeenCalledWith(
     expect.objectContaining({ recipient: 'NQ99 RECV', valueLuna: 250000n, data: 'ab'.repeat(16) }))
+})
+
+it('Charge sends a fiat price in minor units', async () => {
+  cleanup() // this suite doesn't auto-cleanup between tests (no vitest globals)
+  const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+
+  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '12.34' } })
+  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
+  fireEvent.click(screen.getByText(/request payment/i))
+
+  await waitFor(() => expect(claim).toHaveBeenCalled())
+  expect(claim.mock.calls[0][1]).toMatchObject({ fiatAmountMinor: 1234, fiatCurrency: 'USD' })
 })

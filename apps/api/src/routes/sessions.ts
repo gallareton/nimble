@@ -4,8 +4,11 @@ import { paymentSession, claimAttempt, charge, userProfile, chainTransaction } f
 import { env } from '../env'
 import { withIdempotency } from '../plugins/idempotency'
 import { generateCode, hashCode } from '../services/codeService'
-import { ClaimRequest } from '@nimble/shared'
+import { priceInLuna } from '../services/pricing'
+import { ClaimRequest, parseLunaString } from '@nimble/shared'
 import { createHmac } from 'node:crypto'
+import { openShiftFor } from './shifts'
+import type { Db } from '../db/client'
 
 export const CODE_TTL_MS = 120_000
 export const CLAIM_WINDOW_MS = 60_000
@@ -76,9 +79,28 @@ export async function sessionRoutes(app: FastifyInstance) {
       ])
       return reply.code(404).send(CODE_UNAVAILABLE)
     }
-    const { code, amountLuna, reference } = parsed.data
+    const { code, amountLuna, fiatAmountMinor, fiatCurrency, reference } = parsed.data
+    const priced = amountLuna !== undefined || fiatAmountMinor !== undefined
 
-    const idemPayload = amountLuna ? `${code}:${amountLuna}` : code
+    // Priced in fiat? Freeze a quote now, same as the charges route — the
+    // export has to state the rate that applied at the moment of sale, not
+    // today's. Done outside the transaction, before idempotency dedupes,
+    // matching the charges route's ordering.
+    let quote = null
+    if (fiatAmountMinor !== undefined) {
+      quote = (await app.deps.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
+      if (!quote)
+        return reply.code(503).send({ error: { code: 'NO_RATE', message: 'no exchange rate available' } })
+    }
+
+    // Fingerprint what the client asked for, not what the rate turned it
+    // into: a retry with the same key must replay the original 200 even if
+    // the quote moved between the first attempt and the retry.
+    const idemPayload = fiatAmountMinor !== undefined
+      ? JSON.stringify({ code, fiatAmountMinor, fiatCurrency, reference: reference ?? null })
+      : amountLuna
+        ? JSON.stringify({ code, amountLuna, reference: reference ?? null })
+        : code
     const { code: status, body } = await withIdempotency<any>(db, `claim:${req.user.userId}`, key, idemPayload, async () => {
       // BLIK-style: when the receiver supplies the amount up front, claiming
       // and charging happen in one atomic transaction — the payer's next SSE
@@ -86,7 +108,7 @@ export async function sessionRoutes(app: FastifyInstance) {
       const result = await db.transaction(async tx => {
         const [won] = await tx.update(paymentSession).set({
           receiverUserId: req.user.userId,
-          status: amountLuna ? 'AWAITING_PAYER_APPROVAL' : 'CLAIMED',
+          status: priced ? 'AWAITING_PAYER_APPROVAL' : 'CLAIMED',
           claimedAt: new Date(),
           chargeDeadlineAt: new Date(Date.now() + CLAIM_WINDOW_MS),
         }).where(and(
@@ -97,10 +119,22 @@ export async function sessionRoutes(app: FastifyInstance) {
           dsql`${paymentSession.payerUserId} <> ${req.user.userId}`,
         )).returning()
         if (!won) return null
-        if (!amountLuna) return { won, c: null }
+        if (!priced) return { won, c: null }
+        const amountAtomic = fiatAmountMinor !== undefined
+          ? priceInLuna(fiatAmountMinor, quote!)
+          : parseLunaString(amountLuna!)
         const [receiver] = await tx.select().from(userProfile).where(eq(userProfile.id, req.user.userId))
+        // Every charge this route creates gets stamped, luna-priced too — a
+        // vendor's day must contain all their sales, not only the fiat ones.
+        const openShift = await openShiftFor(tx as unknown as Db, req.user.userId)
         const [c] = await tx.insert(charge).values({
-          sessionId: won.id, amountAtomic: BigInt(amountLuna),
+          sessionId: won.id, amountAtomic,
+          shiftId: openShift?.id ?? null,
+          fiatAmountMinor: fiatAmountMinor ?? null,
+          fiatCurrency: fiatCurrency ?? null,
+          fxRate: quote ? String(quote.value) : null,
+          fxRateAt: quote ? new Date(quote.at) : null,
+          fxSource: quote?.source ?? null,
           recipientAddress: receiver.walletAddress, reference: reference ?? null,
         }).returning()
         return { won, c }

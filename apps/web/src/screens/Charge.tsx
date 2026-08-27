@@ -1,16 +1,30 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { nimToLuna } from '@nimble/shared'
-import { useApp } from '../AppContext'
+import { useAppOptional } from '../AppContext'
+import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
-import { formatUsd, useUsdRate } from '../lib/fiat'
+import { useUsdRate } from '../lib/fiat'
+
+const FIAT_CURRENCY = 'USD'
+
+/** '12.34' → 1234. Rejects more than two decimals rather than rounding money
+ *  behind the cashier's back. */
+export function toMinorUnits(input: string): number | null {
+  const m = /^(\d+)(?:[.,](\d{1,2}))?$/.exec(input.trim())
+  if (!m) return null
+  const minor = Number(m[1]) * 100 + Number((m[2] ?? '0').padEnd(2, '0'))
+  return minor > 0 ? minor : null
+}
 
 // BLIK-style: the receiver fills in what they are asking for FIRST; the code
 // is the last thing entered, and the payer gets the approval prompt the
-// moment it is submitted — no second data-entry step on this side.
-export function Charge() {
-  const { api } = useApp()
+// moment it is submitted — no second data-entry step on this side. The
+// cashier prices the sale in fiat; the server converts and freezes the quote.
+export function Charge(props: { api?: Api }) {
+  const ctx = useAppOptional()
+  const api = props.api ?? ctx?.api
+  if (!api) throw new Error('Charge needs api via props or AppProvider')
   const navigate = useNavigate()
   const [amount, setAmount] = useState('')
   const [reference, setReference] = useState('')
@@ -19,21 +33,26 @@ export function Charge() {
   const [error, setError] = useState<string | null>(null)
   const usdRate = useUsdRate(api)
 
+  const nimApprox = (() => {
+    const usd = Number(amount.replace(',', '.'))
+    return usdRate && Number.isFinite(usd) && usd > 0 ? usd / usdRate : null
+  })()
+
   const submit = async () => {
     setError(null)
-    let amountLuna: string
-    try {
-      amountLuna = nimToLuna(amount).toString()
-    } catch {
-      setError(t('Enter a valid NIM amount (max 5 decimals).'))
+    const fiatAmountMinor = toMinorUnits(amount)
+    if (fiatAmountMinor === null) {
+      setError(t('Enter a valid amount (max 2 decimals).'))
       return
     }
     setBusy(true)
     try {
-      const res = await api.claim(code.replace(/\s/g, ''), { amountLuna, reference: reference || undefined })
+      const res = await api.claim(code.replace(/\s/g, ''),
+        { fiatAmountMinor, fiatCurrency: FIAT_CURRENCY, reference: reference || undefined })
       navigate(`/session/${res.sessionId}`)
     } catch (e) {
       if (e instanceof ApiError && e.code === 'RATE_LIMITED') setError(t('Too many attempts. Wait a moment.'))
+      else if (e instanceof ApiError && e.code === 'NO_RATE') setError(t('No exchange rate available right now. Try again shortly.'))
       else setError(t('Code unavailable. Check and try again.'))
     } finally {
       setBusy(false)
@@ -48,17 +67,16 @@ export function Charge() {
       </header>
       <div className="form-card">
       <label>
-        Amount (NIM)
-        <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="2.5" />
-        {formatUsd(Number(amount.replace(',', '.')), usdRate) &&
-          <span className="quiet">{formatUsd(Number(amount.replace(',', '.')), usdRate)}</span>}
+        {t('Amount (USD)')}
+        <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="2.50" />
+        {nimApprox !== null && <span className="quiet">≈ {nimApprox.toFixed(5)} NIM</span>}
       </label>
       <label>
-        Reference
+        {t('Reference')}
         <input value={reference} maxLength={100} onChange={e => setReference(e.target.value)} placeholder="Soda" />
       </label>
       <label>
-        Code from the payer
+        {t('Code from the payer')}
         <input
           className="code-input"
           inputMode="numeric"

@@ -6,11 +6,21 @@ export const PositiveLunaString = LunaString.refine(s => BigInt(s) > 0n, 'must b
 
 // BLIK-style: the receiver knows the amount before asking for the code, so
 // claim carries the charge — the payer gets the approval prompt immediately.
+// Pricing is optional (an unpriced claim is the payer-initiated flow) and,
+// when present, is either luna or fiat minor units — never both.
 export const ClaimRequest = z.object({
   code: z.string().regex(/^\d{6}$/),
   amountLuna: PositiveLunaString.optional(),
+  fiatAmountMinor: z.number().int().positive().optional(),
+  fiatCurrency: z.string().length(3).optional(),
   reference: z.string().max(100).optional(),
-})
+}).refine(
+  b => b.amountLuna === undefined || b.fiatAmountMinor === undefined,
+  'cannot set both amountLuna and fiatAmountMinor',
+).refine(
+  b => (b.fiatAmountMinor === undefined) === (b.fiatCurrency === undefined),
+  'fiatCurrency is required with fiatAmountMinor',
+)
 /** A charge is priced either directly in luna, or in fiat minor units which the
  *  server converts with a quote it then stores. Exactly one of the two. */
 export const CreateChargeRequest = z.object({

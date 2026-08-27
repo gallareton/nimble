@@ -1,11 +1,18 @@
 import { afterAll, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
-import { paymentSession } from '../src/db/schema'
+import { charge, paymentSession } from '../src/db/schema'
+import { nullRates } from '../src/services/rates'
 import { freshDb } from './helpers/db'
 import { authedApp, makeUser } from './helpers/actors'
 
 const { db, close } = await freshDb()
 const { app, tokenFor } = authedApp(db)
+// Give the default test app a working rate so fiat-priced claims have a quote
+// to freeze; the "no rate available" test builds its own app with nullRates.
+app.deps.rates = {
+  getUsdPerNim: async () => 0.005,
+  quoteUsdPerNim: async () => ({ value: 0.005, at: new Date().toISOString(), source: 'test-fixture' }),
+}
 afterAll(close)
 
 async function createSession(payerToken: string) {
@@ -104,5 +111,91 @@ it('claim with amount creates the charge atomically — payer sees approval imme
   expect(view.status).toBe('AWAITING_PAYER_APPROVAL')
   expect(view.charge.amountLuna).toBe('250000')
   expect(view.charge.reference).toBe('Soda')
+})
+
+it('claim priced in fiat stores the converted amount, the frozen quote, and the open shift', async () => {
+  const payer = await makeUser(db, `NQ50 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ51 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer); const rt = await tokenFor(receiver)
+  const openShift = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: { authorization: `Bearer ${rt}` } })).json()
+  const { code } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+
+  const r = await app.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload: { code, fiatAmountMinor: 1234, fiatCurrency: 'USD' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(r.statusCode).toBe(200)
+  const body = r.json()
+  expect(body.chargeId).toBeTruthy()
+
+  const [row] = await db.select().from(charge).where(eq(charge.id, body.chargeId))
+  expect(row.shiftId).toBe(openShift.id)
+  expect(row.fiatAmountMinor).toBe(1234)
+  expect(row.fiatCurrency).toBe('USD')
+  expect(row.fxRate).toBeTruthy()
+  expect(row.amountAtomic).toBeGreaterThan(0n)
+})
+
+it('claim priced in luna is also stamped with the open shift', async () => {
+  const payer = await makeUser(db, `NQ52 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ53 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer); const rt = await tokenFor(receiver)
+  const openShift = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ben' }, headers: { authorization: `Bearer ${rt}` } })).json()
+  const { code } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+
+  const r = await app.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload: { code, amountLuna: '250000' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(r.statusCode).toBe(200)
+  const body = r.json()
+
+  const [row] = await db.select().from(charge).where(eq(charge.id, body.chargeId))
+  expect(row.shiftId).toBe(openShift.id)
+})
+
+it('refuses a fiat-priced claim when no rate is available', async () => {
+  const payer = await makeUser(db, `NQ54 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ55 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer)
+  const { code } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+  const noRateApp = authedApp(db, receiver.walletAddress, { rates: nullRates }).app
+  const rt = await tokenFor(receiver)
+
+  const res = await noRateApp.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload: { code, fiatAmountMinor: 1234, fiatCurrency: 'USD' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(res.statusCode).toBe(503)
+  expect(res.json().error.code).toBe('NO_RATE')
+})
+
+it('a claim retry across a rate move replays the original charge, never a second one', async () => {
+  const payer = await makeUser(db, `NQ56 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ57 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer); const rt = await tokenFor(receiver)
+  const { code } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+  const idemKey = crypto.randomUUID()
+  const payload = { code, fiatAmountMinor: 1234, fiatCurrency: 'USD' }
+
+  const first = await app.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+  expect(first.statusCode).toBe(200)
+
+  // Retry with a different receiver token would fail on the AVAILABLE guard,
+  // so retry as the same user but through an app whose quote has moved —
+  // idempotency must replay the first answer, not re-price.
+  const movedRateApp = authedApp(db, receiver.walletAddress, { rates: {
+    getUsdPerNim: async () => 0.009,
+    quoteUsdPerNim: async () => ({ value: 0.009, at: new Date().toISOString(), source: 'test-fixture-moved' }),
+  } }).app
+  const retry = await movedRateApp.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+
+  expect(retry.statusCode).toBe(200)
+  expect(retry.json()).toEqual(first.json())
 })
 
