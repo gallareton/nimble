@@ -36,6 +36,20 @@ export const paymentSession = pgTable('payment_session', {
   index('session_status_idx').on(t.status),
 ])
 
+// A vendor's working period. The daily report is bounded by it, so exactly one
+// may be open per user — enforced here rather than in application code, the
+// same way one_available_code_per_payer is.
+export const shift = pgTable('shift', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => userProfile.id),
+  operatorLabel: text('operator_label').notNull(),
+  openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
+  closedAt: timestamp('closed_at', { withTimezone: true }),
+}, t => [
+  uniqueIndex('one_open_shift_per_user').on(t.userId).where(sql`closed_at is null`),
+  index('shift_user_idx').on(t.userId),
+])
+
 export const charge = pgTable('charge', {
   id: uuid('id').primaryKey().defaultRandom(),
   sessionId: uuid('session_id').notNull().unique().references(() => paymentSession.id),
@@ -49,6 +63,15 @@ export const charge = pgTable('charge', {
   reconciliationToken: text('reconciliation_token').unique(),
   status: text('status').notNull().default('PENDING'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  // Stamped at creation, never derived from timestamps later: a closed shift
+  // has to report the same rows forever.
+  shiftId: uuid('shift_id').references(() => shift.id),
+  // The price the cashier typed, and the quote it was converted with.
+  fiatAmountMinor: integer('fiat_amount_minor'),
+  fiatCurrency: text('fiat_currency'),
+  fxRate: text('fx_rate'),
+  fxRateAt: timestamp('fx_rate_at', { withTimezone: true }),
+  fxSource: text('fx_source'),
 })
 
 export const chainTransaction = pgTable('chain_transaction', {

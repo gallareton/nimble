@@ -1,5 +1,6 @@
+import { eq } from 'drizzle-orm'
 import { afterAll, expect, it } from 'vitest'
-import { paymentSession, userProfile } from '../src/db/schema'
+import { paymentSession, shift, userProfile } from '../src/db/schema'
 import { freshDb } from './helpers/db'
 
 const { db, close } = await freshDb()
@@ -12,4 +13,15 @@ it('enforces one AVAILABLE code per payer', async () => {
   await expect(
     db.insert(paymentSession).values({ payerUserId: u.id, codeHash: 'h2', expiresAt }),
   ).rejects.toThrow(/one_available_code_per_payer/)
+})
+
+it('allows only one open shift per user', async () => {
+  const [u] = await db.insert(userProfile).values({ walletAddress: `NQ90 ${crypto.randomUUID().slice(0, 8)}` }).returning()
+  await db.insert(shift).values({ userId: u.id, operatorLabel: 'Ana' })
+  await expect(
+    db.insert(shift).values({ userId: u.id, operatorLabel: 'Bo' }),
+  ).rejects.toThrow()
+  // closing the first one frees the slot
+  await db.update(shift).set({ closedAt: new Date() }).where(eq(shift.userId, u.id))
+  await expect(db.insert(shift).values({ userId: u.id, operatorLabel: 'Bo' })).resolves.toBeDefined()
 })
