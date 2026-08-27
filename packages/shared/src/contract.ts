@@ -4,6 +4,14 @@ import type { SessionStatus } from './states'
 export const LunaString = z.string().regex(/^\d+$/, 'integer luna string')
 export const PositiveLunaString = LunaString.refine(s => BigInt(s) > 0n, 'must be positive')
 
+// The MVP settles in USD only — quoteUsdPerNim never resolves any other
+// currency, so a request naming one would be silently priced at the wrong
+// rate. Reject it at the schema, not by hand-checking it in the route: this
+// number lands in the shift export, and the Merchant API exposes the same
+// surface to third parties.
+export const SUPPORTED_FIAT_CURRENCY = 'USD' as const
+const FiatCurrency = z.literal(SUPPORTED_FIAT_CURRENCY)
+
 // BLIK-style: the receiver knows the amount before asking for the code, so
 // claim carries the charge — the payer gets the approval prompt immediately.
 // Pricing is optional (an unpriced claim is the payer-initiated flow) and,
@@ -12,7 +20,7 @@ export const ClaimRequest = z.object({
   code: z.string().regex(/^\d{6}$/),
   amountLuna: PositiveLunaString.optional(),
   fiatAmountMinor: z.number().int().positive().optional(),
-  fiatCurrency: z.string().length(3).optional(),
+  fiatCurrency: FiatCurrency.optional(),
   reference: z.string().max(100).optional(),
 }).refine(
   b => b.amountLuna === undefined || b.fiatAmountMinor === undefined,
@@ -26,7 +34,7 @@ export const ClaimRequest = z.object({
 export const CreateChargeRequest = z.object({
   amountLuna: PositiveLunaString.optional(),
   fiatAmountMinor: z.number().int().positive().optional(),
-  fiatCurrency: z.string().length(3).optional(),
+  fiatCurrency: FiatCurrency.optional(),
   reference: z.string().max(100).optional(),
 }).refine(
   b => (b.amountLuna === undefined) !== (b.fiatAmountMinor === undefined),

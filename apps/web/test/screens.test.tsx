@@ -4,7 +4,7 @@ import { expect, it, vi } from 'vitest'
 import { CodeDisplay } from '../src/components/CodeDisplay'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { Approval } from '../src/screens/Approval'
-import { Charge } from '../src/screens/Charge'
+import { Charge, toMinorUnits } from '../src/screens/Charge'
 
 it('CodeDisplay groups digits and is screen-reader friendly', () => {
   render(<CodeDisplay code="482731" />)
@@ -66,4 +66,16 @@ it('Charge sends a fiat price in minor units', async () => {
 
   await waitFor(() => expect(claim).toHaveBeenCalled())
   expect(claim.mock.calls[0][1]).toMatchObject({ fiatAmountMinor: 1234, fiatCurrency: 'USD' })
+})
+
+it('toMinorUnits parses fiat text to integer minor units, rejecting garbage and float-unsafe input', () => {
+  expect(toMinorUnits('12.34')).toBe(1234)
+  expect(toMinorUnits('12')).toBe(1200)
+  expect(toMinorUnits('12,34')).toBe(1234)
+  expect(toMinorUnits('12.345')).toBeNull() // more than 2 decimals — never round behind the cashier's back
+  expect(toMinorUnits('0')).toBeNull() // must be positive
+  expect(toMinorUnits('-1')).toBeNull()
+  expect(toMinorUnits('abc')).toBeNull()
+  expect(toMinorUnits('')).toBeNull()
+  expect(toMinorUnits('1'.repeat(20))).toBeNull() // a till will never see a 20-digit price
 })

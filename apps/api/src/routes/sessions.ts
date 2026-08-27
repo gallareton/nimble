@@ -82,26 +82,28 @@ export async function sessionRoutes(app: FastifyInstance) {
     const { code, amountLuna, fiatAmountMinor, fiatCurrency, reference } = parsed.data
     const priced = amountLuna !== undefined || fiatAmountMinor !== undefined
 
-    // Priced in fiat? Freeze a quote now, same as the charges route — the
-    // export has to state the rate that applied at the moment of sale, not
-    // today's. Done outside the transaction, before idempotency dedupes,
-    // matching the charges route's ordering.
-    let quote = null
-    if (fiatAmountMinor !== undefined) {
-      quote = (await app.deps.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
-      if (!quote)
-        return reply.code(503).send({ error: { code: 'NO_RATE', message: 'no exchange rate available' } })
-    }
-
     // Fingerprint what the client asked for, not what the rate turned it
     // into: a retry with the same key must replay the original 200 even if
-    // the quote moved between the first attempt and the retry.
+    // the quote moved between the first attempt and the retry — or if the
+    // rate provider is unreachable on the retry, which is precisely when a
+    // vendor retries.
     const idemPayload = fiatAmountMinor !== undefined
       ? JSON.stringify({ code, fiatAmountMinor, fiatCurrency, reference: reference ?? null })
       : amountLuna
         ? JSON.stringify({ code, amountLuna, reference: reference ?? null })
         : code
     const { code: status, body } = await withIdempotency<any>(db, `claim:${req.user.userId}`, key, idemPayload, async () => {
+      // Priced in fiat? Freeze a quote now, same as the charges route — the
+      // export has to state the rate that applied at the moment of sale, not
+      // today's. Fetched here, inside the idempotency-guarded handler, so a
+      // replay of an already-successful claim never depends on the rate
+      // provider being reachable — idempotency must not depend on the rate.
+      let quote = null
+      if (fiatAmountMinor !== undefined) {
+        quote = (await app.deps.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
+        if (!quote)
+          return { code: 503, body: { error: { code: 'NO_RATE', message: 'no exchange rate available' } } }
+      }
       // BLIK-style: when the receiver supplies the amount up front, claiming
       // and charging happen in one atomic transaction — the payer's next SSE
       // event is already AWAITING_PAYER_APPROVAL with the charge attached.

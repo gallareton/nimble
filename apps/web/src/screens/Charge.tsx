@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
 import { useUsdRate } from '../lib/fiat'
 
-const FIAT_CURRENCY = 'USD'
-
 /** '12.34' → 1234. Rejects more than two decimals rather than rounding money
  *  behind the cashier's back. */
 export function toMinorUnits(input: string): number | null {
-  const m = /^(\d+)(?:[.,](\d{1,2}))?$/.exec(input.trim())
+  // Bounded to 9 major-unit digits — a till will never exceed $999,999,999,
+  // and it keeps the intermediate well clear of 2^53.
+  const m = /^(\d{1,9})(?:[.,](\d{1,2}))?$/.exec(input.trim())
   if (!m) return null
   const minor = Number(m[1]) * 100 + Number((m[2] ?? '0').padEnd(2, '0'))
   return minor > 0 ? minor : null
@@ -48,7 +49,7 @@ export function Charge(props: { api?: Api }) {
     setBusy(true)
     try {
       const res = await api.claim(code.replace(/\s/g, ''),
-        { fiatAmountMinor, fiatCurrency: FIAT_CURRENCY, reference: reference || undefined })
+        { fiatAmountMinor, fiatCurrency: SUPPORTED_FIAT_CURRENCY, reference: reference || undefined })
       navigate(`/session/${res.sessionId}`)
     } catch (e) {
       if (e instanceof ApiError && e.code === 'RATE_LIMITED') setError(t('Too many attempts. Wait a moment.'))

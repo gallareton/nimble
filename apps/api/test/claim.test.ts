@@ -197,5 +197,57 @@ it('a claim retry across a rate move replays the original charge, never a second
 
   expect(retry.statusCode).toBe(200)
   expect(retry.json()).toEqual(first.json())
+  const rows = await db.select().from(charge).where(eq(charge.sessionId, first.json().sessionId))
+  expect(rows.length).toBe(1)
+})
+
+it('a claim retry replays the stored answer even when the rate provider is now unreachable', async () => {
+  const payer = await makeUser(db, `NQ58 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ59 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer); const rt = await tokenFor(receiver)
+  const { code } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+  const idemKey = crypto.randomUUID()
+  const payload = { code, fiatAmountMinor: 1234, fiatCurrency: 'USD' }
+
+  const first = await app.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+  expect(first.statusCode).toBe(200)
+
+  // The rate provider is completely down on the retry — a naive implementation
+  // that fetches the quote before checking idempotency would 503 here instead
+  // of replaying the stored 200. This is precisely when a vendor retries.
+  const noRateApp = authedApp(db, receiver.walletAddress, { rates: nullRates }).app
+  const retry = await noRateApp.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+
+  expect(retry.statusCode).toBe(200)
+  expect(retry.json()).toEqual(first.json())
+  const rows = await db.select().from(charge).where(eq(charge.sessionId, first.json().sessionId))
+  expect(rows.length).toBe(1)
+})
+
+it('a claim priced in an unsupported currency is rejected and creates nothing', async () => {
+  const payer = await makeUser(db, `NQ60 ${crypto.randomUUID().slice(0, 8)}`)
+  const receiver = await makeUser(db, `NQ61 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer); const rt = await tokenFor(receiver)
+  const { code, sessionId } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+
+  const res = await app.inject({ method: 'POST', url: '/v1/sessions/claim',
+    payload: { code, fiatAmountMinor: 1234, fiatCurrency: 'EUR' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+
+  // The claim route folds every malformed body — including an unsupported
+  // currency, which never reaches quoteUsdPerNim — into the same generic
+  // rejection it already uses for a bad code shape, so a code-guesser can't
+  // distinguish the two. The schema is what rejects it (SUPPORTED_FIAT_CURRENCY
+  // is a z.literal('USD')); the route does no hand-checking of the currency.
+  expect(res.statusCode).toBe(404)
+  expect(res.json().error.code).toBe('CODE_UNAVAILABLE')
+  const rows = await db.select().from(charge).where(eq(charge.sessionId, sessionId))
+  expect(rows.length).toBe(0)
+  const [s] = await db.select().from(paymentSession).where(eq(paymentSession.id, sessionId))
+  expect(s.status).toBe('AVAILABLE')
 })
 

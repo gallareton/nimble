@@ -31,22 +31,10 @@ export async function chargeRoutes(app: FastifyInstance) {
     if (s.receiverUserId !== req.user.userId)
       return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'only receiver creates charges' } })
 
-    // Priced in fiat? Freeze a quote now and keep it on the row — the export
-    // has to state the rate that applied at the moment of sale, not today's.
-    let quote = null
-    let amountAtomic: bigint
-    if (body.fiatAmountMinor !== undefined) {
-      quote = (await app.deps.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
-      if (!quote)
-        return reply.code(503).send({ error: { code: 'NO_RATE', message: 'no exchange rate available' } })
-      amountAtomic = priceInLuna(body.fiatAmountMinor, quote)
-    } else {
-      amountAtomic = parseLunaString(body.amountLuna!)
-    }
-
     // Fingerprint what the client asked for, not what the rate turned it into:
     // a retry with the same key must replay the original 201 even if the quote
-    // moved between the first attempt and the retry.
+    // moved between the first attempt and the retry — or if the rate provider
+    // is unreachable on the retry, which is precisely when a vendor retries.
     const fingerprint = body.fiatAmountMinor !== undefined
       ? JSON.stringify({ fiatAmountMinor: body.fiatAmountMinor, fiatCurrency: body.fiatCurrency,
         reference: body.reference ?? null })
@@ -55,6 +43,21 @@ export async function chargeRoutes(app: FastifyInstance) {
     type ChargeResponseBody = { error?: { code: string; message: string }; chargeId?: string; version?: number }
     const { code, body: resBody } = await withIdempotency<ChargeResponseBody>(
       db, `charge:${sessionId}`, key, fingerprint, async () => {
+        // Priced in fiat? Freeze a quote now and keep it on the row — the export
+        // has to state the rate that applied at the moment of sale, not today's.
+        // Fetched here, inside the idempotency-guarded handler, so a replay of
+        // an already-successful charge never depends on the rate provider
+        // being reachable — idempotency must not depend on the rate.
+        let quote = null
+        let amountAtomic: bigint
+        if (body.fiatAmountMinor !== undefined) {
+          quote = (await app.deps.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
+          if (!quote)
+            return { code: 503, body: { error: { code: 'NO_RATE', message: 'no exchange rate available' } } }
+          amountAtomic = priceInLuna(body.fiatAmountMinor, quote)
+        } else {
+          amountAtomic = parseLunaString(body.amountLuna!)
+        }
         // state transition + charge insert are atomic: a crash between them must
         // not leave the session in AWAITING_PAYER_APPROVAL without a charge
         const result = await db.transaction(async tx => {

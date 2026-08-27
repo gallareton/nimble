@@ -128,3 +128,42 @@ it('a retry across a rate move replays the original charge, never a 409 or a sec
   const rows = await db.select().from(charge).where(eq(charge.sessionId, sessionId))
   expect(rows.length).toBe(1)
 })
+
+it('a retry replays the stored answer even when the rate provider is now unreachable', async () => {
+  const receiver = await makeUser(db, `NQ47 ${crypto.randomUUID().slice(0, 8)}`)
+  const rt = await tokenFor(receiver)
+  const { sessionId } = await claimedSessionFor(receiver, rt)
+  const idemKey = crypto.randomUUID()
+  const payload = { fiatAmountMinor: 1234, fiatCurrency: 'USD' }
+
+  const first = await app.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+  expect(first.statusCode).toBe(201)
+
+  // The rate provider is completely down on the retry — a naive implementation
+  // that fetches the quote before checking idempotency would 503 here instead
+  // of replaying the stored 201. This is precisely when a vendor retries.
+  const noRateApp = authedApp(db, 'NQ47', { rates: nullRates }).app
+  const retry = await noRateApp.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+
+  expect(retry.statusCode).toBe(201)
+  expect(retry.json()).toEqual(first.json())
+  const rows = await db.select().from(charge).where(eq(charge.sessionId, sessionId))
+  expect(rows.length).toBe(1)
+})
+
+it('a charge priced in an unsupported currency is rejected and creates nothing', async () => {
+  const receiver = await makeUser(db, `NQ48 ${crypto.randomUUID().slice(0, 8)}`)
+  const rt = await tokenFor(receiver)
+  const { sessionId } = await claimedSessionFor(receiver, rt)
+
+  // Rejected by the schema (fiatCurrency is z.literal('USD')), not by a
+  // hand-check in the route — Fastify's ZodError handler turns it into 400.
+  const res = await app.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload: { fiatAmountMinor: 1234, fiatCurrency: 'EUR' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(res.statusCode).toBe(400)
+  const rows = await db.select().from(charge).where(eq(charge.sessionId, sessionId))
+  expect(rows.length).toBe(0)
+})
