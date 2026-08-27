@@ -102,3 +102,29 @@ it('refuses a fiat price when no rate is available', async () => {
   expect(res.statusCode).toBe(503)
   expect(res.json().error.code).toBe('NO_RATE')
 })
+
+it('a retry across a rate move replays the original charge, never a 409 or a second charge', async () => {
+  const receiver = await makeUser(db, `NQ46 ${crypto.randomUUID().slice(0, 8)}`)
+  const rt = await tokenFor(receiver)
+  const { sessionId } = await claimedSessionFor(receiver, rt)
+  const idemKey = crypto.randomUUID()
+  const payload = { fiatAmountMinor: 1234, fiatCurrency: 'USD' }
+
+  const first = await app.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+  expect(first.statusCode).toBe(201)
+
+  // Same request, same key, but the quote has moved since the first attempt —
+  // a retry must replay the original answer, not re-price and not 409.
+  const movedRateApp = authedApp(db, 'NQ46', { rates: {
+    getUsdPerNim: async () => 0.009,
+    quoteUsdPerNim: async () => ({ value: 0.009, at: new Date().toISOString(), source: 'test-fixture-moved' }),
+  } }).app
+  const retry = await movedRateApp.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload, headers: { authorization: `Bearer ${rt}`, 'idempotency-key': idemKey } })
+
+  expect(retry.statusCode).toBe(201)
+  expect(retry.json()).toEqual(first.json())
+  const rows = await db.select().from(charge).where(eq(charge.sessionId, sessionId))
+  expect(rows.length).toBe(1)
+})

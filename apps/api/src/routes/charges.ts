@@ -44,9 +44,17 @@ export async function chargeRoutes(app: FastifyInstance) {
       amountAtomic = parseLunaString(body.amountLuna!)
     }
 
+    // Fingerprint what the client asked for, not what the rate turned it into:
+    // a retry with the same key must replay the original 201 even if the quote
+    // moved between the first attempt and the retry.
+    const fingerprint = body.fiatAmountMinor !== undefined
+      ? JSON.stringify({ fiatAmountMinor: body.fiatAmountMinor, fiatCurrency: body.fiatCurrency,
+        reference: body.reference ?? null })
+      : JSON.stringify({ amountLuna: body.amountLuna, reference: body.reference ?? null })
+
     type ChargeResponseBody = { error?: { code: string; message: string }; chargeId?: string; version?: number }
     const { code, body: resBody } = await withIdempotency<ChargeResponseBody>(
-      db, `charge:${sessionId}`, key, amountAtomic.toString(), async () => {
+      db, `charge:${sessionId}`, key, fingerprint, async () => {
         // state transition + charge insert are atomic: a crash between them must
         // not leave the session in AWAITING_PAYER_APPROVAL without a charge
         const result = await db.transaction(async tx => {
