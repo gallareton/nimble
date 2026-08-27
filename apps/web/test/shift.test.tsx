@@ -1,9 +1,11 @@
-import { expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { afterEach, expect, it, vi } from 'vitest'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { Shift } from '../src/screens/Shift'
 
 const noShift = { getCurrentShift: vi.fn(async () => null), openShift: vi.fn() }
+
+afterEach(() => cleanup())
 
 it('offers to open a shift when none is running', async () => {
   render(<MemoryRouter><Shift api={noShift as never} /></MemoryRouter>)
@@ -26,4 +28,14 @@ it('shows the running shift and its totals', async () => {
   await waitFor(() => expect(screen.getByText('Ana')).toBeTruthy())
   expect(screen.getByText('500 NIM')).toBeTruthy()
   expect(screen.getByText('Close the shift')).toBeTruthy()
+})
+
+it('shows a failure message instead of the open-a-shift form when loading breaks', async () => {
+  const api = {
+    getCurrentShift: vi.fn(async () => { throw new Error('network down') }),
+    openShift: vi.fn(),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText(/Could not load the shift/i)).toBeTruthy())
+  expect(screen.queryByText('Open a shift')).toBeNull()
 })

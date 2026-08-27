@@ -151,6 +151,7 @@ const pl: Record<string, string> = {
   'Download JSON': 'Pobierz JSON',
   'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble prowadzi jedno stanowisko. Utargu z innego telefonu nie ma w tym raporcie.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Część sprzedaży nie miała kursu, więc suma w walucie jest niepełna.',
+  'Could not load the shift. Check your connection and try again.': 'Nie udało się wczytać zmiany. Sprawdź połączenie i spróbuj ponownie.',
 }
 
 const de: Record<string, string> = {
@@ -293,6 +294,7 @@ const de: Record<string, string> = {
   'Download JSON': 'JSON herunterladen',
   'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble erfasst nur eine Kasse. Einnahmen von einem anderen Handy stehen nicht in diesem Bericht.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Für manche Verkäufe gab es keinen Wechselkurs, daher ist die Fiat-Summe unvollständig.',
+  'Could not load the shift. Check your connection and try again.': 'Die Schicht konnte nicht geladen werden. Verbindung prüfen und erneut versuchen.',
 }
 
 const es: Record<string, string> = {
@@ -435,6 +437,7 @@ const es: Record<string, string> = {
   'Download JSON': 'Descargar JSON',
   'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble solo controla un puesto. Los cobros de otro teléfono no están en este informe.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Algunas ventas no tenían tipo de cambio, así que el total en moneda local es parcial.',
+  'Could not load the shift. Check your connection and try again.': 'No se pudo cargar el turno. Comprueba tu conexión e inténtalo de nuevo.',
 }
 
 const fr: Record<string, string> = {
@@ -577,6 +580,7 @@ const fr: Record<string, string> = {
   'Download JSON': 'Télécharger le JSON',
   'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble ne suit qu\u2019une seule caisse. Les recettes d\u2019un autre téléphone ne figurent pas dans ce rapport.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Certaines ventes n\u2019avaient pas de taux de change, le total en devise est donc partiel.',
+  'Could not load the shift. Check your connection and try again.': 'Impossible de charger le poste. Vérifiez votre connexion et réessayez.',
 }
 
 const pt: Record<string, string> = {
@@ -719,6 +723,7 @@ const pt: Record<string, string> = {
   'Download JSON': 'Baixar JSON',
   'NIMble tracks one station. Takings from another phone are not in this report.': 'O NIMble controla apenas um caixa. Os valores recebidos noutro telemóvel não entram neste relatório.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Algumas vendas não tinham taxa de câmbio, por isso o total em moeda local está incompleto.',
+  'Could not load the shift. Check your connection and try again.': 'Não foi possível carregar o turno. Verifique a ligação e tente novamente.',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

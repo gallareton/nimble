@@ -12,12 +12,14 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   const [report, setReport] = useState<ShiftReport | null>(null)
   const [label, setLabel] = useState('')
   const [busy, setBusy] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
+    setLoadError(false)
     void api.getCurrentShift().then(async s => {
       setShift(s)
       if (s) setReport(await api.getShiftReport(s.id))
-    }).catch(() => {})
+    }).catch(() => { setLoadError(true) })
   }, [api])
 
   const open = async () => {
@@ -46,6 +48,16 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     a.click()
     a.remove()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  if (loadError) {
+    return (
+      <main>
+        <h1>{t('Shift')}</h1>
+        <p role="alert">{t('Could not load the shift. Check your connection and try again.')}</p>
+        <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
+      </main>
+    )
   }
 
   if (!shift && !report) {
