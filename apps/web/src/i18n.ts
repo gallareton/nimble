@@ -140,6 +140,7 @@ const pl: Record<string, string> = {
   'Show the guide again': 'Pokaż przewodnik ponownie',
   'The guide will show next time you open the home screen.': 'Przewodnik pokaże się przy następnym otwarciu ekranu głównego.',
   'Nothing yet — your last payments will appear here.': 'Jeszcze nic — tu pojawią się Twoje ostatnie płatności.',
+  'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'NIMble nadrabia zaległości w łańcuchu i nie może teraz potwierdzać płatności. Z Twoim portfelem wszystko w porządku — spróbuj za chwilę.',
 }
 
 const de: Record<string, string> = {
@@ -271,6 +272,7 @@ const de: Record<string, string> = {
   'Show the guide again': 'Anleitung erneut anzeigen',
   'The guide will show next time you open the home screen.': 'Die Anleitung erscheint beim nächsten Öffnen des Startbildschirms.',
   'Nothing yet — your last payments will appear here.': 'Noch nichts — hier erscheinen deine letzten Zahlungen.',
+  'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'NIMble holt die Chain auf und kann Zahlungen gerade nicht bestätigen. Mit deiner Wallet ist alles in Ordnung — bitte gleich noch einmal versuchen.',
 }
 
 const es: Record<string, string> = {
@@ -402,6 +404,7 @@ const es: Record<string, string> = {
   'Show the guide again': 'Mostrar la guía otra vez',
   'The guide will show next time you open the home screen.': 'La guía aparecerá la próxima vez que abras la pantalla de inicio.',
   'Nothing yet — your last payments will appear here.': 'Nada aún: aquí aparecerán tus últimos pagos.',
+  'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'NIMble se está poniendo al día con la cadena y ahora no puede confirmar pagos. Tu monedero está bien: inténtalo dentro de un momento.',
 }
 
 const fr: Record<string, string> = {
@@ -533,6 +536,7 @@ const fr: Record<string, string> = {
   'Show the guide again': 'Revoir le guide',
   'The guide will show next time you open the home screen.': 'Le guide s\u2019affichera à la prochaine ouverture de l\u2019accueil.',
   'Nothing yet — your last payments will appear here.': 'Rien pour l\u2019instant — vos derniers paiements apparaîtront ici.',
+  'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'NIMble rattrape la chaîne et ne peut pas confirmer de paiement pour le moment. Votre portefeuille n\u2019a aucun problème — réessayez dans un instant.',
 }
 
 const pt: Record<string, string> = {
@@ -664,6 +668,7 @@ const pt: Record<string, string> = {
   'Show the guide again': 'Mostrar o guia novamente',
   'The guide will show next time you open the home screen.': 'O guia aparecerá da próxima vez que abrir o ecrã inicial.',
   'Nothing yet — your last payments will appear here.': 'Ainda nada — os seus últimos pagamentos aparecerão aqui.',
+  'NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.': 'O NIMble está a recuperar o atraso na cadeia e não consegue confirmar pagamentos agora. A sua carteira está bem — tente novamente daqui a pouco.',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

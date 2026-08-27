@@ -13,7 +13,7 @@ export function Home() {
   const { api, token, login } = useApp()
   const [recent, setRecent] = useState<HistoryItem[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [wrongNetwork, setWrongNetwork] = useState<null | 'test' | 'main'>(null)
+  const [wrongNetwork, setWrongNetwork] = useState<null | 'test' | 'main' | 'lagging'>(null)
   const [intro, setIntro] = useState(!introSeen())
 
   useEffect(() => {
@@ -31,8 +31,13 @@ export function Home() {
       // its consensus is established (tip from the competition community).
       if (wallet.isConsensusEstablished && !(await wallet.isConsensusEstablished())) return
       const [walletHeight, srv] = await Promise.all([wallet.getBlockNumber!(), api.getNetwork()])
-      if (srv.height !== null && Math.abs(walletHeight - srv.height) > 100_000)
-        setWrongNetwork(srv.network.startsWith('Test') ? 'test' : 'main')
+      if (srv.height === null || Math.abs(walletHeight - srv.height) <= 100_000) return
+      // A server merely behind the wallet is our node lagging, not the user on
+      // the wrong network — blaming them for our outage sends them to change a
+      // setting that was right all along. Different networks are orders of
+      // magnitude apart; a lagging node is close and always behind.
+      const behind = srv.height < walletHeight && srv.height > walletHeight * 0.5
+      setWrongNetwork(behind ? 'lagging' : srv.network.startsWith('Test') ? 'test' : 'main')
     })().catch(() => {})
   }, [api, token, wallet])
 
@@ -57,7 +62,9 @@ export function Home() {
       <h1 className="brand">NIM<em>ble</em></h1>
       {wrongNetwork && (
         <p role="alert" className="banner">
-          {wrongNetwork === 'test'
+          {wrongNetwork === 'lagging'
+            ? t('NIMble is catching up with the chain and cannot confirm payments right now. Nothing is wrong with your wallet — please try again shortly.')
+            : wrongNetwork === 'test'
             ? t('Your Nimiq Pay is on a different network than this NIMble server (testnet). Long-press settings in Nimiq Pay to switch to Testnet before paying.')
             : t('Your Nimiq Pay is on a different network than this NIMble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.')}
         </p>
