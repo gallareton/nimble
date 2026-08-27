@@ -6,6 +6,32 @@ import type { FastifyInstance } from 'fastify'
 import { chainTransaction, charge, paymentSession, receipt, shift } from '../db/schema'
 import type { Db } from '../db/client'
 
+/** RFC 4180: quotes doubled, field wrapped whenever it could confuse a parser. */
+function csvField(value: string | number | null): string {
+  if (value === null) return ''
+  const s = String(value)
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+const CSV_COLUMNS = [
+  'local_number', 'occurred_at_utc', 'status', 'amount_fiat_minor', 'fiat_currency',
+  'amount_crypto', 'asset', 'network', 'tx_hash', 'fx_rate', 'fx_rate_at',
+  'fx_source', 'reference', 'operator', 'shift_id',
+] as const
+
+function toCsv(report: ShiftReport): string {
+  const lines = [CSV_COLUMNS.join(',')]
+  for (const e of report.entries) {
+    lines.push([
+      e.localNumber, e.occurredAt, e.status, e.amountFiatMinor, e.fiatCurrency,
+      e.amountNim, e.asset, e.network, e.hash, e.fxRate, e.fxRateAt,
+      e.fxSource, e.reference, report.shift.operatorLabel, report.shift.id,
+    ].map(csvField).join(','))
+  }
+  // Excel reads UTF-8 as the local codepage without this, mangling every accent.
+  return '﻿' + lines.join('\r\n') + '\r\n'
+}
+
 const view = (row: typeof shift.$inferSelect): ShiftView => ({
   id: row.id,
   operatorLabel: row.operatorLabel,
@@ -121,5 +147,25 @@ export async function shiftRoutes(app: FastifyInstance) {
       .where(and(eq(shift.id, id), eq(shift.userId, req.user.userId)))
     if (!row) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'shift not found' } })
     return buildReport(db, row)
+  })
+
+  app.get('/v1/shifts/:id/export', { preHandler: app.authenticate }, async (req, reply) => {
+    const id = (req.params as { id: string }).id
+    const format = (req.query as { format?: string }).format ?? 'csv'
+    const [row] = await db.select().from(shift)
+      .where(and(eq(shift.id, id), eq(shift.userId, req.user.userId)))
+    if (!row) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'shift not found' } })
+    const report = await buildReport(db, row)
+    const stamp = row.openedAt.toISOString().slice(0, 10)
+    const openSuffix = row.closedAt === null ? '-open' : ''
+    if (format === 'json') {
+      return reply
+        .header('content-disposition', `attachment; filename="nimble-shift-${stamp}${openSuffix}.json"`)
+        .send(report)
+    }
+    return reply
+      .type('text/csv; charset=utf-8')
+      .header('content-disposition', `attachment; filename="nimble-shift-${stamp}${openSuffix}.csv"`)
+      .send(toCsv(report))
   })
 }

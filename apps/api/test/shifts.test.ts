@@ -53,3 +53,41 @@ it('a vendor cannot read another vendor shift', async () => {
     payload: { operatorLabel: 'Ana' }, headers: auth(a.t) })).json()
   expect((await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth(b.t) })).statusCode).toBe(404)
 })
+
+it('exports RFC 4180 CSV with a BOM, CRLF and the rate columns', async () => {
+  const { t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana, "the boss"' }, headers: auth(t) })).json()
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+
+  const res = await app.inject({ url: `/v1/shifts/${id}/export`, headers: auth(t) })
+  expect(res.statusCode).toBe(200)
+  expect(res.headers['content-type']).toContain('text/csv')
+  expect(res.headers['content-disposition']).toContain('attachment; filename="nimble-shift-')
+  expect(res.body.startsWith('﻿')).toBe(true)
+  const [header] = res.body.slice(1).split('\r\n')
+  expect(header).toBe('local_number,occurred_at_utc,status,amount_fiat_minor,fiat_currency,' +
+    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,reference,operator,shift_id')
+
+  const json = await app.inject({ url: `/v1/shifts/${id}/export?format=json`, headers: auth(t) })
+  expect(json.json().shift.operatorLabel).toBe('Ana, "the boss"')
+})
+
+it('open shifts get -open suffix in export filename, closed shifts do not', async () => {
+  const { t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Bob' }, headers: auth(t) })).json()
+
+  // Export while still open
+  const openRes = await app.inject({ url: `/v1/shifts/${id}/export`, headers: auth(t) })
+  expect(openRes.statusCode).toBe(200)
+  expect(openRes.headers['content-disposition']).toContain('-open.csv')
+
+  // Close the shift
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+
+  // Export after closing
+  const closedRes = await app.inject({ url: `/v1/shifts/${id}/export`, headers: auth(t) })
+  expect(closedRes.statusCode).toBe(200)
+  expect(closedRes.headers['content-disposition']).not.toContain('-open')
+})
