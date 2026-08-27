@@ -125,6 +125,7 @@ const pl: Record<string, string> = {
   'Taking longer than usual': 'Trwa dłużej niż zwykle',
   'Payment cancelled': 'Płatność anulowana',
   'Cancelled': 'Anulowana',
+  'Waiting for your wallet to sync…': 'Czekam na synchronizację portfela…',
 }
 
 const de: Record<string, string> = {
@@ -241,6 +242,7 @@ const de: Record<string, string> = {
   'Taking longer than usual': 'Dauert länger als üblich',
   'Payment cancelled': 'Zahlung abgebrochen',
   'Cancelled': 'Abgebrochen',
+  'Waiting for your wallet to sync…': 'Warte auf die Synchronisierung der Wallet…',
 }
 
 const es: Record<string, string> = {
@@ -357,6 +359,7 @@ const es: Record<string, string> = {
   'Taking longer than usual': 'Tarda más de lo habitual',
   'Payment cancelled': 'Pago cancelado',
   'Cancelled': 'Cancelado',
+  'Waiting for your wallet to sync…': 'Esperando la sincronización de tu monedero…',
 }
 
 const fr: Record<string, string> = {
@@ -473,6 +476,7 @@ const fr: Record<string, string> = {
   'Taking longer than usual': "Plus long que d'habitude",
   'Payment cancelled': 'Paiement annulé',
   'Cancelled': 'Annulé',
+  'Waiting for your wallet to sync…': 'En attente de la synchronisation du portefeuille…',
 }
 
 const pt: Record<string, string> = {
@@ -589,6 +593,7 @@ const pt: Record<string, string> = {
   'Taking longer than usual': 'Demorando mais que o normal',
   'Payment cancelled': 'Pagamento cancelado',
   'Cancelled': 'Cancelado',
+  'Waiting for your wallet to sync…': 'Aguardando a sincronização da carteira…',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

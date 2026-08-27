@@ -45,8 +45,8 @@ async function resolve(): Promise<NetworkChoice> {
   const TEST: NetworkChoice = { base: '/api/test', suffix: '.test', net: 'test' }
   const near = (a: number, b: number) => Math.abs(a - b) < 100_000
 
-  let main = await probe('/api/main')
-  let test = await probe('/api/test')
+  // Sequentially these cost two round trips before anything can render.
+  let [main, test] = await Promise.all([probe('/api/main'), probe('/api/test')])
   // legacy production (no prefixes yet) → same-origin single backend
   if (!main && !test) return { base: '', suffix: '', net: 'single' }
 
@@ -72,8 +72,7 @@ async function resolve(): Promise<NetworkChoice> {
     if (testRuledOut && !mainRuledOut && main) return MAIN // by elimination
     if (mainRuledOut && !testRuledOut && test) return TEST // by elimination
     await new Promise(r => setTimeout(r, 2000))
-    main = await probe('/api/main')
-    test = await probe('/api/test')
+    ;[main, test] = await Promise.all([probe('/api/main'), probe('/api/test')])
   }
 
   // Both backends answered and neither matches the wallet: routing is
