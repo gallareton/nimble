@@ -26,7 +26,7 @@ function csvFreeText(value: string | null): string {
 const CSV_COLUMNS = [
   'local_number', 'occurred_at_utc', 'status', 'amount_fiat_minor', 'fiat_currency',
   'amount_crypto', 'asset', 'network', 'tx_hash', 'fx_rate', 'fx_rate_at',
-  'fx_source', 'reference', 'operator', 'shift_id',
+  'fx_source', 'fx_buffer_bps', 'reference', 'operator', 'shift_id',
 ] as const
 
 function toCsv(report: ShiftReport): string {
@@ -35,7 +35,7 @@ function toCsv(report: ShiftReport): string {
     lines.push([
       e.localNumber, e.occurredAt, e.status, e.amountFiatMinor, e.fiatCurrency,
       e.amountNim, e.asset, e.network, e.hash, e.fxRate, e.fxRateAt,
-      e.fxSource,
+      e.fxSource, csvField(e.fxBufferBps),
       csvFreeText(e.reference), // Protect against formula injection
       csvFreeText(report.shift.operatorLabel), // Protect against formula injection
       report.shift.id,
@@ -109,6 +109,7 @@ export async function buildReport(db: Db, row: typeof shift.$inferSelect): Promi
       fxRate: x.c.fxRate,
       fxRateAt: x.c.fxRateAt?.toISOString() ?? null,
       fxSource: x.c.fxSource,
+      fxBufferBps: x.c.fxBufferBps,
     }
   })
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import type { ShiftReport, ShiftView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
+import { ApiError } from '../api/client'
 import { t } from '../i18n'
 
 export function Shift({ api: apiProp }: { api?: Api } = {}) {
@@ -13,6 +14,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   const [label, setLabel] = useState('')
   const [busy, setBusy] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
     setLoadError(false)
@@ -24,30 +26,50 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
 
   const open = async () => {
     setBusy(true)
-    try { setShift(await api.openShift(label.trim())) } finally { setBusy(false) }
+    setActionError(null)
+    try {
+      setShift(await api.openShift(label.trim()))
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'SHIFT_OPEN')
+        setActionError(t('A shift is already open on this device.'))
+      else
+        setActionError(t('Could not open the shift. Check your connection and try again.'))
+    } finally {
+      setBusy(false)
+    }
   }
 
   const close = async () => {
     if (!shift) return
     setBusy(true)
+    setActionError(null)
     try {
       setReport(await api.closeShift(shift.id))
       setShift(null)
-    } finally { setBusy(false) }
+    } catch {
+      setActionError(t('Could not close the shift. Check your connection and try again.'))
+    } finally {
+      setBusy(false)
+    }
   }
 
   // A plain <a href> cannot carry the bearer token the export endpoint
   // requires, so pull the file down with auth and hand the browser a blob
   // URL to save, revoking it once the download has started.
   const download = async (id: string, format: 'csv' | 'json') => {
-    const { url, filename } = await api.fetchShiftExport(id, format)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setActionError(null)
+    try {
+      const { url, filename } = await api.fetchShiftExport(id, format)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch {
+      setActionError(t('Could not download the export. Check your connection and try again.'))
+    }
   }
 
   if (loadError) {
@@ -73,6 +95,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
             {t('Open a shift')}
           </button>
         </div>
+        {actionError && <p role="alert">{actionError}</p>}
         <p className="quiet">{t('NIMble tracks one station. Takings from another phone are not in this report.')}</p>
         <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
       </main>
@@ -98,6 +121,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
           {report.fiatIncomplete && <p className="quiet">{t('Some sales had no exchange rate, so the fiat total is partial.')}</p>}
         </section>
       )}
+      {actionError && <p role="alert">{actionError}</p>}
       {shift && (
         <button disabled={busy} onClick={close}>{t('Close the shift')}</button>
       )}

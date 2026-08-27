@@ -1,7 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { Shift } from '../src/screens/Shift'
+import { ApiError } from '../src/api/client'
 
 const noShift = { getCurrentShift: vi.fn(async () => null), openShift: vi.fn() }
 
@@ -38,4 +39,19 @@ it('shows a failure message instead of the open-a-shift form when loading breaks
   render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
   await waitFor(() => expect(screen.getByText(/Could not load the shift/i)).toBeTruthy())
   expect(screen.queryByText('Open a shift')).toBeNull()
+})
+
+it('tells the vendor a shift is already open instead of failing silently on a 409', async () => {
+  const api = {
+    getCurrentShift: vi.fn(async () => null),
+    openShift: vi.fn(async () => { throw new ApiError('SHIFT_OPEN', 'a shift is already open', 409) }),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Open a shift')).toBeTruthy())
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Ana' } })
+  fireEvent.click(screen.getByText('Open a shift'))
+  await waitFor(() => expect(screen.getByRole('alert').textContent)
+    .toMatch(/already open/i))
+  // The button re-enables so the vendor can retry, rather than staying stuck.
+  expect((screen.getByText('Open a shift') as HTMLButtonElement).disabled).toBe(false)
 })

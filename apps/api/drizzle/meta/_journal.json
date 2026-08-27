@@ -22,6 +22,13 @@
       "when": 1787852199543,
       "tag": "0002_nasty_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787861355065,
+      "tag": "0003_bitter_black_cat",
+      "breakpoints": true
     }
   ]
 }

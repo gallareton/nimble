@@ -1,0 +1,1 @@
+ALTER TABLE "charge" ADD COLUMN "fx_buffer_bps" integer;

@@ -88,6 +88,7 @@ export interface ShiftEntry {
   fxRate: string | null
   fxRateAt: string | null
   fxSource: string | null
+  fxBufferBps: number | null
 }
 
 export interface ShiftReport {

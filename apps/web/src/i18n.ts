@@ -155,6 +155,10 @@ const pl: Record<string, string> = {
   'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble prowadzi jedno stanowisko. Utargu z innego telefonu nie ma w tym raporcie.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Część sprzedaży nie miała kursu, więc suma w walucie jest niepełna.',
   'Could not load the shift. Check your connection and try again.': 'Nie udało się wczytać zmiany. Sprawdź połączenie i spróbuj ponownie.',
+  'A shift is already open on this device.': 'Na tym urządzeniu jest już otwarta zmiana.',
+  'Could not open the shift. Check your connection and try again.': 'Nie udało się otworzyć zmiany. Sprawdź połączenie i spróbuj ponownie.',
+  'Could not close the shift. Check your connection and try again.': 'Nie udało się zamknąć zmiany. Sprawdź połączenie i spróbuj ponownie.',
+  'Could not download the export. Check your connection and try again.': 'Nie udało się pobrać eksportu. Sprawdź połączenie i spróbuj ponownie.',
 }
 
 const de: Record<string, string> = {
@@ -301,6 +305,10 @@ const de: Record<string, string> = {
   'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble erfasst nur eine Kasse. Einnahmen von einem anderen Handy stehen nicht in diesem Bericht.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Für manche Verkäufe gab es keinen Wechselkurs, daher ist die Fiat-Summe unvollständig.',
   'Could not load the shift. Check your connection and try again.': 'Die Schicht konnte nicht geladen werden. Verbindung prüfen und erneut versuchen.',
+  'A shift is already open on this device.': 'Auf diesem Gerät ist bereits eine Schicht geöffnet.',
+  'Could not open the shift. Check your connection and try again.': 'Die Schicht konnte nicht geöffnet werden. Verbindung prüfen und erneut versuchen.',
+  'Could not close the shift. Check your connection and try again.': 'Die Schicht konnte nicht geschlossen werden. Verbindung prüfen und erneut versuchen.',
+  'Could not download the export. Check your connection and try again.': 'Der Export konnte nicht heruntergeladen werden. Verbindung prüfen und erneut versuchen.',
 }
 
 const es: Record<string, string> = {
@@ -447,6 +455,10 @@ const es: Record<string, string> = {
   'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble solo controla un puesto. Los cobros de otro teléfono no están en este informe.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Algunas ventas no tenían tipo de cambio, así que el total en moneda local es parcial.',
   'Could not load the shift. Check your connection and try again.': 'No se pudo cargar el turno. Comprueba tu conexión e inténtalo de nuevo.',
+  'A shift is already open on this device.': 'Ya hay un turno abierto en este dispositivo.',
+  'Could not open the shift. Check your connection and try again.': 'No se pudo abrir el turno. Comprueba tu conexión e inténtalo de nuevo.',
+  'Could not close the shift. Check your connection and try again.': 'No se pudo cerrar el turno. Comprueba tu conexión e inténtalo de nuevo.',
+  'Could not download the export. Check your connection and try again.': 'No se pudo descargar la exportación. Comprueba tu conexión e inténtalo de nuevo.',
 }
 
 const fr: Record<string, string> = {
@@ -593,6 +605,10 @@ const fr: Record<string, string> = {
   'NIMble tracks one station. Takings from another phone are not in this report.': 'NIMble ne suit qu\u2019une seule caisse. Les recettes d\u2019un autre téléphone ne figurent pas dans ce rapport.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Certaines ventes n\u2019avaient pas de taux de change, le total en devise est donc partiel.',
   'Could not load the shift. Check your connection and try again.': 'Impossible de charger le poste. Vérifiez votre connexion et réessayez.',
+  'A shift is already open on this device.': 'Un poste est déjà ouvert sur cet appareil.',
+  'Could not open the shift. Check your connection and try again.': 'Impossible d\'ouvrir le poste. Vérifiez votre connexion et réessayez.',
+  'Could not close the shift. Check your connection and try again.': 'Impossible de fermer le poste. Vérifiez votre connexion et réessayez.',
+  'Could not download the export. Check your connection and try again.': 'Impossible de télécharger l\'export. Vérifiez votre connexion et réessayez.',
 }
 
 const pt: Record<string, string> = {
@@ -739,6 +755,10 @@ const pt: Record<string, string> = {
   'NIMble tracks one station. Takings from another phone are not in this report.': 'O NIMble controla apenas um caixa. Os valores recebidos noutro telemóvel não entram neste relatório.',
   'Some sales had no exchange rate, so the fiat total is partial.': 'Algumas vendas não tinham taxa de câmbio, por isso o total em moeda local está incompleto.',
   'Could not load the shift. Check your connection and try again.': 'Não foi possível carregar o turno. Verifique a ligação e tente novamente.',
+  'A shift is already open on this device.': 'Já há um turno aberto neste dispositivo.',
+  'Could not open the shift. Check your connection and try again.': 'Não foi possível abrir o turno. Verifique a ligação e tente novamente.',
+  'Could not close the shift. Check your connection and try again.': 'Não foi possível fechar o turno. Verifique a ligação e tente novamente.',
+  'Could not download the export. Check your connection and try again.': 'Não foi possível transferir a exportação. Verifique a ligação e tente novamente.',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

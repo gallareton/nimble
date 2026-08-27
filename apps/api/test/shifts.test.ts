@@ -1,9 +1,21 @@
+import { eq } from 'drizzle-orm'
 import { afterAll, expect, it } from 'vitest'
+import { chainTransaction, charge } from '../src/db/schema'
+import { monitorTick } from '../src/services/monitor'
+import { SessionEvents } from '../src/services/events'
+import { FX_BUFFER_BPS } from '../src/services/pricing'
 import { freshDb } from './helpers/db'
 import { authedApp, makeUser } from './helpers/actors'
 
 const { db, close } = await freshDb()
 const { app, tokenFor } = authedApp(db)
+// A working quote so fiat-priced charges have something to freeze — the
+// reproducibility and reconciliation tests below need a CONFIRMED, fiat-priced
+// sale, which needs a rate.
+app.deps.rates = {
+  getUsdPerNim: async () => 0.004,
+  quoteUsdPerNim: async () => ({ value: 0.004, at: new Date().toISOString(), source: 'test-fixture' }),
+}
 afterAll(close)
 
 async function vendor() {
@@ -11,6 +23,43 @@ async function vendor() {
   return { u, t: await tokenFor(u) }
 }
 const auth = (t: string) => ({ authorization: `Bearer ${t}` })
+
+/**
+ * Drives a fiat-priced charge to CONFIRMED the way the chain actually does it
+ * (there is no /confirm route): register a chain transaction directly, then
+ * run the monitor with a stub chain client through inclusion and finality,
+ * same approach as monitor.test.ts.
+ */
+async function confirmFiatSale(shiftId: string, rt: string, fiatAmountMinor: number) {
+  const payer = await makeUser(db, `NQ55 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer)
+  const { code, sessionId } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+  await app.inject({ method: 'POST', url: '/v1/sessions/claim', payload: { code },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+  const chargeRes = await app.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload: { fiatAmountMinor, fiatCurrency: 'USD', reference: 'Coffee' },
+    headers: { authorization: `Bearer ${rt}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(chargeRes.statusCode).toBe(201)
+
+  const [c] = await db.select().from(charge).where(eq(charge.sessionId, sessionId))
+  expect(c.shiftId).toBe(shiftId)
+  const [tx] = await db.insert(chainTransaction).values({ chargeId: c.id, sender: payer.walletAddress,
+    recipient: c.recipientAddress, amountAtomic: c.amountAtomic, hash: crypto.randomUUID() }).returning()
+
+  const events = new SessionEvents()
+  let macro = 90
+  const chain = {
+    findIncomingByData: async () => null,
+    getTransaction: async () => ({ includedAtHeight: 100, expired: false }),
+    getLastMacroHeight: async () => macro,
+  }
+  await monitorTick(db, events, chain) // SUBMITTED → CONFIRMING
+  macro = 120
+  await monitorTick(db, events, chain) // CONFIRMING → CONFIRMED, receipts written
+
+  return { sessionId, chargeId: c.id, txHash: tx.hash }
+}
 
 it('opens one shift, refuses a second, closes it and reports', async () => {
   const { t } = await vendor()
@@ -37,14 +86,68 @@ it('opens one shift, refuses a second, closes it and reports', async () => {
   expect((await app.inject({ url: '/v1/shifts/current', headers: auth(t) })).statusCode).toBe(404)
 })
 
-it('a closed shift reports the same numbers every time it is asked', async () => {
+it('a closed shift with a confirmed fiat sale reports the same non-zero numbers every time it is asked', async () => {
   const { t } = await vendor()
   const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
     payload: { operatorLabel: 'Ana' }, headers: auth(t) })).json()
+
+  await confirmFiatSale(id, t, 1234)
+
   await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
   const a = (await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth(t) })).json()
   const b = (await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth(t) })).json()
   expect(a).toEqual(b)
+
+  expect(a.totals.confirmed).toBe(1)
+  expect(a.totals.grossFiatMinor).toBe(1234)
+  expect(Number(a.totals.grossNim)).toBeGreaterThan(0)
+
+  const [entry] = a.entries
+  expect(entry.status).toBe('CONFIRMED')
+  expect(entry.amountFiatMinor).toBe(1234)
+  expect(entry.fiatCurrency).toBe('USD')
+  expect(entry.fxRate).toBe('0.004')
+  expect(entry.fxRateAt).not.toBeNull()
+  expect(entry.fxSource).toBe('test-fixture')
+  expect(entry.fxBufferBps).toBe(FX_BUFFER_BPS)
+  // occurredAt comes from the receipt snapshot written when the monitor
+  // confirms the transaction, not from the charge's createdAt.
+  expect(entry.occurredAt).not.toBeNull()
+})
+
+it('the fx buffer is its own column: (amount_fiat_minor / fx_rate) * (1 + fx_buffer_bps/10000) reconciles to amount_crypto', async () => {
+  const { t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth(t) })).json()
+
+  // 1234 minor units at a 0.004 quote: naive division gives 3085 NIM, but the
+  // 50 bps merchant buffer means 3100.425 NIM was actually charged. Both
+  // numbers have to be recoverable from the exported columns.
+  await confirmFiatSale(id, t, 1234)
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+
+  const res = await app.inject({ url: `/v1/shifts/${id}/export`, headers: auth(t) })
+  expect(res.statusCode).toBe(200)
+  const [header, dataRow] = res.body.slice(1).split('\r\n')
+  const cols = header.split(',')
+  const cells = dataRow.split(',')
+  const cell = (name: string) => cells[cols.indexOf(name)]
+
+  const amountFiatMinor = Number(cell('amount_fiat_minor'))
+  const fxRate = Number(cell('fx_rate'))
+  const fxBufferBps = Number(cell('fx_buffer_bps'))
+  const amountCrypto = Number(cell('amount_crypto'))
+
+  expect(amountFiatMinor).toBe(1234)
+  expect(fxRate).toBe(0.004)
+  expect(fxBufferBps).toBe(FX_BUFFER_BPS)
+
+  // The buffer is padding on TOP of the raw quote (the merchant demands more
+  // NIM per fiat unit to absorb FX risk), so it multiplies rather than
+  // divides — see priceInLuna in src/services/pricing.ts.
+  const expectedNim = (amountFiatMinor / 100 / fxRate) * (1 + fxBufferBps / 10_000)
+  expect(Math.abs(amountCrypto - expectedNim)).toBeLessThan(0.0001) // ceil-rounding tolerance
+  expect(amountCrypto).toBeCloseTo(3100.425, 3)
 })
 
 it('a vendor cannot read another vendor shift', async () => {
@@ -67,7 +170,7 @@ it('exports RFC 4180 CSV with a BOM, CRLF and the rate columns', async () => {
   expect(res.body.startsWith('﻿')).toBe(true)
   const [header] = res.body.slice(1).split('\r\n')
   expect(header).toBe('local_number,occurred_at_utc,status,amount_fiat_minor,fiat_currency,' +
-    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,reference,operator,shift_id')
+    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,fx_buffer_bps,reference,operator,shift_id')
 
   const json = await app.inject({ url: `/v1/shifts/${id}/export?format=json`, headers: auth(t) })
   expect(json.json().shift.operatorLabel).toBe('Ana, "the boss"')
@@ -113,11 +216,9 @@ it('neutralizes spreadsheet formula injection in reference and operator columns'
     payload: { amountLuna: '100000', reference: chargeRef },
     headers: { authorization: `Bearer ${operatorToken}`, 'idempotency-key': crypto.randomUUID() } })
 
-  // Operator confirms the payment to close the session
-  await app.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/confirm`,
-    payload: {}, headers: { authorization: `Bearer ${operatorToken}`, 'idempotency-key': crypto.randomUUID() } })
-
-  // Close the shift to finalize it
+  // Close the shift to finalize it — buildReport includes every charge
+  // stamped with the shift regardless of its status, so no route needs to
+  // confirm the payment for it to appear in the export.
   await app.inject({ method: 'POST', url: `/v1/shifts/${shiftId}/close`, headers: auth(operatorToken) })
 
   // Export to CSV
