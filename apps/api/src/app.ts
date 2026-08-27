@@ -12,6 +12,7 @@ import { sessionRoutes } from './routes/sessions'
 import { chargeRoutes } from './routes/charges'
 import { sseRoutes } from './routes/sse'
 import { historyRoutes } from './routes/history'
+import { shiftRoutes } from './routes/shifts'
 
 import { nullRates, type RateProvider } from './services/rates'
 import type { ChainClient } from './services/monitor'
@@ -71,6 +72,7 @@ export function buildApp(deps: AppDeps) {
   app.register(chargeRoutes)
   app.register(sseRoutes)
   app.register(historyRoutes)
+  app.register(shiftRoutes)
   return app
 }
 declare module 'fastify' {

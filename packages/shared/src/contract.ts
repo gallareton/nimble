@@ -38,3 +38,42 @@ export interface ErrorBody { error: { code: string; message: string } }
 
 export type ClaimRequestT = z.infer<typeof ClaimRequest>
 export type CreateChargeRequestT = z.infer<typeof CreateChargeRequest>
+
+export const OpenShiftRequest = z.object({ operatorLabel: z.string().min(1).max(60) })
+
+export interface ShiftView {
+  id: string; operatorLabel: string; openedAt: string; closedAt: string | null
+}
+
+/** One sale as it appears in a shift report and its export. */
+export interface ShiftEntry {
+  localNumber: number
+  occurredAt: string
+  status: SessionStatus
+  amountNim: string
+  asset: string
+  network: string
+  hash: string | null
+  reference: string | null
+  amountFiatMinor: number | null
+  fiatCurrency: string | null
+  fxRate: string | null
+  fxRateAt: string | null
+  fxSource: string | null
+}
+
+export interface ShiftReport {
+  shift: ShiftView
+  totals: {
+    count: number; confirmed: number; failed: number
+    grossNim: string
+    grossFiatMinor: number | null
+    fiatCurrency: string | null
+    averageTicketNim: string | null
+  }
+  entries: ShiftEntry[]
+  /** True when a sale had no fiat price, so the fiat total covers only part of the day. */
+  fiatIncomplete: boolean
+}
+
+export type OpenShiftRequestT = z.infer<typeof OpenShiftRequest>
