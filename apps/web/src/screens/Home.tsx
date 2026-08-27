@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../AppContext'
 import type { HistoryItem } from '../api/client'
+import { Intro, introSeen, markIntroSeen } from '../components/Intro'
 import { Landing } from '../components/Landing'
 import { inNimiqPay } from '../lib/host'
 import { t } from '../i18n'
@@ -13,6 +14,7 @@ export function Home() {
   const [recent, setRecent] = useState<HistoryItem[]>([])
   const [error, setError] = useState<string | null>(null)
   const [wrongNetwork, setWrongNetwork] = useState<null | 'test' | 'main'>(null)
+  const [intro, setIntro] = useState(!introSeen())
 
   useEffect(() => {
     if (!token) return
@@ -60,14 +62,21 @@ export function Home() {
             : t('Your Nimiq Pay is on a different network than this NIMble server (mainnet). Long-press settings in Nimiq Pay to switch to Mainnet before paying.')}
         </p>
       )}
+      {intro && <Intro onDismiss={() => { markIntroSeen(); setIntro(false) }} />}
       <nav className="home-actions" aria-disabled={wrongNetwork !== null}>
         <Link to="/pay" style={wrongNetwork ? { pointerEvents: 'none' } : undefined}>
           <button className="primary" aria-label="Pay" disabled={wrongNetwork !== null}>
-            {t('Pay')}<span className="sub" aria-hidden>{t('show a code')}</span></button></Link>
+            {t('Pay')}<span className="sub" aria-hidden>{t('show your code')}</span></button></Link>
         <Link to="/charge" style={wrongNetwork ? { pointerEvents: 'none' } : undefined}>
           <button aria-label="Charge" disabled={wrongNetwork !== null}>
-          {t('Charge')}<span className="sub" aria-hidden>{t('enter a code')}</span></button></Link>
+          {t('Charge')}<span className="sub" aria-hidden>{t('type their code')}</span></button></Link>
       </nav>
+      {recent.length === 0 && !intro && (
+        <section className="empty-recent">
+          <h2>{t('Recent')}</h2>
+          <p className="quiet">{t('Nothing yet — your last payments will appear here.')}</p>
+        </section>
+      )}
       {recent.length > 0 && (
         <section>
           <h2>{t('Recent')}</h2>
@@ -88,14 +97,16 @@ export function Home() {
         </section>
       )}
       <p className="footer-nav"><Link to="/history">{t('History')}</Link> · <Link to="/settings">{t('Settings')}</Link></p>
-      <section className="howto" aria-label={t('How it works')}>
-        <h2>{t('How it works')}</h2>
-        <ol>
-          <li>{t('Paying? Tap Pay and tell the receiver your 6-digit code.')}</li>
-          <li>{t('Charging? Tap Charge, enter the amount and their code.')}</li>
-          <li>{t('The payer approves in the wallet — both screens turn green in seconds.')}</li>
-        </ol>
-      </section>
+      {!intro && (
+        <section className="howto" aria-label={t('How it works')}>
+          <h2>{t('How it works')}</h2>
+          <ol>
+            <li>{t('Paying? Tap Pay and tell the receiver your 6-digit code.')}</li>
+            <li>{t('Charging? Tap Charge, enter the amount and their code.')}</li>
+            <li>{t('The payer approves in the wallet — both screens turn green in seconds.')}</li>
+          </ol>
+        </section>
+      )}
     </main>
   )
 }

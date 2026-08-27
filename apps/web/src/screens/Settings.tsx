@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
+import { resetIntro } from '../components/Intro'
 import { t } from '../i18n'
 
 export function Settings({ api: apiProp }: { api?: Api } = {}) {
@@ -10,6 +11,7 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
   const address = ctx?.address ?? null
   const [name, setName] = useState('')
   const [saved, setSaved] = useState(false)
+  const [replay, setReplay] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -39,6 +41,8 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
       <p className="quiet">
         {t('Receiving address (your wallet):')} <code>{address ?? '—'}</code>
       </p>
+      <button onClick={() => { resetIntro(); setReplay(true) }}>{t('Show the guide again')}</button>
+      {replay && <p role="status">{t('The guide will show next time you open the home screen.')}</p>}
       {ctx && <button onClick={ctx.logout}>{t('Disconnect')}</button>}
       <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
     </main>
