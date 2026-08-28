@@ -1,7 +1,7 @@
 import { OpenShiftRequest } from '@nimble/shared'
 import type { ShiftEntry, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import { lunaToNim } from '@nimble/shared'
-import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { chainTransaction, charge, paymentSession, receipt, shift } from '../db/schema'
 import type { Db } from '../db/client'
@@ -146,6 +146,11 @@ export async function shiftRoutes(app: FastifyInstance) {
   // needs a gross total and a confirmed count, both computable with a single
   // GROUP BY over charge/payment_session regardless of how many shifts (up
   // to the 100 cap) are returned.
+  //
+  // Closed shifts only: the open shift is already served by /v1/shifts/current,
+  // and this endpoint's only consumer is a "past shifts" list — filtering
+  // server-side means a client refactor can't accidentally surface the live
+  // shift here twice.
   app.get('/v1/shifts', { preHandler: app.authenticate }, async (req, reply) => {
     const raw = (req.query as { limit?: string }).limit
     let limit = raw !== undefined ? Number(raw) : 30
@@ -164,7 +169,7 @@ export async function shiftRoutes(app: FastifyInstance) {
       .from(shift)
       .leftJoin(charge, eq(charge.shiftId, shift.id))
       .leftJoin(paymentSession, eq(paymentSession.id, charge.sessionId))
-      .where(eq(shift.userId, req.user.userId))
+      .where(and(eq(shift.userId, req.user.userId), isNotNull(shift.closedAt)))
       .groupBy(shift.id)
       .orderBy(desc(shift.openedAt))
       .limit(limit)

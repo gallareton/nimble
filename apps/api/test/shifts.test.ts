@@ -187,14 +187,61 @@ it('lists the caller\'s shifts newest first, with totals, honouring the cap', as
 
 it('the shift list never includes another vendor\'s shifts', async () => {
   const a = await vendor(); const b = await vendor()
-  await app.inject({ method: 'POST', url: '/v1/shifts',
-    payload: { operatorLabel: 'Ana' }, headers: auth(a.t) })
-  await app.inject({ method: 'POST', url: '/v1/shifts',
-    payload: { operatorLabel: 'Bo' }, headers: auth(b.t) })
+  const { id: idA } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth(a.t) })).json()
+  const { id: idB } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Bo' }, headers: auth(b.t) })).json()
+  await app.inject({ method: 'POST', url: `/v1/shifts/${idA}/close`, headers: auth(a.t) })
+  await app.inject({ method: 'POST', url: `/v1/shifts/${idB}/close`, headers: auth(b.t) })
 
   const listA = (await app.inject({ url: '/v1/shifts', headers: auth(a.t) })).json()
   expect(listA.length).toBe(1)
   expect(listA[0].operatorLabel).toBe('Ana')
+})
+
+it('excludes the currently open shift from the list; it appears once closed', async () => {
+  const { t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth(t) })).json()
+
+  const openList = (await app.inject({ url: '/v1/shifts', headers: auth(t) })).json()
+  expect(openList.find((s: { id: string }) => s.id === id)).toBeUndefined()
+
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+  const closedList = (await app.inject({ url: '/v1/shifts', headers: auth(t) })).json()
+  expect(closedList.find((s: { id: string }) => s.id === id)).toBeDefined()
+})
+
+it('the list\'s grossNim and confirmed agree with buildReport\'s totals for a mixed shift', async () => {
+  const { t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth(t) })).json()
+
+  // One CONFIRMED sale, driven to CONFIRMED the way the chain actually does it.
+  await confirmFiatSale(id, t, 750)
+
+  // A second sale that is created but never confirmed — status stays short of
+  // CONFIRMED, so it must count toward totals.count but not totals.confirmed.
+  const payer = await makeUser(db, `NQ60 ${crypto.randomUUID().slice(0, 8)}`)
+  const pt = await tokenFor(payer)
+  const { code, sessionId } = (await app.inject({ method: 'POST', url: '/v1/sessions',
+    headers: { authorization: `Bearer ${pt}`, 'idempotency-key': crypto.randomUUID() } })).json()
+  await app.inject({ method: 'POST', url: '/v1/sessions/claim', payload: { code },
+    headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
+  await app.inject({ method: 'POST', url: `/v1/sessions/${sessionId}/charges`,
+    payload: { amountLuna: '100000', reference: 'Unconfirmed' },
+    headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
+
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+
+  const list = (await app.inject({ url: '/v1/shifts', headers: auth(t) })).json()
+  const listRow = list.find((s: { id: string }) => s.id === id)
+  const report = (await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth(t) })).json()
+
+  expect(report.totals.count).toBe(2)
+  expect(report.totals.confirmed).toBe(1)
+  expect(listRow.grossNim).toBe(report.totals.grossNim)
+  expect(listRow.confirmed).toBe(report.totals.confirmed)
 })
 
 it('exports RFC 4180 CSV with a BOM, CRLF and the rate columns', async () => {
