@@ -102,6 +102,11 @@ handover checklist, not a record of a passed run.
       amounts must land in separate columns, `amount_fiat_minor` must be an
       integer, and every confirmed row's `tx_hash` must resolve on a testnet
       explorer with `fx_rate_at` no older than the sale.
+- [x] **Sharing a file** — VERIFIED 2026-08-28 on the owner's device: `navigator.share`
+      is NOT available in the Nimiq Pay webview. The export falls back to the
+      on-screen panel with a Copy button, which is what a vendor gets today.
+      Treat "hand the vendor a file" as impossible in this host until proven
+      otherwise; anything that needs a file must go through copy or a link.
 - [ ] **Formula safety**: set a reference to `=1+1`, export, open in a
       spreadsheet. The cell must show the text, not a computed 2.
 - [ ] **Backend down**: stop the API and open the Shift screen. It must say
