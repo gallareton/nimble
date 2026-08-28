@@ -545,3 +545,37 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 
 .empty-recent { margin-top: 8px; }
 .empty-recent h2 { margin-bottom: 4px; }
+
+/* ── release signal (BR-P05): the vendor's own screen is the proof of
+   payment — full-screen and impossible to mistake for a status badge ── */
+.paid-banner {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px 24px;
+  text-align: center;
+  background: var(--nimiq-green);
+  color: #ffffff;
+}
+.paid-banner__word {
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.paid-banner__amount { color: #ffffff; }
+.paid-banner__amount small { color: rgba(255, 255, 255, 0.8); }
+.paid-banner__finality { font-weight: 700; font-size: 15px; margin: 0; }
+.paid-banner__finality--final { text-transform: uppercase; letter-spacing: 0.04em; }
+.paid-banner__instruction { max-width: 32ch; font-size: 15px; margin: 0; }
+.paid-banner button {
+  margin-top: 10px;
+  background: #ffffff;
+  color: var(--ink);
+  background-image: none;
+}

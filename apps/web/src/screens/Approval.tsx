@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { TERMINAL_STATES, lunaToNim, type SessionView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import { Countdown } from '../components/Countdown'
+import { PaidBanner } from '../components/PaidBanner'
 import { StatusBadge } from '../components/StatusBadge'
 import { Spinner } from '../components/Spinner'
 import { t } from '../i18n'
@@ -26,6 +27,7 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
   const [view, setView] = useState<SessionView | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
   const hashRef = useRef<{ hash: string; idemKey: string } | null>(null)
 
   const refresh = useCallback(() => {
@@ -93,8 +95,19 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
   // the background.
   const settled = view.status === 'CONFIRMING' || TERMINAL_STATES.has(view.status)
 
+  const showPaidBanner = !isPayer && !bannerDismissed && view.charge &&
+    (view.status === 'CONFIRMING' || view.status === 'CONFIRMED')
+
   return (
     <main>
+      {showPaidBanner && view.charge && (
+        <PaidBanner
+          status={view.status as 'CONFIRMING' | 'CONFIRMED'}
+          amountLuna={view.charge.amountLuna}
+          reference={view.charge.reference}
+          onDismiss={() => setBannerDismissed(true)}
+        />
+      )}
       <h1>{isPayer ? t('Payment') : t('Charge status')}</h1>
       <p><StatusBadge status={view.status} />{' '}
         {!settled && <Spinner />}</p>
