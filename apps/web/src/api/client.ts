@@ -118,16 +118,18 @@ export class Api {
     return this.#get<ShiftReport>(`/v1/shifts/${id}/report`)
   }
   // A plain <a href> cannot carry the bearer token the API requires, so the
-  // export is fetched with auth and handed to the browser as a blob URL —
-  // the caller is responsible for revoking it once the download starts.
-  async fetchShiftExport(id: string, format: 'csv' | 'json'): Promise<{ url: string; filename: string }> {
+  // export is fetched with auth here. The caller receives the body as text
+  // (no blob URL) so it can be shared, copied or shown on screen — the
+  // wallet's webview has no download manager to hand a blob URL to.
+  async fetchShiftExport(id: string, format: 'csv' | 'json'): Promise<{ text: string; filename: string; mime: string }> {
     const token = this.getToken()
     const headers: Record<string, string> = {}
     if (token) headers.authorization = `Bearer ${token}`
     const res = await fetch(`${this.baseUrl}/v1/shifts/${id}/export?format=${format}`, { headers })
     if (!res.ok) throw new ApiError('UNKNOWN', `HTTP ${res.status}`, res.status)
-    const blob = await res.blob()
-    return { url: URL.createObjectURL(blob), filename: `shift-${id}.${format}` }
+    const text = await res.text()
+    const mime = format === 'csv' ? 'text/csv' : 'application/json'
+    return { text, filename: `shift-${id}.${format}`, mime }
   }
   getNetwork() { return this.#get<{ network: string; height: number | null }>('/v1/network') }
   getRate() { return this.#get<{ usdPerNim: number | null; asOf: string }>('/v1/rate') }

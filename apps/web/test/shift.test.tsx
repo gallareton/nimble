@@ -41,6 +41,57 @@ it('shows a failure message instead of the open-a-shift form when loading breaks
   expect(screen.queryByText('Open a shift')).toBeNull()
 })
 
+it('shows an on-screen panel with the export text when the webview cannot share or download', async () => {
+  const report = {
+    shift: { id: 's1', operatorLabel: 'Ana', openedAt: '2026-08-27T08:00:00.000Z', closedAt: '2026-08-27T16:00:00.000Z' },
+    totals: { count: 1, confirmed: 1, failed: 0, grossNim: '500', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '500' },
+    entries: [], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Ana', openedAt: '2026-08-27T08:00:00.000Z', closedAt: null })),
+    getShiftReport: vi.fn(async () => report),
+    closeShift: vi.fn(async () => report),
+    fetchShiftExport: vi.fn(async () => ({ text: 'id,amount\n1,500', filename: 'shift-s1.csv', mime: 'text/csv' })),
+  }
+  const originalCanShare = (navigator as unknown as { canShare?: unknown }).canShare
+  delete (navigator as unknown as { canShare?: unknown }).canShare
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
+  fireEvent.click(screen.getByText('Close the shift'))
+  await waitFor(() => expect(screen.getByText('Download CSV')).toBeTruthy())
+  fireEvent.click(screen.getByText('Download CSV'))
+  await waitFor(() => expect((screen.getByRole('textbox') as HTMLTextAreaElement).value)
+    .toBe('id,amount\n1,500'))
+  ;(navigator as unknown as { canShare?: unknown }).canShare = originalCanShare
+})
+
+it('shares the export via navigator.share when the webview supports it, without showing the panel', async () => {
+  const report = {
+    shift: { id: 's1', operatorLabel: 'Ana', openedAt: '2026-08-27T08:00:00.000Z', closedAt: '2026-08-27T16:00:00.000Z' },
+    totals: { count: 1, confirmed: 1, failed: 0, grossNim: '500', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '500' },
+    entries: [], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Ana', openedAt: '2026-08-27T08:00:00.000Z', closedAt: null })),
+    getShiftReport: vi.fn(async () => report),
+    closeShift: vi.fn(async () => report),
+    fetchShiftExport: vi.fn(async () => ({ text: 'id,amount\n1,500', filename: 'shift-s1.csv', mime: 'text/csv' })),
+  }
+  const canShare = vi.fn(() => true)
+  const share = vi.fn(async () => {})
+  ;(navigator as unknown as { canShare?: unknown }).canShare = canShare
+  ;(navigator as unknown as { share?: unknown }).share = share
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
+  fireEvent.click(screen.getByText('Close the shift'))
+  await waitFor(() => expect(screen.getByText('Download CSV')).toBeTruthy())
+  fireEvent.click(screen.getByText('Download CSV'))
+  await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
+  expect(screen.queryByRole('textbox')).toBeNull()
+  delete (navigator as unknown as { canShare?: unknown }).canShare
+  delete (navigator as unknown as { share?: unknown }).share
+})
+
 it('tells the vendor a shift is already open instead of failing silently on a 409', async () => {
   const api = {
     getCurrentShift: vi.fn(async () => null),

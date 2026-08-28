@@ -159,6 +159,9 @@ const pl: Record<string, string> = {
   'Could not open the shift. Check your connection and try again.': 'Nie udało się otworzyć zmiany. Sprawdź połączenie i spróbuj ponownie.',
   'Could not close the shift. Check your connection and try again.': 'Nie udało się zamknąć zmiany. Sprawdź połączenie i spróbuj ponownie.',
   'Could not download the export. Check your connection and try again.': 'Nie udało się pobrać eksportu. Sprawdź połączenie i spróbuj ponownie.',
+  'Could not share the export. Check your connection and try again.': 'Nie udało się udostępnić eksportu. Sprawdź połączenie i spróbuj ponownie.',
+  'Could not copy the export. Select the text and copy it manually.': 'Nie udało się skopiować eksportu. Zaznacz tekst i skopiuj go ręcznie.',
+  'Copy': 'Kopiuj',
 }
 
 const de: Record<string, string> = {
@@ -309,6 +312,9 @@ const de: Record<string, string> = {
   'Could not open the shift. Check your connection and try again.': 'Die Schicht konnte nicht geöffnet werden. Verbindung prüfen und erneut versuchen.',
   'Could not close the shift. Check your connection and try again.': 'Die Schicht konnte nicht geschlossen werden. Verbindung prüfen und erneut versuchen.',
   'Could not download the export. Check your connection and try again.': 'Der Export konnte nicht heruntergeladen werden. Verbindung prüfen und erneut versuchen.',
+  'Could not share the export. Check your connection and try again.': 'Der Export konnte nicht geteilt werden. Verbindung prüfen und erneut versuchen.',
+  'Could not copy the export. Select the text and copy it manually.': 'Der Export konnte nicht kopiert werden. Text markieren und manuell kopieren.',
+  'Copy': 'Kopieren',
 }
 
 const es: Record<string, string> = {
@@ -459,6 +465,9 @@ const es: Record<string, string> = {
   'Could not open the shift. Check your connection and try again.': 'No se pudo abrir el turno. Comprueba tu conexión e inténtalo de nuevo.',
   'Could not close the shift. Check your connection and try again.': 'No se pudo cerrar el turno. Comprueba tu conexión e inténtalo de nuevo.',
   'Could not download the export. Check your connection and try again.': 'No se pudo descargar la exportación. Comprueba tu conexión e inténtalo de nuevo.',
+  'Could not share the export. Check your connection and try again.': 'No se pudo compartir la exportación. Comprueba tu conexión e inténtalo de nuevo.',
+  'Could not copy the export. Select the text and copy it manually.': 'No se pudo copiar la exportación. Selecciona el texto y cópialo manualmente.',
+  'Copy': 'Copiar',
 }
 
 const fr: Record<string, string> = {
@@ -609,6 +618,9 @@ const fr: Record<string, string> = {
   'Could not open the shift. Check your connection and try again.': 'Impossible d\'ouvrir le poste. Vérifiez votre connexion et réessayez.',
   'Could not close the shift. Check your connection and try again.': 'Impossible de fermer le poste. Vérifiez votre connexion et réessayez.',
   'Could not download the export. Check your connection and try again.': 'Impossible de télécharger l\'export. Vérifiez votre connexion et réessayez.',
+  'Could not share the export. Check your connection and try again.': 'Impossible de partager l\'export. Vérifiez votre connexion et réessayez.',
+  'Could not copy the export. Select the text and copy it manually.': 'Impossible de copier l\'export. Sélectionnez le texte et copiez-le manuellement.',
+  'Copy': 'Copier',
 }
 
 const pt: Record<string, string> = {
@@ -759,6 +771,9 @@ const pt: Record<string, string> = {
   'Could not open the shift. Check your connection and try again.': 'Não foi possível abrir o turno. Verifique a ligação e tente novamente.',
   'Could not close the shift. Check your connection and try again.': 'Não foi possível fechar o turno. Verifique a ligação e tente novamente.',
   'Could not download the export. Check your connection and try again.': 'Não foi possível transferir a exportação. Verifique a ligação e tente novamente.',
+  'Could not share the export. Check your connection and try again.': 'Não foi possível partilhar a exportação. Verifique a ligação e tente novamente.',
+  'Could not copy the export. Select the text and copy it manually.': 'Não foi possível copiar a exportação. Selecione o texto e copie-o manualmente.',
+  'Copy': 'Copiar',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

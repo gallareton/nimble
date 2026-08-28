@@ -186,6 +186,20 @@ input:focus { border-color: var(--action); outline: none; }
 .form-card input { background: var(--nimiq-gray); border-color: transparent; }
 .form-card input:focus { border-color: var(--action); }
 
+.export-panel { gap: 10px; }
+.export-textarea {
+  font: 13px/1.5 var(--mono, monospace);
+  color: var(--ink);
+  background: var(--nimiq-gray);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+}
+.export-textarea:focus { border-color: var(--action); outline: none; }
+
 /* BLIK-style code entry: one input, six-digit rhythm */
 input.code-input {
   font-size: 30px;

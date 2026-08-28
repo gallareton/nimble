@@ -15,6 +15,8 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   const [busy, setBusy] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [exportPanel, setExportPanel] = useState<{ text: string; filename: string } | null>(null)
+  const [copyDone, setCopyDone] = useState(false)
 
   useEffect(() => {
     setLoadError(false)
@@ -53,22 +55,58 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     }
   }
 
-  // A plain <a href> cannot carry the bearer token the export endpoint
-  // requires, so pull the file down with auth and hand the browser a blob
-  // URL to save, revoking it once the download has started.
+  // The wallet's webview has no download manager, so <a download> is a
+  // silent no-op there. Instead: try the OS share sheet first (this is what
+  // lets a vendor hand the file to their accountant), and if that is not
+  // available, show the text on screen so it can be copied by hand. Every
+  // branch that can fail sets actionError — a tap must never do nothing.
   const download = async (id: string, format: 'csv' | 'json') => {
     setActionError(null)
+    setCopyDone(false)
+    let text: string, filename: string, mime: string
     try {
-      const { url, filename } = await api.fetchShiftExport(id, format)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      ;({ text, filename, mime } = await api.fetchShiftExport(id, format))
     } catch {
       setActionError(t('Could not download the export. Check your connection and try again.'))
+      return
+    }
+    const nav = navigator as Navigator & {
+      canShare?: (data: { files: File[] }) => boolean
+      share?: (data: { files: File[]; title?: string }) => Promise<void>
+    }
+    const file = new File([text], filename, { type: mime })
+    if (nav.canShare?.({ files: [file] })) {
+      try {
+        await nav.share!({ files: [file], title: filename })
+      } catch (e) {
+        // The vendor cancelling the share sheet is not a failure.
+        if (e instanceof Error && e.name === 'AbortError') return
+        setActionError(t('Could not share the export. Check your connection and try again.'))
+      }
+      return
+    }
+    setExportPanel({ text, filename })
+  }
+
+  const copyExport = async () => {
+    if (!exportPanel) return
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(exportPanel.text)
+        setCopyDone(true)
+        return
+      }
+      throw new Error('no clipboard API')
+    } catch {
+      const el = document.getElementById('export-textarea') as HTMLTextAreaElement | null
+      try {
+        el?.select()
+        const ok = el ? document.execCommand('copy') : false
+        if (ok) { setCopyDone(true); return }
+        throw new Error('execCommand failed')
+      } catch {
+        setActionError(t('Could not copy the export. Select the text and copy it manually.'))
+      }
     }
   }
 
@@ -131,6 +169,16 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
           {' · '}
           <a href="#" onClick={e => { e.preventDefault(); void download(report.shift.id, 'json') }}>{t('Download JSON')}</a>
         </p>
+      )}
+      {exportPanel && (
+        <section className="form-card export-panel">
+          <p className="quiet">{exportPanel.filename}</p>
+          <textarea id="export-textarea" className="export-textarea" readOnly value={exportPanel.text} />
+          <div className="actions">
+            <button onClick={() => void copyExport()}>{copyDone ? t('Copied') : t('Copy')}</button>
+            <button onClick={() => { setExportPanel(null); setCopyDone(false) }}>{t('Close')}</button>
+          </div>
+        </section>
       )}
       <p className="quiet">{t('NIMble tracks one station. Takings from another phone are not in this report.')}</p>
       <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
