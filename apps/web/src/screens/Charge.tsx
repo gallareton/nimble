@@ -83,7 +83,12 @@ export function Charge(props: { api?: Api }) {
 
     let amountLuna: string
     try {
-      amountLuna = nimToLuna(amount).toString()
+      // Five of our six locales use a comma decimal separator, and a phone
+      // keypad emits one — normalise it here rather than in nimToLuna
+      // itself, which other callers rely on staying dot-only.
+      const luna = nimToLuna(amount.replace(',', '.'))
+      if (luna <= 0n) throw new RangeError('non-positive NIM amount')
+      amountLuna = luna.toString()
     } catch {
       setError(t('Enter a valid NIM amount (max 5 decimals).'))
       return

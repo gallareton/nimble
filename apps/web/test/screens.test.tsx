@@ -138,6 +138,40 @@ it('Charge in NIM mode: an invalid amount shows the NIM message and never calls 
   expect(claim).not.toHaveBeenCalled()
 })
 
+it('Charge in NIM mode: a comma decimal ("1,50") sends the same amountLuna as a dot decimal ("1.50")', async () => {
+  cleanup()
+  localStorage.clear()
+  const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+
+  fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
+  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '1,50' } })
+  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
+  fireEvent.click(screen.getByText(/request payment/i))
+
+  await waitFor(() => expect(claim).toHaveBeenCalled())
+  expect(claim.mock.calls[0][1]).toMatchObject({ amountLuna: '150000' })
+})
+
+it('Charge in NIM mode: "0" shows the NIM validation message and never calls claim', async () => {
+  cleanup()
+  localStorage.clear()
+  const claim = vi.fn(async () => ({ sessionId: 's1' }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+
+  fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
+  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '0' } })
+  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
+  fireEvent.click(screen.getByText(/request payment/i))
+
+  await screen.findByText(/valid nim amount/i)
+  expect(claim).not.toHaveBeenCalled()
+})
+
 it('toMinorUnits parses fiat text to integer minor units, rejecting garbage and float-unsafe input', () => {
   expect(toMinorUnits('12.34')).toBe(1234)
   expect(toMinorUnits('12')).toBe(1200)

@@ -13,6 +13,7 @@ export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
   'Close': 'Zamknij',
+  'Back': 'Wstecz',
   'Nobody to pay yet? NIMble takes two — the other person enters your code.': 'Nie masz komu zapłacić? NIMble wymaga dwóch osób — druga wpisuje Twój kod.',
   'Invite someone': 'Zaproś kogoś',
   'Link copied': 'Skopiowano link',
@@ -170,6 +171,7 @@ const pl: Record<string, string> = {
 
 const de: Record<string, string> = {
   'Close': 'Schließen',
+  'Back': 'Zurück',
   'Nobody to pay yet? NIMble takes two — the other person enters your code.': 'Niemanden zum Zahlen? NIMble braucht zwei — die andere Person gibt deinen Code ein.',
   'Invite someone': 'Jemanden einladen',
   'Link copied': 'Link kopiert',
@@ -327,6 +329,7 @@ const de: Record<string, string> = {
 
 const es: Record<string, string> = {
   'Close': 'Cerrar',
+  'Back': 'Atrás',
   'Nobody to pay yet? NIMble takes two — the other person enters your code.': '¿Nadie a quien pagar? NIMble necesita dos personas — la otra introduce tu código.',
   'Invite someone': 'Invitar a alguien',
   'Link copied': 'Enlace copiado',
@@ -484,6 +487,7 @@ const es: Record<string, string> = {
 
 const fr: Record<string, string> = {
   'Close': 'Fermer',
+  'Back': 'Retour',
   'Nobody to pay yet? NIMble takes two — the other person enters your code.': "Personne à payer ? NIMble se joue à deux — l'autre saisit votre code.",
   'Invite someone': 'Inviter quelqu\'un',
   'Link copied': 'Lien copié',
@@ -641,6 +645,7 @@ const fr: Record<string, string> = {
 
 const pt: Record<string, string> = {
   'Close': 'Fechar',
+  'Back': 'Voltar',
   'Nobody to pay yet? NIMble takes two — the other person enters your code.': 'Ninguém para pagar? O NIMble precisa de dois — a outra pessoa insere seu código.',
   'Invite someone': 'Convidar alguém',
   'Link copied': 'Link copiado',
