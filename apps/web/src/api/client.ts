@@ -1,4 +1,4 @@
-import type { ClaimResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftReport, ShiftView } from '@nimble/shared'
+import type { ClaimResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
@@ -116,6 +116,9 @@ export class Api {
   }
   getShiftReport(id: string): Promise<ShiftReport> {
     return this.#get<ShiftReport>(`/v1/shifts/${id}/report`)
+  }
+  getShifts(limit?: number): Promise<ShiftListItem[]> {
+    return this.#get<ShiftListItem[]>(`/v1/shifts${limit ? `?limit=${limit}` : ''}`)
   }
   // A plain <a href> cannot carry the bearer token the API requires, so the
   // export is fetched with auth here. The caller receives the body as text

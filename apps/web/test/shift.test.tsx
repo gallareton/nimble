@@ -92,6 +92,44 @@ it('shares the export via navigator.share when the webview supports it, without 
   delete (navigator as unknown as { share?: unknown }).share
 })
 
+it('lists past shifts and shows a selected one\'s report using the same export actions', async () => {
+  const past = [
+    { id: 'past-2', operatorLabel: 'Cy', openedAt: '2026-08-26T08:00:00.000Z', closedAt: '2026-08-26T16:00:00.000Z', grossNim: '900', confirmed: 3 },
+    { id: 'past-1', operatorLabel: 'Ana', openedAt: '2026-08-25T08:00:00.000Z', closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1 },
+  ]
+  const pastReport = {
+    shift: past[1],
+    totals: { count: 1, confirmed: 1, failed: 0, grossNim: '400', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '400' },
+    entries: [], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => null),
+    getShifts: vi.fn(async () => past),
+    getShiftReport: vi.fn(async (id: string) => {
+      if (id === 'past-1') return pastReport
+      throw new Error('unexpected id')
+    }),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Open a shift')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('Cy')).toBeTruthy())
+  expect(screen.getByText('Ana')).toBeTruthy()
+
+  fireEvent.click(screen.getByText('Ana'))
+  await waitFor(() => expect(screen.getByText('400 NIM')).toBeTruthy())
+  expect(screen.getByText('Download CSV')).toBeTruthy()
+})
+
+it('shows nothing extra when the vendor has no past shifts', async () => {
+  const api = {
+    getCurrentShift: vi.fn(async () => null),
+    getShifts: vi.fn(async () => []),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Open a shift')).toBeTruthy())
+  expect(screen.queryByText(/Past shifts/i)).toBeNull()
+})
+
 it('tells the vendor a shift is already open instead of failing silently on a 409', async () => {
   const api = {
     getCurrentShift: vi.fn(async () => null),

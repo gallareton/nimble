@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { ShiftReport, ShiftView } from '@nimble/shared'
+import type { ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
@@ -17,6 +17,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   const [actionError, setActionError] = useState<string | null>(null)
   const [exportPanel, setExportPanel] = useState<{ text: string; filename: string } | null>(null)
   const [copyDone, setCopyDone] = useState(false)
+  const [pastShifts, setPastShifts] = useState<ShiftListItem[]>([])
 
   useEffect(() => {
     setLoadError(false)
@@ -24,7 +25,19 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       setShift(s)
       if (s) setReport(await api.getShiftReport(s.id))
     }).catch(() => { setLoadError(true) })
+    // A vendor with no history yet should see nothing extra — an empty list
+    // just means the section below never renders, no separate error state.
+    void (api.getShifts?.() ?? Promise.resolve([])).then(setPastShifts).catch(() => {})
   }, [api])
+
+  const selectPastShift = async (id: string) => {
+    setActionError(null)
+    try {
+      setReport(await api.getShiftReport(id))
+    } catch {
+      setActionError(t('Could not load the shift. Check your connection and try again.'))
+    }
+  }
 
   const open = async () => {
     setBusy(true)
@@ -134,6 +147,24 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
           </button>
         </div>
         {actionError && <p role="alert">{actionError}</p>}
+        {pastShifts.length > 0 && (
+          <section className="form-card">
+            <h2>{t('Past shifts')}</h2>
+            <ul className="past-shifts">
+              {pastShifts.map(p => (
+                <li key={p.id}>
+                  <a href="#" onClick={e => { e.preventDefault(); void selectPastShift(p.id) }}>
+                    <span>{new Date(p.openedAt).toLocaleDateString()}</span>
+                    {' · '}
+                    <span>{p.operatorLabel}</span>
+                    {' · '}
+                    <span>{p.grossNim} NIM</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <p className="quiet">{t('NIMble tracks one station. Takings from another phone are not in this report.')}</p>
         <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
       </main>
@@ -178,6 +209,20 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
             <button onClick={() => void copyExport()}>{copyDone ? t('Copied') : t('Copy')}</button>
             <button onClick={() => { setExportPanel(null); setCopyDone(false) }}>{t('Close')}</button>
           </div>
+        </section>
+      )}
+      {!shift && pastShifts.length > 0 && (
+        <section className="form-card">
+          <h2>{t('Past shifts')}</h2>
+          <ul className="past-shifts">
+            {pastShifts.map(p => (
+              <li key={p.id}>
+                <a href="#" onClick={e => { e.preventDefault(); void selectPastShift(p.id) }}>
+                  {new Date(p.openedAt).toLocaleDateString()} · {p.operatorLabel} · {p.grossNim} NIM
+                </a>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
       <p className="quiet">{t('NIMble tracks one station. Takings from another phone are not in this report.')}</p>

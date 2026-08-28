@@ -157,6 +157,46 @@ it('a vendor cannot read another vendor shift', async () => {
   expect((await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth(b.t) })).statusCode).toBe(404)
 })
 
+it('lists the caller\'s shifts newest first, with totals, honouring the cap', async () => {
+  const { t } = await vendor()
+  const ids: string[] = []
+  for (const label of ['Ana', 'Bo', 'Cy']) {
+    const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+      payload: { operatorLabel: label }, headers: auth(t) })).json()
+    await confirmFiatSale(id, t, 500)
+    await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+    ids.push(id)
+  }
+
+  const res = await app.inject({ url: '/v1/shifts', headers: auth(t) })
+  expect(res.statusCode).toBe(200)
+  const list = res.json()
+  expect(list.map((s: { id: string }) => s.id)).toEqual([...ids].reverse())
+  expect(list[0].operatorLabel).toBe('Cy')
+  expect(list[0].confirmed).toBe(1)
+  expect(Number(list[0].grossNim)).toBeGreaterThan(0)
+  expect(list[0].closedAt).not.toBeNull()
+
+  const capped = await app.inject({ url: '/v1/shifts?limit=2', headers: auth(t) })
+  expect(capped.json().length).toBe(2)
+
+  const overCap = await app.inject({ url: '/v1/shifts?limit=1000', headers: auth(t) })
+  expect(overCap.json().length).toBeLessThanOrEqual(100)
+  expect(overCap.json().length).toBe(3)
+})
+
+it('the shift list never includes another vendor\'s shifts', async () => {
+  const a = await vendor(); const b = await vendor()
+  await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth(a.t) })
+  await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Bo' }, headers: auth(b.t) })
+
+  const listA = (await app.inject({ url: '/v1/shifts', headers: auth(a.t) })).json()
+  expect(listA.length).toBe(1)
+  expect(listA[0].operatorLabel).toBe('Ana')
+})
+
 it('exports RFC 4180 CSV with a BOM, CRLF and the rate columns', async () => {
   const { t } = await vendor()
   const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',

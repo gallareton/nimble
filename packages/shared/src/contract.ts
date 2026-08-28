@@ -91,6 +91,12 @@ export interface ShiftEntry {
   fxBufferBps: number | null
 }
 
+/** One row of a vendor's shift history: enough to list without a full report per row. */
+export interface ShiftListItem extends ShiftView {
+  grossNim: string
+  confirmed: number
+}
+
 export interface ShiftReport {
   shift: ShiftView
   totals: {

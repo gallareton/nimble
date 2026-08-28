@@ -1,7 +1,7 @@
 import { OpenShiftRequest } from '@nimble/shared'
-import type { ShiftEntry, ShiftReport, ShiftView } from '@nimble/shared'
+import type { ShiftEntry, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import { lunaToNim } from '@nimble/shared'
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { chainTransaction, charge, paymentSession, receipt, shift } from '../db/schema'
 import type { Db } from '../db/client'
@@ -139,6 +139,45 @@ export async function shiftRoutes(app: FastifyInstance) {
     const [row] = await db.insert(shift)
       .values({ userId: req.user.userId, operatorLabel: body.operatorLabel }).returning()
     return reply.code(201).send(view(row))
+  })
+
+  // One aggregate query rather than a buildReport() per row: a full report
+  // joins receipts too and is a heavy query per shift, but the list only
+  // needs a gross total and a confirmed count, both computable with a single
+  // GROUP BY over charge/payment_session regardless of how many shifts (up
+  // to the 100 cap) are returned.
+  app.get('/v1/shifts', { preHandler: app.authenticate }, async (req, reply) => {
+    const raw = (req.query as { limit?: string }).limit
+    let limit = raw !== undefined ? Number(raw) : 30
+    if (!Number.isFinite(limit) || limit < 1) limit = 30
+    limit = Math.min(Math.trunc(limit), 100)
+
+    const rows = await db.select({
+      id: shift.id,
+      operatorLabel: shift.operatorLabel,
+      openedAt: shift.openedAt,
+      closedAt: shift.closedAt,
+      grossLuna: sql<string>`coalesce(sum(case when ${paymentSession.status} = 'CONFIRMED'
+        then ${charge.amountAtomic} else 0 end), 0)`,
+      confirmed: sql<number>`count(case when ${paymentSession.status} = 'CONFIRMED' then 1 end)::int`,
+    })
+      .from(shift)
+      .leftJoin(charge, eq(charge.shiftId, shift.id))
+      .leftJoin(paymentSession, eq(paymentSession.id, charge.sessionId))
+      .where(eq(shift.userId, req.user.userId))
+      .groupBy(shift.id)
+      .orderBy(desc(shift.openedAt))
+      .limit(limit)
+
+    const items: ShiftListItem[] = rows.map(r => ({
+      id: r.id,
+      operatorLabel: r.operatorLabel,
+      openedAt: r.openedAt.toISOString(),
+      closedAt: r.closedAt?.toISOString() ?? null,
+      grossNim: lunaToNim(BigInt(r.grossLuna)),
+      confirmed: Number(r.confirmed),
+    }))
+    return reply.send(items)
   })
 
   app.get('/v1/shifts/current', { preHandler: app.authenticate }, async (req, reply) => {
