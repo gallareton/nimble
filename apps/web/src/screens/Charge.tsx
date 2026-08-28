@@ -1,11 +1,22 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
+import { nimToLuna, SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
-import { useUsdRate } from '../lib/fiat'
+import { formatUsd, useUsdRate } from '../lib/fiat'
+
+type Unit = 'USD' | 'NIM'
+const UNIT_KEY = 'nimble.charge.unit'
+
+function loadUnit(): Unit {
+  try { return localStorage.getItem(UNIT_KEY) === 'NIM' ? 'NIM' : 'USD' } catch { return 'USD' }
+}
+
+function saveUnit(unit: Unit) {
+  try { localStorage.setItem(UNIT_KEY, unit) } catch { /* private mode */ }
+}
 
 /** '12.34' → 1234. Rejects more than two decimals rather than rounding money
  *  behind the cashier's back. */
@@ -27,6 +38,7 @@ export function Charge(props: { api?: Api }) {
   const api = props.api ?? ctx?.api
   if (!api) throw new Error('Charge needs api via props or AppProvider')
   const navigate = useNavigate()
+  const [unit, setUnit] = useState<Unit>(loadUnit)
   const [amount, setAmount] = useState('')
   const [reference, setReference] = useState('')
   const [code, setCode] = useState('')
@@ -34,26 +46,54 @@ export function Charge(props: { api?: Api }) {
   const [error, setError] = useState<string | null>(null)
   const usdRate = useUsdRate(api)
 
-  const nimApprox = (() => {
-    const usd = Number(amount.replace(',', '.'))
-    return usdRate && Number.isFinite(usd) && usd > 0 ? usd / usdRate : null
+  const chooseUnit = (next: Unit) => {
+    setUnit(next)
+    saveUnit(next)
+  }
+
+  const approx = (() => {
+    const n = Number(amount.replace(',', '.'))
+    if (!Number.isFinite(n) || n <= 0) return null
+    if (unit === 'USD') return usdRate ? `≈ ${(n / usdRate).toFixed(5)} NIM` : null
+    return formatUsd(n, usdRate)
   })()
 
   const submit = async () => {
     setError(null)
-    const fiatAmountMinor = toMinorUnits(amount)
-    if (fiatAmountMinor === null) {
-      setError(t('Enter a valid amount (max 2 decimals).'))
+    if (unit === 'USD') {
+      const fiatAmountMinor = toMinorUnits(amount)
+      if (fiatAmountMinor === null) {
+        setError(t('Enter a valid amount (max 2 decimals).'))
+        return
+      }
+      setBusy(true)
+      try {
+        const res = await api.claim(code.replace(/\s/g, ''),
+          { fiatAmountMinor, fiatCurrency: SUPPORTED_FIAT_CURRENCY, reference: reference || undefined })
+        navigate(`/session/${res.sessionId}`)
+      } catch (e) {
+        if (e instanceof ApiError && e.code === 'RATE_LIMITED') setError(t('Too many attempts. Wait a moment.'))
+        else if (e instanceof ApiError && e.code === 'NO_RATE') setError(t('No exchange rate available right now. Try again shortly.'))
+        else setError(t('Code unavailable. Check and try again.'))
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+
+    let amountLuna: string
+    try {
+      amountLuna = nimToLuna(amount).toString()
+    } catch {
+      setError(t('Enter a valid NIM amount (max 5 decimals).'))
       return
     }
     setBusy(true)
     try {
-      const res = await api.claim(code.replace(/\s/g, ''),
-        { fiatAmountMinor, fiatCurrency: SUPPORTED_FIAT_CURRENCY, reference: reference || undefined })
+      const res = await api.claim(code.replace(/\s/g, ''), { amountLuna, reference: reference || undefined })
       navigate(`/session/${res.sessionId}`)
     } catch (e) {
       if (e instanceof ApiError && e.code === 'RATE_LIMITED') setError(t('Too many attempts. Wait a moment.'))
-      else if (e instanceof ApiError && e.code === 'NO_RATE') setError(t('No exchange rate available right now. Try again shortly.'))
       else setError(t('Code unavailable. Check and try again.'))
     } finally {
       setBusy(false)
@@ -67,10 +107,17 @@ export function Charge(props: { api?: Api }) {
         <h1>{t('Charge')}</h1>
       </header>
       <div className="form-card">
+      <div className="chips" role="group" aria-label={t('Pricing unit')}>
+        <button type="button" className={`chip ${unit === 'USD' ? 'chip--on' : ''}`}
+          aria-pressed={unit === 'USD'} onClick={() => chooseUnit('USD')}>{t('USD')}</button>
+        <button type="button" className={`chip ${unit === 'NIM' ? 'chip--on' : ''}`}
+          aria-pressed={unit === 'NIM'} onClick={() => chooseUnit('NIM')}>{t('NIM')}</button>
+      </div>
       <label>
-        {t('Amount (USD)')}
-        <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} placeholder="2.50" />
-        {nimApprox !== null && <span className="quiet">≈ {nimApprox.toFixed(5)} NIM</span>}
+        {unit === 'USD' ? t('Amount (USD)') : t('Amount (NIM)')}
+        <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)}
+          placeholder={unit === 'USD' ? '2.50' : '2.5'} />
+        {approx !== null && <span className="quiet">{approx}</span>}
       </label>
       <label>
         {t('Reference')}

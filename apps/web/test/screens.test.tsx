@@ -53,8 +53,9 @@ it('Approval shows all mandatory fields and drives intent→send→register on c
     expect.objectContaining({ recipient: 'NQ99 RECV', valueLuna: 250000n, data: 'ab'.repeat(16) }))
 })
 
-it('Charge sends a fiat price in minor units', async () => {
+it('Charge defaults to USD and sends fiat minor units, never amountLuna', async () => {
   cleanup() // this suite doesn't auto-cleanup between tests (no vitest globals)
+  localStorage.clear()
   const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
@@ -66,6 +67,75 @@ it('Charge sends a fiat price in minor units', async () => {
 
   await waitFor(() => expect(claim).toHaveBeenCalled())
   expect(claim.mock.calls[0][1]).toMatchObject({ fiatAmountMinor: 1234, fiatCurrency: 'USD' })
+  expect(claim.mock.calls[0][1]).not.toHaveProperty('amountLuna')
+})
+
+it('Charge in NIM mode sends amountLuna, never fiatAmountMinor', async () => {
+  cleanup()
+  localStorage.clear()
+  const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+
+  fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
+  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '2.5' } })
+  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
+  fireEvent.click(screen.getByText(/request payment/i))
+
+  await waitFor(() => expect(claim).toHaveBeenCalled())
+  expect(claim.mock.calls[0][1]).toMatchObject({ amountLuna: '250000' })
+  expect(claim.mock.calls[0][1]).not.toHaveProperty('fiatAmountMinor')
+  expect(claim.mock.calls[0][1]).not.toHaveProperty('fiatCurrency')
+})
+
+it('Charge remembers the last chosen unit across mounts via localStorage', async () => {
+  cleanup()
+  localStorage.clear()
+  const claim = vi.fn(async () => ({ sessionId: 's1' }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
+  cleanup()
+
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  expect(screen.getByRole('button', { name: /^NIM$/i }).getAttribute('aria-pressed')).toBe('true')
+  expect(screen.getByLabelText(/amount/i)).toBeTruthy()
+})
+
+it('Charge in USD mode: an invalid amount shows the USD message and never calls claim', async () => {
+  cleanup()
+  localStorage.clear()
+  const claim = vi.fn(async () => ({ sessionId: 's1' }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+
+  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '12.345' } })
+  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
+  fireEvent.click(screen.getByText(/request payment/i))
+
+  await screen.findByText(/valid amount/i)
+  expect(screen.queryByText(/valid nim amount/i)).toBeNull()
+  expect(claim).not.toHaveBeenCalled()
+})
+
+it('Charge in NIM mode: an invalid amount shows the NIM message and never calls claim', async () => {
+  cleanup()
+  localStorage.clear()
+  const claim = vi.fn(async () => ({ sessionId: 's1' }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+
+  fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
+  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '2.123456' } })
+  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
+  fireEvent.click(screen.getByText(/request payment/i))
+
+  await screen.findByText(/valid nim amount/i)
+  expect(claim).not.toHaveBeenCalled()
 })
 
 it('toMinorUnits parses fiat text to integer minor units, rejecting garbage and float-unsafe input', () => {
