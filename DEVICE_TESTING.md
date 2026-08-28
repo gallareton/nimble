@@ -113,3 +113,16 @@ handover checklist, not a record of a passed run.
       the shift could not be loaded — it must NOT show the "open a shift"
       form, which would tell a vendor with a live shift that their day is
       empty.
+
+### Release signal (BR-P05) — needs a real device
+
+- [ ] **The panel is legible on your screen.** It was only ever rendered in a
+      headless DOM; the amount, the finality line and the release instruction
+      have to fit without scrolling on the phone a cashier actually holds.
+- [ ] **Sound and vibration.** Both are best-effort and the panel must appear
+      with or without them. Note which of the two your device does, so the
+      next person knows what this host supports.
+- [ ] **The audio unlock.** Browsers refuse to make sound unless the audio
+      context was created near a real tap. Take a payment the way a cashier
+      does and say whether the beep actually sounded — if it never does, the
+      beep is dead weight and should go.
