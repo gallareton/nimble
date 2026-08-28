@@ -3,10 +3,12 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom'
 import { Charge } from '../src/screens/Charge'
 import { Shift } from '../src/screens/Shift'
+import { RETRY_INTERVAL_MS } from '../src/lib/online'
 
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 
 function fillChargeForm() {
@@ -72,4 +74,49 @@ it('still renders a past shift report while offline', async () => {
   await waitFor(() => expect(screen.getByText('Ana')).toBeTruthy())
   fireEvent.click(screen.getByText('Ana'))
   await waitFor(() => expect(screen.getByText('400 NIM')).toBeTruthy())
+})
+
+it('refuses at submit time when a fresh probe fails, even though navigator.onLine is still true — a dead uplink behind a live Wi-Fi association', async () => {
+  vi.stubGlobal('navigator', { ...navigator, onLine: true })
+  let calls = 0
+  const api = {
+    getNetwork: vi.fn(async () => {
+      calls++
+      if (calls === 1) return { network: 'test', height: 1 } // mount probe: fine
+      throw new Error('dead uplink') // submit-time probe: not fine
+    }),
+    claim: vi.fn(async () => ({ sessionId: 's1' })),
+  }
+  render(<MemoryRouter><Charge api={api as never} /></MemoryRouter>)
+  fillChargeForm()
+  await waitFor(() => expect((screen.getByText('Request payment') as HTMLButtonElement).disabled).toBe(false))
+
+  fireEvent.click(screen.getByText('Request payment'))
+
+  await waitFor(() => expect(screen.getByText(/offline/i)).toBeTruthy())
+  expect(api.claim).not.toHaveBeenCalled()
+})
+
+it('recovers on its own via periodic re-probe once the backend answers again, without an online event ever firing', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  // Stays true the whole test — this is the "live Wi-Fi, dead uplink"
+  // case the online/offline events cannot signal at all.
+  vi.stubGlobal('navigator', { ...navigator, onLine: true })
+  let calls = 0
+  const api = {
+    getNetwork: vi.fn(async () => {
+      calls++
+      if (calls < 3) throw new Error('down')
+      return { network: 'test', height: 1 }
+    }),
+    claim: vi.fn(),
+  }
+  render(<MemoryRouter><Charge api={api as never} /></MemoryRouter>)
+  fillChargeForm()
+  await waitFor(() => expect((screen.getByText('Request payment') as HTMLButtonElement).disabled).toBe(true))
+
+  await vi.advanceTimersByTimeAsync(RETRY_INTERVAL_MS * 3)
+
+  await waitFor(() => expect((screen.getByText('Request payment') as HTMLButtonElement).disabled).toBe(false))
+  expect(screen.queryByText(/offline/i)).toBeNull()
 })

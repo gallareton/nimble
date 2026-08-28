@@ -58,7 +58,8 @@ it('Charge defaults to USD and sends fiat minor units, never amountLuna', async 
   localStorage.clear()
   const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '12.34' } })
@@ -75,7 +76,8 @@ it('Charge in NIM mode sends amountLuna, never fiatAmountMinor', async () => {
   localStorage.clear()
   const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
@@ -94,7 +96,8 @@ it('Charge remembers the last chosen unit across mounts via localStorage', async
   localStorage.clear()
   const claim = vi.fn(async () => ({ sessionId: 's1' }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
   cleanup()
@@ -109,7 +112,8 @@ it('Charge in USD mode: an invalid amount shows the USD message and never calls 
   localStorage.clear()
   const claim = vi.fn(async () => ({ sessionId: 's1' }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '12.345' } })
@@ -126,7 +130,8 @@ it('Charge in NIM mode: an invalid amount shows the NIM message and never calls 
   localStorage.clear()
   const claim = vi.fn(async () => ({ sessionId: 's1' }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
@@ -143,7 +148,8 @@ it('Charge in NIM mode: a comma decimal ("1,50") sends the same amountLuna as a 
   localStorage.clear()
   const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
@@ -160,7 +166,8 @@ it('Charge in NIM mode: "0" shows the NIM validation message and never calls cla
   localStorage.clear()
   const claim = vi.fn(async () => ({ sessionId: 's1' }))
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })) } as any
+  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))

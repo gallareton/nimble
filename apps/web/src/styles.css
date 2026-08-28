@@ -186,6 +186,19 @@ input:focus { border-color: var(--action); outline: none; }
 .form-card input { background: var(--nimiq-gray); border-color: transparent; }
 .form-card input:focus { border-color: var(--action); }
 
+.offline-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--nimiq-red);
+  background: rgba(217, 68, 50, 0.08);
+  border: 1px solid rgba(217, 68, 50, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .export-panel { gap: 10px; }
 .export-textarea {
   font: 13px/1.5 var(--mono, monospace);

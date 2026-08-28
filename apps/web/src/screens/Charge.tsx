@@ -46,7 +46,7 @@ export function Charge(props: { api?: Api }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const usdRate = useUsdRate(api)
-  const online = useOnline(api)
+  const [online, recheckOnline] = useOnline(api)
 
   const chooseUnit = (next: Unit) => {
     setUnit(next)
@@ -62,6 +62,19 @@ export function Charge(props: { api?: Api }) {
 
   const submit = async () => {
     setError(null)
+    setBusy(true)
+    // A dead uplink behind a live Wi-Fi association fires no event, so
+    // `online` (from the hook) can be stale. Re-check right now, at the
+    // moment the till is about to accept money, rather than trust a
+    // probe made minutes ago.
+    const stillOnline = await recheckOnline()
+    if (!stillOnline) {
+      // recheckOnline() already flipped `online` to false, so the
+      // offline notice below the form is now showing — no need for a
+      // second, duplicate message here.
+      setBusy(false)
+      return
+    }
     if (unit === 'USD') {
       const fiatAmountMinor = toMinorUnits(amount)
       if (fiatAmountMinor === null) {
@@ -152,7 +165,7 @@ export function Charge(props: { api?: Api }) {
       )}
       <button className="primary" onClick={submit}
         disabled={busy || !online || !amount || code.replace(/\s/g, '').length !== 6}>
-        Request payment
+        {t('Request payment')}
       </button>
       </div>
       {error && <p role="alert">{error}</p>}
