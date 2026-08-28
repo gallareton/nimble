@@ -6,6 +6,7 @@ import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
 import { formatUsd, useUsdRate } from '../lib/fiat'
+import { useOnline } from '../lib/online'
 
 type Unit = 'USD' | 'NIM'
 const UNIT_KEY = 'nimble.charge.unit'
@@ -45,6 +46,7 @@ export function Charge(props: { api?: Api }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const usdRate = useUsdRate(api)
+  const online = useOnline(api)
 
   const chooseUnit = (next: Unit) => {
     setUnit(next)
@@ -143,7 +145,13 @@ export function Charge(props: { api?: Api }) {
           placeholder="123 456"
         />
       </label>
-      <button className="primary" onClick={submit} disabled={busy || !amount || code.replace(/\s/g, '').length !== 6}>
+      {!online && (
+        <p role="alert" className="offline-notice">
+          {t("Offline — payments can't be accepted until the connection is back.")}
+        </p>
+      )}
+      <button className="primary" onClick={submit}
+        disabled={busy || !online || !amount || code.replace(/\s/g, '').length !== 6}>
         Request payment
       </button>
       </div>

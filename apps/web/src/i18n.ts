@@ -173,6 +173,7 @@ const pl: Record<string, string> = {
   'Could not share the export. Check your connection and try again.': 'Nie udało się udostępnić eksportu. Sprawdź połączenie i spróbuj ponownie.',
   'Could not copy the export. Select the text and copy it manually.': 'Nie udało się skopiować eksportu. Zaznacz tekst i skopiuj go ręcznie.',
   'Copy': 'Kopiuj',
+  "Offline — payments can't be accepted until the connection is back.": 'Offline — nie można przyjmować płatności, dopóki połączenie nie wróci.',
 }
 
 const de: Record<string, string> = {
@@ -337,6 +338,7 @@ const de: Record<string, string> = {
   'Could not share the export. Check your connection and try again.': 'Der Export konnte nicht geteilt werden. Verbindung prüfen und erneut versuchen.',
   'Could not copy the export. Select the text and copy it manually.': 'Der Export konnte nicht kopiert werden. Text markieren und manuell kopieren.',
   'Copy': 'Kopieren',
+  "Offline — payments can't be accepted until the connection is back.": 'Offline — Zahlungen können erst wieder angenommen werden, wenn die Verbindung zurück ist.',
 }
 
 const es: Record<string, string> = {
@@ -501,6 +503,7 @@ const es: Record<string, string> = {
   'Could not share the export. Check your connection and try again.': 'No se pudo compartir la exportación. Comprueba tu conexión e inténtalo de nuevo.',
   'Could not copy the export. Select the text and copy it manually.': 'No se pudo copiar la exportación. Selecciona el texto y cópialo manualmente.',
   'Copy': 'Copiar',
+  "Offline — payments can't be accepted until the connection is back.": 'Sin conexión — no se pueden aceptar pagos hasta que vuelva la conexión.',
 }
 
 const fr: Record<string, string> = {
@@ -665,6 +668,7 @@ const fr: Record<string, string> = {
   'Could not share the export. Check your connection and try again.': 'Impossible de partager l\'export. Vérifiez votre connexion et réessayez.',
   'Could not copy the export. Select the text and copy it manually.': 'Impossible de copier l\'export. Sélectionnez le texte et copiez-le manuellement.',
   'Copy': 'Copier',
+  "Offline — payments can't be accepted until the connection is back.": "Hors ligne — impossible d'accepter un paiement tant que la connexion n'est pas rétablie.",
 }
 
 const pt: Record<string, string> = {
@@ -829,6 +833,7 @@ const pt: Record<string, string> = {
   'Could not share the export. Check your connection and try again.': 'Não foi possível partilhar a exportação. Verifique a ligação e tente novamente.',
   'Could not copy the export. Select the text and copy it manually.': 'Não foi possível copiar a exportação. Selecione o texto e copie-o manualmente.',
   'Copy': 'Copiar',
+  "Offline — payments can't be accepted until the connection is back.": 'Offline — não é possível aceitar pagamentos até a conexão voltar.',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

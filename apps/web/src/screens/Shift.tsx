@@ -49,6 +49,11 @@ function ReportSummary({ report }: { report: ShiftReport }) {
   )
 }
 
+// Reading stays available offline (BR-P10 blocks accepting a payment, not
+// looking at what already happened): this screen deliberately never checks
+// connectivity, so a vendor reviewing yesterday's takings on a bad
+// connection is never locked out. Only Charge, which mints new claims,
+// gates on `useOnline`.
 export function Shift({ api: apiProp }: { api?: Api } = {}) {
   const ctx = useAppOptional()
   const api = apiProp ?? ctx!.api
