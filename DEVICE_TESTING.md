@@ -126,3 +126,20 @@ handover checklist, not a record of a passed run.
       context was created near a real tap. Take a payment the way a cashier
       does and say whether the beep actually sounded — if it never does, the
       beep is dead weight and should go.
+
+## Reading balances — answered by the Nimiq team, 2026-08-30
+
+`nimiq.getBalance` does not exist and is not supported; there is no
+`eth_getBalance` equivalent in the Mini App provider. The team called it a
+sensible thing to have and said they would discuss it internally, but for now
+the recommended route is a **public RPC server**, both of which also serve
+testnet:
+
+- https://rpc.nimiqwatch.com
+- https://rpc-mainnet.nimiqscan.com
+
+This matters because commit ed3993a removed the pre-send balance check on the
+grounds that the light client cannot read balances. That reasoning still holds
+for the embedded client — but it is no longer a reason to have no check at all.
+A payer who cannot afford a charge should learn that before they sign, not from
+the wallet's own "Bad Request" after they have approved it.
