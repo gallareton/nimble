@@ -13,6 +13,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CODE_PEPPER: ${CODE_PEPPER}
       NIMIQ_NETWORK: ${NIMIQ_NETWORK:-TestAlbatross}
+      # Optional: the API defaults to the matching public RPC per network.
+      NIMIQ_RPC_URL: ${NIMIQ_RPC_URL:-}
       NODE_ENV: production
     depends_on:
       db:
