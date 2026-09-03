@@ -28,6 +28,7 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [bannerDismissed, setBannerDismissed] = useState(false)
+  const [shortfallLuna, setShortfallLuna] = useState<string | null>(null)
   const hashRef = useRef<{ hash: string; idemKey: string } | null>(null)
 
   const refresh = useCallback(() => {
@@ -40,6 +41,20 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
     if (id) void api.openEvents(id, () => refresh()).then(c => { close = c })
     return () => close?.()
   }, [api, id, refresh])
+
+  // Advisory-only balance check (Task 1's endpoint): fetched once when the
+  // approval sheet appears. A failed fetch leaves the screen exactly as it
+  // is today — never surfaced, never blocking (design note above confirm()).
+  const chargeIdForCheck = view?.role === 'payer' && view.status === 'AWAITING_PAYER_APPROVAL'
+    ? view.charge?.chargeId : undefined
+  useEffect(() => {
+    if (!chargeIdForCheck) return
+    let cancelled = false
+    api.getAffordability(chargeIdForCheck).then(r => {
+      if (!cancelled) setShortfallLuna(r.sufficient === false ? r.shortfallLuna : null)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [api, chargeIdForCheck])
 
   if (!view) return <main><p>{t('Loading…')}</p></main>
 
@@ -133,6 +148,9 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
             <dt>{t('Network fee')}</dt>
             <dd>{t('shown by wallet on confirmation')}</dd>
           </dl>
+          {shortfallLuna && (
+            <p className="quiet">{t('This account is short by {amount} NIM.').replace('{amount}', lunaToNim(BigInt(shortfallLuna)))}</p>
+          )}
           <div className="actions">
             <button onClick={rejectCharge} disabled={busy}>{t('Reject')}</button>
             <button className="primary" onClick={confirm} disabled={busy}>{t('Confirm')}</button>

@@ -174,6 +174,7 @@ const pl: Record<string, string> = {
   'Could not copy the export. Select the text and copy it manually.': 'Nie udało się skopiować eksportu. Zaznacz tekst i skopiuj go ręcznie.',
   'Copy': 'Kopiuj',
   "Offline — payments can't be accepted until the connection is back.": 'Offline — nie można przyjmować płatności, dopóki połączenie nie wróci.',
+  'This account is short by {amount} NIM.': 'Na tym koncie brakuje {amount} NIM.',
 }
 
 const de: Record<string, string> = {
@@ -339,6 +340,7 @@ const de: Record<string, string> = {
   'Could not copy the export. Select the text and copy it manually.': 'Der Export konnte nicht kopiert werden. Text markieren und manuell kopieren.',
   'Copy': 'Kopieren',
   "Offline — payments can't be accepted until the connection is back.": 'Offline — Zahlungen können erst wieder angenommen werden, wenn die Verbindung zurück ist.',
+  'This account is short by {amount} NIM.': 'Diesem Konto fehlen {amount} NIM.',
 }
 
 const es: Record<string, string> = {
@@ -504,6 +506,7 @@ const es: Record<string, string> = {
   'Could not copy the export. Select the text and copy it manually.': 'No se pudo copiar la exportación. Selecciona el texto y cópialo manualmente.',
   'Copy': 'Copiar',
   "Offline — payments can't be accepted until the connection is back.": 'Sin conexión — no se pueden aceptar pagos hasta que vuelva la conexión.',
+  'This account is short by {amount} NIM.': 'A esta cuenta le faltan {amount} NIM.',
 }
 
 const fr: Record<string, string> = {
@@ -669,6 +672,7 @@ const fr: Record<string, string> = {
   'Could not copy the export. Select the text and copy it manually.': 'Impossible de copier l\'export. Sélectionnez le texte et copiez-le manuellement.',
   'Copy': 'Copier',
   "Offline — payments can't be accepted until the connection is back.": "Hors ligne — impossible d'accepter un paiement tant que la connexion n'est pas rétablie.",
+  'This account is short by {amount} NIM.': 'Il manque {amount} NIM sur ce compte.',
 }
 
 const pt: Record<string, string> = {
@@ -834,6 +838,7 @@ const pt: Record<string, string> = {
   'Could not copy the export. Select the text and copy it manually.': 'Não foi possível copiar a exportação. Selecione o texto e copie-o manualmente.',
   'Copy': 'Copiar',
   "Offline — payments can't be accepted until the connection is back.": 'Offline — não é possível aceitar pagamentos até a conexão voltar.',
+  'This account is short by {amount} NIM.': 'Esta conta está com {amount} NIM em falta.',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

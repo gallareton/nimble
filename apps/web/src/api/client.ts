@@ -1,4 +1,4 @@
-import type { ClaimResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
+import type { AffordabilityResponse, ClaimResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
@@ -85,6 +85,7 @@ export class Api {
   reject(chargeId: string) { return this.#post<{ status: string }>(`/v1/charges/${chargeId}/reject`) }
   cancel(sessionId: string) { return this.#post<{ status: string }>(`/v1/sessions/${sessionId}/cancel`) }
   intent(chargeId: string) { return this.#post<IntentResponse>(`/v1/charges/${chargeId}/intent`) }
+  getAffordability(chargeId: string) { return this.#get<AffordabilityResponse>(`/v1/charges/${chargeId}/affordability`) }
   registerTx(chargeId: string, hash: string, idemKey?: string) {
     return this.#post<{ transactionId: string }>(`/v1/charges/${chargeId}/transactions`, { hash }, idemKey)
   }

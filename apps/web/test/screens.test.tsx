@@ -30,6 +30,7 @@ it('Approval shows all mandatory fields and drives intent→send→register on c
     registerTx: vi.fn(async () => {}),
     reject: vi.fn(async () => {}),
     openEvents: vi.fn(async () => () => {}),
+    getAffordability: vi.fn(async () => ({ sufficient: null, shortfallLuna: null })),
   }
   const wallet = { sendTransaction: vi.fn(async () => ({ hash: 'deadbeef' })) }
   render(
@@ -51,6 +52,86 @@ it('Approval shows all mandatory fields and drives intent→send→register on c
   await waitFor(() => expect(api.registerTx).toHaveBeenCalledWith('c1', 'deadbeef', expect.any(String)))
   expect(wallet.sendTransaction).toHaveBeenCalledWith(
     expect.objectContaining({ recipient: 'NQ99 RECV', valueLuna: 250000n, data: 'ab'.repeat(16) }))
+})
+
+it('Approval shows a shortfall warning but leaves Confirm enabled when sufficient is false', async () => {
+  cleanup()
+  const api = {
+    getSession: vi.fn(async () => ({ sessionId: 's1', status: 'AWAITING_PAYER_APPROVAL', role: 'payer',
+      expiresAt: new Date().toISOString(),
+      counterpart: { displayName: 'Kiosk', verificationStatus: 'unverified', addressTail: 'XY12' },
+      charge: { chargeId: 'c1', version: 1, amountLuna: '250000', asset: 'NIM', network: 'nimiq',
+        reference: 'Soda', recipientAddress: 'NQ99 RECV' } })),
+    getAffordability: vi.fn(async () => ({ sufficient: false, shortfallLuna: '50000' })),
+    openEvents: vi.fn(async () => () => {}),
+  }
+  const wallet = { sendTransaction: vi.fn(async () => ({ hash: 'deadbeef' })) }
+  render(
+    <MemoryRouter initialEntries={['/session/s1']}>
+      <Routes>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <Route path="/session/:id" element={<Approval api={api as any} wallet={wallet as any} />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+
+  await screen.findByText('Kiosk')
+  await waitFor(() => expect(api.getAffordability).toHaveBeenCalledWith('c1'))
+  expect(await screen.findByText(/short by 0\.5 NIM/i)).toBeTruthy()
+  const confirmBtn = screen.getByRole('button', { name: /confirm/i }) as HTMLButtonElement
+  expect(confirmBtn.disabled).toBe(false)
+})
+
+it('Approval shows nothing when affordability is unknown (null)', async () => {
+  cleanup()
+  const api = {
+    getSession: vi.fn(async () => ({ sessionId: 's1', status: 'AWAITING_PAYER_APPROVAL', role: 'payer',
+      expiresAt: new Date().toISOString(),
+      counterpart: { displayName: 'Kiosk', verificationStatus: 'unverified', addressTail: 'XY12' },
+      charge: { chargeId: 'c1', version: 1, amountLuna: '250000', asset: 'NIM', network: 'nimiq',
+        reference: 'Soda', recipientAddress: 'NQ99 RECV' } })),
+    getAffordability: vi.fn(async () => ({ sufficient: null, shortfallLuna: null })),
+    openEvents: vi.fn(async () => () => {}),
+  }
+  const wallet = { sendTransaction: vi.fn(async () => ({ hash: 'deadbeef' })) }
+  render(
+    <MemoryRouter initialEntries={['/session/s1']}>
+      <Routes>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <Route path="/session/:id" element={<Approval api={api as any} wallet={wallet as any} />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+
+  await screen.findByText('Kiosk')
+  await waitFor(() => expect(api.getAffordability).toHaveBeenCalledWith('c1'))
+  expect(screen.queryByText(/short by/i)).toBeNull()
+})
+
+it('Approval shows nothing when affordability is sufficient (true)', async () => {
+  cleanup()
+  const api = {
+    getSession: vi.fn(async () => ({ sessionId: 's1', status: 'AWAITING_PAYER_APPROVAL', role: 'payer',
+      expiresAt: new Date().toISOString(),
+      counterpart: { displayName: 'Kiosk', verificationStatus: 'unverified', addressTail: 'XY12' },
+      charge: { chargeId: 'c1', version: 1, amountLuna: '250000', asset: 'NIM', network: 'nimiq',
+        reference: 'Soda', recipientAddress: 'NQ99 RECV' } })),
+    getAffordability: vi.fn(async () => ({ sufficient: true, shortfallLuna: null })),
+    openEvents: vi.fn(async () => () => {}),
+  }
+  const wallet = { sendTransaction: vi.fn(async () => ({ hash: 'deadbeef' })) }
+  render(
+    <MemoryRouter initialEntries={['/session/s1']}>
+      <Routes>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <Route path="/session/:id" element={<Approval api={api as any} wallet={wallet as any} />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+
+  await screen.findByText('Kiosk')
+  await waitFor(() => expect(api.getAffordability).toHaveBeenCalledWith('c1'))
+  expect(screen.queryByText(/short by/i)).toBeNull()
 })
 
 it('Charge defaults to USD and sends fiat minor units, never amountLuna', async () => {
