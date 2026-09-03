@@ -229,6 +229,32 @@ it('clears an open export panel when the vendor switches from one past shift to 
   ;(navigator as unknown as { canShare?: unknown }).canShare = originalCanShare
 })
 
+it('lets the vendor return to the open-a-shift form after closing a shift, keeping the report until then', async () => {
+  const report = {
+    shift: { id: 's1', operatorLabel: 'Ana', openedAt: '2026-08-27T08:00:00.000Z', closedAt: '2026-08-27T16:00:00.000Z' },
+    totals: { count: 1, confirmed: 1, failed: 0, grossNim: '500', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '500' },
+    entries: [], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Ana', openedAt: '2026-08-27T08:00:00.000Z', closedAt: null })),
+    getShiftReport: vi.fn(async () => report),
+    closeShift: vi.fn(async () => report),
+    fetchShiftExport: vi.fn(async () => ({ text: 'id,amount\n1,500', filename: 'shift-s1.csv', mime: 'text/csv' })),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
+  fireEvent.click(screen.getByText('Close the shift'))
+
+  // The closed report and its export actions stay reachable until the
+  // vendor explicitly leaves — closing must not hide them immediately.
+  await waitFor(() => expect(screen.getByText('Download CSV')).toBeTruthy())
+  expect(screen.getByText('500 NIM')).toBeTruthy()
+
+  fireEvent.click(screen.getByText(/Back/i))
+  await waitFor(() => expect(screen.getByText('Open a shift')).toBeTruthy())
+  expect(screen.queryByText('Download CSV')).toBeNull()
+})
+
 it('tells the vendor a shift is already open instead of failing silently on a 409', async () => {
   const api = {
     getCurrentShift: vi.fn(async () => null),

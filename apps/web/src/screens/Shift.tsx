@@ -102,6 +102,17 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     setActionError(null)
   }
 
+  // A closed shift's report otherwise sticks around forever (nothing ever
+  // clears `report`), stranding the vendor away from the open-a-shift form
+  // that reappears only once `shift` and `report` are both null. Same idiom
+  // as leaving a past shift: clear the view-only state, keep everything else.
+  const backFromClosedShift = () => {
+    setReport(null)
+    setExportPanel(null)
+    setCopyDone(false)
+    setActionError(null)
+  }
+
   const open = async () => {
     setBusy(true)
     setActionError(null)
@@ -257,6 +268,11 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   return (
     <main>
       <h1>{t('Shift')}</h1>
+      {report && !shift && (
+        <p>
+          <a href="#" onClick={e => { e.preventDefault(); backFromClosedShift() }}>‹ {t('Back')}</a>
+        </p>
+      )}
       {shift && <p className="quiet">{shift.operatorLabel}</p>}
       {report && <ReportSummary report={report} />}
       {actionError && <p role="alert">{actionError}</p>}
