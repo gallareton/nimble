@@ -64,6 +64,13 @@ export interface IntentResponse {
 }
 export interface ErrorBody { error: { code: string; message: string } }
 
+/** null means the payer's balance could not be read (RPC unreachable, slow,
+ *  or malformed) — advisory only, never a reason to block the payment. */
+export interface AffordabilityResponse {
+  sufficient: boolean | null
+  shortfallLuna: string | null
+}
+
 export type ClaimRequestT = z.infer<typeof ClaimRequest>
 export type CreateChargeRequestT = z.infer<typeof CreateChargeRequest>
 

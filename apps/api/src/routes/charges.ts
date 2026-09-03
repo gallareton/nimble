@@ -158,4 +158,24 @@ export async function chargeRoutes(app: FastifyInstance) {
     })
     return reply.code(code).send(body)
   })
+
+  app.get('/v1/charges/:id/affordability', { preHandler: app.authenticate }, async (req, reply) => {
+    const found = await loadChargeWithSession(db, (req.params as any).id)
+    if (!found || (found.s.payerUserId !== req.user.userId && found.s.receiverUserId !== req.user.userId))
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'not found' } })
+    // The payer's balance is nobody else's business — not even the receiver's.
+    if (found.s.payerUserId !== req.user.userId)
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'only the payer can check affordability' } })
+
+    const balanceLuna = (await app.deps.balances?.getBalanceLuna(req.user.address).catch(() => null)) ?? null
+    if (balanceLuna === null)
+      return { sufficient: null, shortfallLuna: null }
+
+    const amount = found.c.amountAtomic
+    // Fee is deliberately not modeled: we cannot know which fee the wallet
+    // will choose, and guessing would produce false refusals — worse than
+    // no advisory at all.
+    if (balanceLuna >= amount) return { sufficient: true, shortfallLuna: null }
+    return { sufficient: false, shortfallLuna: (amount - balanceLuna).toString() }
+  })
 }

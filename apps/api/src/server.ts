@@ -8,6 +8,7 @@ import { startMonitor } from './services/monitor'
 import { makeNimiqChainClient } from './services/nimiqChain'
 import { FakeChainClient } from './services/fakeChain'
 import { makeCoingeckoRates } from './services/rates'
+import { makeBalanceReader } from './services/balances'
 
 if ((env.mockAuth || env.fakeChain) && process.env.NODE_ENV === 'production')
   throw new Error('MOCK_AUTH / FAKE_CHAIN must never be enabled in production')
@@ -28,7 +29,8 @@ const { db } = makeDb(env.databaseUrl)
 const events = new SessionEvents()
 const rates = makeCoingeckoRates()
 const chainRef = { current: null as import('./services/monitor').ChainClient | null }
-const app = buildApp({ db, verifier: env.mockAuth ? mockVerifier : nimiqVerifier, events, rates, chainRef })
+const balances = makeBalanceReader(env.nimiqRpcUrl)
+const app = buildApp({ db, verifier: env.mockAuth ? mockVerifier : nimiqVerifier, events, rates, chainRef, balances })
 startSweeper(db, events)
 
 if (env.fakeChain) {

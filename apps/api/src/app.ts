@@ -16,10 +16,12 @@ import { shiftRoutes } from './routes/shifts'
 
 import { nullRates, type RateProvider } from './services/rates'
 import type { ChainClient } from './services/monitor'
+import type { BalanceReader } from './services/balances'
 export interface AppDeps {
   db: Db; verifier: SignatureVerifier; events: SessionEvents; rates?: RateProvider
   // late-bound: the chain client connects after listen()
   chainRef?: { current: ChainClient | null }
+  balances?: BalanceReader
 }
 
 export function buildApp(deps: AppDeps) {
