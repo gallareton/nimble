@@ -5,7 +5,9 @@ and names the hard part honestly. Shipped so far: the full BLIK-style
 payment loop on NIM (mainnet + testnet behind one URL, auto-detected
 per wallet) — instant "Paid" at micro-block inclusion,
 receipts with USD frozen at finality, six languages, wallet-signature auth
-with silent session refresh, on-chain reconciliation, production deploy.
+with silent session refresh, on-chain reconciliation, production deploy —
+and, on top of it, the vendor POS: shifts, fiat pricing, daily report and
+CSV export, plus an advisory balance pre-check on the approval screen.
 
 ## Next — deepen the core loop
 
@@ -19,10 +21,13 @@ invitation to install Nimiq Pay.
 watch them settle live. Socially sticky; technically a loop over the
 existing session flow.
 
-**Merchant polish.** The Charge screen already behaves like a POS
-terminal. Add a vendor mode: larger amount pad, per-day totals, receipt
-export (CSV), and a verified-business profile replacing today's
-"Unverified profile" badge.
+**Merchant polish — mostly shipped.** The vendor mode landed: shifts with
+an operator label (one open per vendor, enforced by a partial index),
+pricing in USD or NIM with the quote frozen on the charge row, a daily
+report, CSV export, a full-screen paid signal for the till, and an
+offline guard that refuses a payment the till cannot verify. What remains
+is the verified-business profile with a tax id replacing today's
+"Unverified profile" badge, plus refunds, a cashier PIN, and tips.
 
 ## Later — grow the network
 
@@ -68,13 +73,24 @@ a rework. What it actually takes, with eyes open:
 
 ## Known limits
 
-**No server-side balance checks.** The embedded Nimiq client runs Pico
-sync: it has no accounts tree and returns `balance: 0` for any address it
-doesn't own (device-verified — an address holding 200k NIM reported zero,
-before and after subscribing it). Affordability is therefore the wallet's
-call: it knows the balance, refuses to sign, and Nimble surfaces that
-refusal verbatim. A pre-flight check could return if we ever run a full
-node or query an RPC/explorer for balances.
+**The balance pre-check is advisory, and has to stay that way.** Neither
+of our own two chain surfaces can read someone else's balance: the Mini
+App SDK has no balance call (confirmed by the Nimiq team, 2026-08-30),
+and the embedded client runs Pico sync — no accounts tree, so it returns
+`balance: 0` for any address it doesn't own (device-verified: an address
+holding 200k NIM reported zero, before and after subscribing it).
+
+So the check reads a **public Nimiq RPC server-side** and warns the payer
+before they sign. Three properties are load-bearing and must survive any
+rework. An unreadable balance answers "unknown", never "zero" — a false
+zero would tell a funded payer they cannot pay. Confirm stays enabled:
+the wallet is the authority, our reading can be a block stale, and a
+payer who just topped up elsewhere must not be locked out. And the RPC is
+a third party we do not control, so its downtime must never become our
+outage.
+
+The wallet remains the real gate — it knows the balance, refuses to sign,
+and Nimble surfaces that refusal verbatim.
 
 ## Mainnet — shipped
 
