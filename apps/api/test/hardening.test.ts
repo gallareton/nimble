@@ -1,6 +1,24 @@
 import { afterAll, expect, it } from 'vitest'
+import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
 import { freshDb } from './helpers/db'
 import { authedApp, makeUser } from './helpers/actors'
+
+const apiRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+const tsxCli = join(dirname(createRequire(import.meta.url).resolve('tsx/package.json')), 'dist/cli.mjs')
+
+function runServerWithEnv(extraEnv: Record<string, string | undefined>) {
+  const env = { ...process.env, ...extraEnv }
+  for (const [key, value] of Object.entries(extraEnv)) if (value === undefined) delete env[key]
+  return spawnSync(process.execPath, [tsxCli, join(apiRoot, 'src/server.ts')], {
+    cwd: apiRoot,
+    env,
+    encoding: 'utf8',
+    timeout: 20000,
+  })
+}
 
 const { db, close } = await freshDb()
 const { app, tokenFor } = authedApp(db)
@@ -36,4 +54,30 @@ it('unexpected errors are 500 without internals', async () => {
   expect(r.statusCode).toBe(500)
   expect(r.json().error.code).toBe('INTERNAL')
   expect(JSON.stringify(r.json())).not.toContain('xyz')
+})
+
+it('production refuses to start with no JWT_SECRET / CODE_PEPPER set, naming both', () => {
+  const r = runServerWithEnv({ NODE_ENV: 'production', JWT_SECRET: undefined, CODE_PEPPER: undefined })
+  expect(r.stderr).toContain('JWT_SECRET')
+  expect(r.stderr).toContain('CODE_PEPPER')
+  expect(r.stderr).toContain('must be set to a real secret in production')
+})
+
+it('production refuses to start when JWT_SECRET is the dev default literal, even if explicitly set', () => {
+  const r = runServerWithEnv({ NODE_ENV: 'production', JWT_SECRET: 'dev-secret-change-me', CODE_PEPPER: 'a-real-pepper' })
+  expect(r.stderr).toContain('JWT_SECRET')
+  expect(r.stderr).not.toContain('CODE_PEPPER must be set')
+})
+
+it('production refuses to start when CODE_PEPPER is the dev default literal, even if explicitly set', () => {
+  const r = runServerWithEnv({ NODE_ENV: 'production', JWT_SECRET: 'a-real-secret', CODE_PEPPER: 'dev-pepper-change-me' })
+  expect(r.stderr).toContain('CODE_PEPPER')
+  expect(r.stderr).not.toContain('JWT_SECRET must be set')
+})
+
+it('non-production stays unaffected by the secrets gate even with no secrets set', () => {
+  // Point at a closed local port so it fails fast past the gate instead of
+  // idling until the spawn timeout — we only care that the gate stayed out of the way.
+  const r = runServerWithEnv({ NODE_ENV: 'test', JWT_SECRET: undefined, CODE_PEPPER: undefined, DATABASE_URL: 'postgres://x:x@127.0.0.1:1/x' })
+  expect(r.stderr).not.toContain('must be set to a real secret in production')
 })

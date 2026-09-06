@@ -1,6 +1,6 @@
 import { buildApp } from './app'
 import { makeDb } from './db/client'
-import { env } from './env'
+import { env, DEV_JWT_SECRET, DEV_CODE_PEPPER } from './env'
 import { SessionEvents } from './services/events'
 import { nimiqVerifier } from './services/nimiqAuth'
 import { startSweeper } from './services/sweeper'
@@ -12,6 +12,14 @@ import { makeBalanceReader } from './services/balances'
 
 if ((env.mockAuth || env.fakeChain) && process.env.NODE_ENV === 'production')
   throw new Error('MOCK_AUTH / FAKE_CHAIN must never be enabled in production')
+
+if (process.env.NODE_ENV === 'production') {
+  const missing: string[] = []
+  if (!process.env.JWT_SECRET || env.jwtSecret === DEV_JWT_SECRET) missing.push('JWT_SECRET')
+  if (!process.env.CODE_PEPPER || env.codePepper === DEV_CODE_PEPPER) missing.push('CODE_PEPPER')
+  if (missing.length > 0)
+    throw new Error(`${missing.join(', ')} must be set to a real secret in production (dev default is not allowed)`)
+}
 
 // Dev/E2E only: accepts MockWalletProvider identities. The mock publicKey
 // carries the address ("mock-pk:<address>") so two browser contexts can act
