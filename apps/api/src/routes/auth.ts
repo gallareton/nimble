@@ -4,6 +4,7 @@ import { SignJWT } from 'jose'
 import type { FastifyInstance } from 'fastify'
 import { AuthVerifyRequest } from '@nimble/shared'
 import { authNonce, authSession, userProfile } from '../db/schema'
+import { loginMessage } from '../services/nimiqAuth'
 import { env } from '../env'
 
 // Refresh tokens are opaque secrets; only their sha256 lands in the DB, so a
@@ -15,32 +16,6 @@ async function issueJwt(userId: string, address: string) {
   return new SignJWT({ addr: address }).setProtectedHeader({ alg: 'HS256' })
     .setSubject(userId).setExpirationTime('1h')
     .sign(new TextEncoder().encode(env.jwtSecret))
-}
-
-/**
- * The exact bytes the wallet is asked to sign.
- *
- * Built in one place and used by both the challenge and the verification: the
- * two used to carry the same string literal written out twice, which is a
- * drift waiting to happen.
- *
- * The origin is named so a person signing this in some other Mini App can see
- * who is really asking. Without it the message was just "NIMble login <nonce>",
- * and an attacker could take a nonce from our challenge endpoint, get a victim
- * to sign that string somewhere else, and replay it here as a login. The
- * origin comes from configuration, never from a request header — the header is
- * the attacker's to set.
- */
-export function loginMessage(nonce: string): string {
-  return [
-    `Sign in to ${env.appOrigin}`,
-    '',
-    'Signing proves you own this wallet. It moves no funds and approves no',
-    'payment. If you did not just open this site, do not sign.',
-    '',
-    `Origin: ${env.appOrigin}`,
-    `Nonce: ${nonce}`,
-  ].join('\n')
 }
 
 export async function authRoutes(app: FastifyInstance) {

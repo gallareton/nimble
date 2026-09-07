@@ -2,7 +2,7 @@ import { afterAll, expect, it } from 'vitest'
 import { buildApp } from '../src/app'
 import { SessionEvents } from '../src/services/events'
 import { freshDb } from './helpers/db'
-import { loginMessage } from '../src/routes/auth'
+import { loginMessage } from '../src/services/nimiqAuth'
 import { env } from '../src/env'
 
 const { db, close } = await freshDb()
