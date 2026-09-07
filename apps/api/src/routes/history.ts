@@ -50,7 +50,7 @@ export async function historyRoutes(app: FastifyInstance) {
         .innerJoin(charge, eq(charge.id, chainTransaction.chargeId))
         .innerJoin(paymentSession, eq(paymentSession.id, charge.sessionId))
         .where(inArray(chainTransaction.status, ['SUBMITTED', 'CONFIRMING', 'DELAYED']))
-        .orderBy(desc(chainTransaction.submittedAt)).limit(10)
+        .orderBy(desc(chainTransaction.submittedAt), desc(chainTransaction.id)).limit(10)
       pendingItems = inflight
         .filter(({ s }) => s.payerUserId === req.user.userId || s.receiverUserId === req.user.userId)
         .map(({ tx, c, s }) => ({

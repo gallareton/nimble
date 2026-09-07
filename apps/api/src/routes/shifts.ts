@@ -71,7 +71,11 @@ export async function buildReport(db: Db, row: typeof shift.$inferSelect): Promi
     .leftJoin(chainTransaction, eq(chainTransaction.chargeId, charge.id))
     .leftJoin(receipt, and(eq(receipt.transactionId, chainTransaction.id), eq(receipt.role, 'receiver')))
     .where(eq(charge.shiftId, row.id))
-    .orderBy(asc(charge.createdAt))
+    // Tiebreaker is load-bearing, not cosmetic: this order assigns
+    // localNumber and drives the CSV export, and a closed shift has to
+    // report the same rows in the same order forever. Two charges sharing
+    // a created_at would otherwise renumber between two exports.
+    .orderBy(asc(charge.createdAt), asc(charge.id))
 
   let confirmed = 0
   let failed = 0
@@ -171,7 +175,7 @@ export async function shiftRoutes(app: FastifyInstance) {
       .leftJoin(paymentSession, eq(paymentSession.id, charge.sessionId))
       .where(and(eq(shift.userId, req.user.userId), isNotNull(shift.closedAt)))
       .groupBy(shift.id)
-      .orderBy(desc(shift.openedAt))
+      .orderBy(desc(shift.openedAt), desc(shift.id))
       .limit(limit)
 
     const items: ShiftListItem[] = rows.map(r => ({
