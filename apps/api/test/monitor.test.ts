@@ -2,7 +2,7 @@ import { afterAll, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { chainTransaction, charge, paymentSession, receipt } from '../src/db/schema'
 import { SessionEvents } from '../src/services/events'
-import { monitorTick } from '../src/services/monitor'
+import { monitorTick, startMonitor } from '../src/services/monitor'
 import { freshDb } from './helpers/db'
 import { authedApp, makeUser } from './helpers/actors'
 
@@ -43,6 +43,25 @@ it('SUBMITTED → CONFIRMING on inclusion → CONFIRMED after macro block, recei
   expect(await db.select().from(receipt).where(eq(receipt.transactionId, tx.id))).toHaveLength(2)
   await monitorTick(db, events, chain) // idempotent: no duplicate receipts
   expect(await db.select().from(receipt).where(eq(receipt.transactionId, tx.id))).toHaveLength(2)
+})
+
+it('two overlapping monitorTick runs on the same transaction write exactly two receipts', async () => {
+  const { tx } = await submittedTx()
+  const events = new SessionEvents()
+  // Both ticks see the tx already macro-included, and getTransaction stalls
+  // long enough that neither tick's status update lands before the other
+  // reads the pending set — the race the receipt unique index resolves.
+  const chain = { ...noRecon,
+    getTransaction: async () => {
+      await new Promise(r => setTimeout(r, 20))
+      return { includedAtHeight: 100, expired: false }
+    },
+    getLastMacroHeight: async () => 100,
+  }
+  await Promise.all([monitorTick(db, events, chain), monitorTick(db, events, chain)])
+  expect(await db.select().from(receipt).where(eq(receipt.transactionId, tx.id))).toHaveLength(2)
+  expect((await db.select().from(chainTransaction).where(eq(chainTransaction.id, tx.id)))[0].status)
+    .toBe('CONFIRMED')
 })
 
 it('expired transaction → FAILED', async () => {
@@ -107,4 +126,30 @@ it('history lists an in-flight payment as pending before the receipt exists', as
   expect(item.sessionId).toBe(s.id)
   expect(item.role).toBe('payer')
   expect(item.snapshot.amountNim).toBe('2.5')
+})
+
+it('startMonitor skips a tick that would overlap a still-running one', async () => {
+  await submittedTx() // gives the tick a pending row so it calls into chain
+  let inFlight = 0
+  let concurrentCalls = 0
+  let calls = 0
+  const chain = { ...noRecon,
+    getTransaction: async () => ({ includedAtHeight: null, expired: false }),
+    getLastMacroHeight: async () => {
+      calls++
+      inFlight++
+      if (inFlight > 1) concurrentCalls++
+      // Longer than the timer interval below, so without the reentrancy
+      // guard the next tick's timer fire would start a second run while
+      // this one is still awaiting.
+      await new Promise(r => setTimeout(r, 60))
+      inFlight--
+      return 0
+    },
+  }
+  const stop = startMonitor(db, new SessionEvents(), chain, 15)
+  await new Promise(r => setTimeout(r, 200))
+  stop()
+  expect(concurrentCalls).toBe(0)
+  expect(calls).toBeGreaterThan(1) // the guard skips overlaps, it doesn't stall the monitor
 })

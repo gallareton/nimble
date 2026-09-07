@@ -92,25 +92,37 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
     }
 
     if (lastMacro >= info.includedAtHeight) {
-      await setStatus(db, events, tx, c.sessionId, tx.status, 'CONFIRMED', { hash: tx.hash })
-      const [s] = await db.select().from(paymentSession).where(eq(paymentSession.id, c.sessionId))
-      // Freeze the fiat value at confirmation time — history must not
-      // drift with the exchange rate afterwards.
+      // Fetched before the transaction opens: this is a network round-trip,
+      // and a DB transaction must not sit open for the duration of one.
       const quote = (await opts.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
       const usdPerNim = quote?.value ?? (await opts.rates?.getUsdPerNim().catch(() => null)) ?? null
-      const snapshot = {
-        amountLuna: tx.amountAtomic.toString(), amountNim: lunaToNim(tx.amountAtomic),
-        asset: 'NIM', network: 'nimiq', hash: tx.hash, sender: tx.sender, recipient: tx.recipient,
-        reference: c.reference, confirmedAt: new Date().toISOString(),
-        ...(usdPerNim ? { usdPerNim, amountUsd: Number(lunaToNim(tx.amountAtomic)) * usdPerNim } : {}),
-        // Provenance travels with the receipt: an export has to say which rate
-        // was used, when it was taken and by whom.
-        ...(quote ? { fxRateAt: quote.at, fxSource: quote.source } : {}),
-      }
-      await db.insert(receipt).values([
-        { transactionId: tx.id, ownerUserId: s.payerUserId, role: 'payer', snapshotJson: snapshot },
-        { transactionId: tx.id, ownerUserId: s.receiverUserId!, role: 'receiver', snapshotJson: snapshot },
-      ])
+      // Status flip and both receipts commit together: a crash between them
+      // must not leave a CONFIRMED transaction with no receipts, and an
+      // overlapping tick's insert must not partially land after this one's
+      // status transition already went through.
+      await db.transaction(async dtx => {
+        const txDb = dtx as unknown as Db
+        await setStatus(txDb, events, tx, c.sessionId, tx.status, 'CONFIRMED', { hash: tx.hash })
+        const [s] = await dtx.select().from(paymentSession).where(eq(paymentSession.id, c.sessionId))
+        // Freeze the fiat value at confirmation time — history must not
+        // drift with the exchange rate afterwards.
+        const snapshot = {
+          amountLuna: tx.amountAtomic.toString(), amountNim: lunaToNim(tx.amountAtomic),
+          asset: 'NIM', network: 'nimiq', hash: tx.hash, sender: tx.sender, recipient: tx.recipient,
+          reference: c.reference, confirmedAt: new Date().toISOString(),
+          ...(usdPerNim ? { usdPerNim, amountUsd: Number(lunaToNim(tx.amountAtomic)) * usdPerNim } : {}),
+          // Provenance travels with the receipt: an export has to say which rate
+          // was used, when it was taken and by whom.
+          ...(quote ? { fxRateAt: quote.at, fxSource: quote.source } : {}),
+        }
+        // onConflictDoNothing: an overlapping tick that confirmed this same
+        // transaction first already inserted these rows — losing the race
+        // here is the expected outcome, not an error.
+        await dtx.insert(receipt).values([
+          { transactionId: tx.id, ownerUserId: s.payerUserId, role: 'payer', snapshotJson: snapshot },
+          { transactionId: tx.id, ownerUserId: s.receiverUserId!, role: 'receiver', snapshotJson: snapshot },
+        ]).onConflictDoNothing({ target: [receipt.transactionId, receipt.ownerUserId] })
+      })
     } else if (tx.status !== 'CONFIRMING') {
       await setStatus(db, events, tx, c.sessionId, tx.status, 'CONFIRMING')
     }
@@ -119,6 +131,16 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
 
 export function startMonitor(db: Db, events: SessionEvents, chain: ChainClient,
   intervalMs = 3000, rates?: RateProvider) {
-  const h = setInterval(() => { void monitorTick(db, events, chain, { rates }).catch(() => {}) }, intervalMs)
+  // Reentrancy guard: a slow tick (network hiccup, big pending set) must not
+  // overlap with the next timer fire — that's the race the receipt unique
+  // index and the DB transaction above exist to survive, but skipping the
+  // tick outright is cheaper and keeps the pending set from being scanned
+  // twice at once.
+  let running = false
+  const h = setInterval(() => {
+    if (running) return
+    running = true
+    void monitorTick(db, events, chain, { rates }).catch(() => {}).finally(() => { running = false })
+  }, intervalMs)
   return () => clearInterval(h)
 }

@@ -15,11 +15,14 @@ async function seed(ownerId: string, otherId: string, n: number) {
   const [c] = await db.insert(charge).values({
     sessionId: s.id, amountAtomic: 100n, recipientAddress: 'NQ00',
   }).returning()
-  const [tx] = await db.insert(chainTransaction).values({
-    chargeId: c.id, sender: 'a', recipient: 'b', amountAtomic: 100n,
-    hash: crypto.randomUUID().replaceAll('-', ''), status: 'CONFIRMED',
-  }).returning()
   for (let i = 0; i < n; i++) {
+    // One chain_transaction per receipt: real payments never share a
+    // transaction row across history entries for the same owner, and the
+    // receipt unique index (transaction_id, owner_user_id) now enforces that.
+    const [tx] = await db.insert(chainTransaction).values({
+      chargeId: c.id, sender: 'a', recipient: 'b', amountAtomic: 100n,
+      hash: crypto.randomUUID().replaceAll('-', ''), status: 'CONFIRMED',
+    }).returning()
     await db.insert(receipt).values({
       transactionId: tx.id, ownerUserId: ownerId, role: i % 2 ? 'payer' : 'receiver',
       snapshotJson: { amountNim: String(i), reference: i % 5 === 0 ? `soda-${i}` : `other-${i}` },

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "receipt_tx_owner_idx" ON "receipt" USING btree ("transaction_id","owner_user_id");

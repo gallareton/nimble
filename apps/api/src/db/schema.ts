@@ -101,7 +101,12 @@ export const receipt = pgTable('receipt', {
   role: text('role').notNull(),
   snapshotJson: jsonb('snapshot_json').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, t => [
+  // One receipt per (transaction, owner): overlapping monitor ticks race to
+  // confirm the same transaction, and the loser's insert must fail cleanly
+  // rather than leave a duplicate.
+  uniqueIndex('receipt_tx_owner_idx').on(t.transactionId, t.ownerUserId),
+])
 
 export const sessionEvent = pgTable('session_event', {
   id: uuid('id').primaryKey().defaultRandom(),
