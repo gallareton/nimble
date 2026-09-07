@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm'
-import { lunaToNim } from '@nimble/shared'
+import { assertTransition, lunaToNim, type SessionStatus } from '@nimble/shared'
 import { chainTransaction, charge, paymentSession, receipt, userProfile } from '../db/schema'
 import type { Db } from '../db/client'
 import type { SessionEvents } from './events'
@@ -19,14 +19,29 @@ export interface ChainClient {
   findIncomingByData(recipient: string, dataHex: string): Promise<{ hash: string } | null>
 }
 
+/**
+ * Moves a transaction and its session to `to`, but only from `from`.
+ *
+ * The WHERE clause is the actual concurrency guard — a check in Node would
+ * race, because two ticks can read the same row before either writes. It also
+ * means a lost race is silent and harmless rather than a clobbered status:
+ * whoever got there first already published the event.
+ *
+ * Returns false when the transition did not apply, so callers can tell the
+ * difference between "moved" and "someone else moved it".
+ */
 async function setStatus(db: Db, events: SessionEvents, tx: typeof chainTransaction.$inferSelect,
-  sessionId: string, from: string, to: string, meta?: object) {
-  await db.update(chainTransaction)
+  sessionId: string, from: string, to: string, meta?: object): Promise<boolean> {
+  assertTransition(from as SessionStatus, to as SessionStatus)
+  const moved = await db.update(chainTransaction)
     .set({ status: to, ...(to === 'CONFIRMED' ? { confirmedAt: new Date() } : {}) })
-    .where(eq(chainTransaction.id, tx.id))
+    .where(and(eq(chainTransaction.id, tx.id), eq(chainTransaction.status, from)))
+    .returning()
+  if (moved.length === 0) return false
   await db.update(paymentSession).set({ status: to }).where(eq(paymentSession.id, sessionId))
   await events.publish(db, { sessionId, eventType: `TX_${to}`, actorType: 'system',
     stateFrom: from, stateTo: to, safeMetadata: meta })
+  return true
 }
 
 export async function monitorTick(db: Db, events: SessionEvents, chain: ChainClient,
@@ -102,7 +117,11 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
       // status transition already went through.
       await db.transaction(async dtx => {
         const txDb = dtx as unknown as Db
-        await setStatus(txDb, events, tx, c.sessionId, tx.status, 'CONFIRMED', { hash: tx.hash })
+        // A concurrent tick that already confirmed this transaction owns the
+        // receipts too — writing them again here would duplicate the work the
+        // unique index then has to reject. Losing the race is the expected
+        // outcome, not an error.
+        if (!await setStatus(txDb, events, tx, c.sessionId, tx.status, 'CONFIRMED', { hash: tx.hash })) return
         const [s] = await dtx.select().from(paymentSession).where(eq(paymentSession.id, c.sessionId))
         // Freeze the fiat value at confirmation time — history must not
         // drift with the exchange rate afterwards.
