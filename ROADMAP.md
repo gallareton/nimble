@@ -11,11 +11,25 @@ CSV export, plus an advisory balance pre-check on the approval screen.
 
 ## Next — deepen the core loop
 
-**Request by link.** The receiver creates a charge and shares it through
-any messenger; the payer's phone opens Nimble straight on the approval
-screen via the documented `nimiqpay://miniapp?url=…` deeplink. No new
-infrastructure, huge reach — every payment request doubles as an
-invitation to install Nimiq Pay.
+**Remote charge.** A vendor bills a customer who is not at the counter:
+the charge is created in the till and shared as a link through any
+messenger, and the payer's phone opens Nimble straight on the approval
+screen via the `nimiqpay://miniapp?url=…` deeplink.
+
+This started life as "request by link", a peer-to-peer feature, and was
+re-scoped after asking what it actually adds. As P2P it adds close to
+nothing: it is not a core BLIK feature either (BLIK's request-shaped
+products are phone-number transfers and cheques), and a plain "send me 20
+NIM" between friends is the wallet's job, not ours. What is *not* the
+wallet's job is bookkeeping — a charge raised this way belongs to a shift,
+lands in the daily report and CSV export, produces receipts on both sides,
+reconciles on chain by its token, and pushes live status to the till over
+SSE. For a vendor that ledger is the product, which is why the feature
+survives in this shape and not the original one.
+
+Consequences of the re-scope, all of them design-bearing: it attaches to a
+shift, its validity is hours rather than the 120 s of a counter code, and
+it must reach the report exactly like a sale rung up in person.
 
 **Bill splitting.** One amount, N people: generate N linked requests and
 watch them settle live. Socially sticky; technically a loop over the
@@ -30,10 +44,6 @@ is the verified-business profile with a tax id replacing today's
 "Unverified profile" badge, plus refunds, a cashier PIN, and tips.
 
 ## Later — grow the network
-
-**Cashlink-style cheques.** Funds locked to a one-time key and handed
-over as a link/code with a longer validity — BLIK cheques, the Nimiq way.
-Also answers "pay someone who doesn't have the app yet" without custody.
 
 **Phone-number transfers.** Pair your number (SMS-MO verification: the
 user *sends* one SMS, which is cheaper and more fraud-resistant than OTP),
@@ -70,6 +80,39 @@ a rework. What it actually takes, with eyes open:
 - **Finality differs:** Polygon confirmations replace Albatross
   micro/macro semantics; the two-tier "Paid → final" UX carries over with
   different thresholds.
+
+## Rejected — with reasons, so nobody re-derives them
+
+**Cashlink-style cheques.** Technically possible, deliberately not built.
+
+The mechanism is not the one it looks like: funds are not authorised late.
+The sender generates a throwaway keypair, sends the funds to that address
+in an ordinary immediate transaction, and puts the private key in the link;
+the recipient sweeps the address. Claiming therefore means signing with the
+cashlink key rather than the wallet key, which the Mini App SDK cannot do —
+but the public RPC accepts `sendRawTransaction` and `pushTransaction`
+(verified 2026-09-07), so a client-side signed sweep would work.
+
+It is rejected on four grounds, not on feasibility:
+
+- **The URL becomes the key to the money.** A screenshot, a chat backup or
+  a clipboard manager loses the funds. That is a different risk class from
+  every other flow here, where the payer's funds stay in the wallet until
+  one approved transfer.
+- **It sits against our own red line.** The backend must never hold a
+  private key. A cashlink can respect that — the key lives only in the URL
+  fragment, which is never sent in an HTTP request — but that is a rule
+  broken by one careless change, not by a decision.
+- **Sharing is crippled in the WebView.** `navigator.share` is absent on
+  device and downloads are blocked, so sharing means a copy-this-text
+  panel. For a feature whose whole point is reaching someone who does not
+  have the app, that is not a detail.
+- **Nimiq already has Cashlinks.** Our own format would only redeem inside
+  Nimble, which defeats the purpose; a compatible one redeems in the Nimiq
+  wallet, which raises the question of what we added.
+
+And under the vendor framing this roadmap now leads with, a merchant
+receives money rather than handing it out, so there is no place for it.
 
 ## Known limits
 
