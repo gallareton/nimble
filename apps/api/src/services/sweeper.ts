@@ -1,7 +1,17 @@
-import { and, eq, inArray, lt } from 'drizzle-orm'
-import { charge, paymentSession } from '../db/schema'
+import { and, eq, inArray, isNotNull, lt, or } from 'drizzle-orm'
+import { charge, paymentSession, idempotencyRecord, claimAttempt, authNonce } from '../db/schema'
+import { CLAIM_WINDOW_MS } from '../routes/sessions'
 import type { Db } from '../db/client'
 import type { SessionEvents } from './events'
+
+// The claim-attempt rate limiter only ever looks at rows newer than
+// `now - CLAIM_WINDOW_MS`, so anything older is safe to delete. Keep a wide
+// margin (a multiple of the window) as slack against clock skew.
+const CLAIM_ATTEMPT_RETENTION_MS = CLAIM_WINDOW_MS * 3
+// auth_nonce has no expiry column; challenges are only ever valid for 5
+// minutes (see routes/auth.ts), so anything from over an hour ago — used or
+// not — is safe to drop.
+const AUTH_NONCE_RETENTION_MS = 60 * 60_000
 
 export async function sweepOnce(db: Db, events: SessionEvents) {
   const now = new Date()
@@ -37,7 +47,34 @@ export async function sweepOnce(db: Db, events: SessionEvents) {
       stateFrom: s.status, stateTo: 'REJECTED' })
   }
 
-  return { expired: expired.length, cancelled: cancelled.length, timedOut }
+  // Plaintext codes only ever live here for their idempotency TTL (see
+  // withIdempotency) — nothing else reads request_hash after that. Rows are
+  // never left in the database once they expire.
+  const purgedIdem = await db.delete(idempotencyRecord)
+    .where(lt(idempotencyRecord.expiresAt, now)).returning()
+
+  // The rate limiter only looks at rows newer than now - CLAIM_WINDOW_MS,
+  // so a wide multiple of that window is always safe to delete.
+  const purgedClaims = await db.delete(claimAttempt)
+    .where(lt(claimAttempt.occurredAt, new Date(now.getTime() - CLAIM_ATTEMPT_RETENTION_MS)))
+    .returning()
+
+  // routes/auth.ts only ever marks a nonce used (usedAt), never deletes it —
+  // that's why this table grows unbounded otherwise. Drop consumed nonces
+  // outright, and unused ones once they're well past the 5-minute challenge
+  // window (routes/auth.ts) with slack against clock skew.
+  const purgedNonces = await db.delete(authNonce)
+    .where(or(
+      isNotNull(authNonce.usedAt),
+      lt(authNonce.createdAt, new Date(now.getTime() - AUTH_NONCE_RETENTION_MS)),
+    )).returning()
+
+  return {
+    expired: expired.length, cancelled: cancelled.length, timedOut,
+    idempotencyPurged: purgedIdem.length,
+    claimAttemptsPurged: purgedClaims.length,
+    authNoncesPurged: purgedNonces.length,
+  }
 }
 
 export function startSweeper(db: Db, events: SessionEvents, intervalMs = 5000): () => void {

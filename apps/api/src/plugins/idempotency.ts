@@ -1,13 +1,20 @@
+import { createHash } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { idempotencyRecord } from '../db/schema'
 import type { Db } from '../db/client'
 
 const TTL_MS = 24 * 60 * 60 * 1000
 
+// The caller's requestHash may be (or embed) a plaintext value — e.g. a
+// six-digit payment code — that must never land in the database verbatim.
+// Hash it here, once, so every caller gets this for free and none can forget.
+const hash = (requestHash: string) => createHash('sha256').update(requestHash).digest('hex')
+
 export async function withIdempotency<T>(
   db: Db, scope: string, key: string, requestHash: string,
   handler: () => Promise<{ code: number; body: T }>,
 ): Promise<{ code: number; body: T; replayed: boolean }> {
+  requestHash = hash(requestHash)
   const inserted = await db.insert(idempotencyRecord)
     .values({ scope, key, requestHash, expiresAt: new Date(Date.now() + TTL_MS) })
     .onConflictDoNothing().returning()

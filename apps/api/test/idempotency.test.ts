@@ -1,5 +1,7 @@
 import { afterAll, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { withIdempotency } from '../src/plugins/idempotency'
+import { idempotencyRecord } from '../src/db/schema'
 import { freshDb } from './helpers/db'
 
 const { db, close } = await freshDb()
@@ -59,4 +61,19 @@ it('does not persist a 5xx — the same key gets a fresh attempt, not a permanen
   const third = await run()
   expect(third).toMatchObject({ code: 201, body: { chargeId: 'c1' }, replayed: true })
   expect(calls).toBe(2)
+})
+
+it('never stores the raw requestHash payload — a plaintext payment code must not be recoverable from the row', async () => {
+  const plaintextCode = '482913'
+  await withIdempotency(db, 'test', 'k5', plaintextCode, async () => ({ code: 200, body: {} }))
+  const [row] = await db.select().from(idempotencyRecord)
+    .where(eq(idempotencyRecord.scope, 'test'))
+    .then(rows => rows.filter(r => r.key === 'k5'))
+  expect(row).toBeDefined()
+  expect(row.requestHash).not.toBe(plaintextCode)
+  expect(row.requestHash).not.toContain(plaintextCode)
+  // sha256 hex digest: fixed 64 lowercase hex chars, deterministic
+  expect(row.requestHash).toMatch(/^[0-9a-f]{64}$/)
+  const { createHash } = await import('node:crypto')
+  expect(row.requestHash).toBe(createHash('sha256').update(plaintextCode).digest('hex'))
 })
