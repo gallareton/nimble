@@ -14,8 +14,15 @@ export async function makeUser(db: Db, address: string) {
 }
 export function authedApp(db: Db, verifiedAddress = 'NQ00',
   opts: { rates?: RateProvider; balances?: BalanceReader } = {}) {
-  const app = buildApp({ db, verifier: { verify: async () => ({ valid: true, address: verifiedAddress }) },
-    events: new SessionEvents(), rates: opts.rates, balances: opts.balances })
+  const app = buildApp({
+    db,
+    hostVerifier: {
+      scheme: 'test',
+      challenge: (nonce) => `test challenge ${nonce}`,
+      verify: async () => ({ subject: verifiedAddress, payoutAddress: verifiedAddress }),
+    },
+    events: new SessionEvents(), rates: opts.rates, balances: opts.balances,
+  })
   const tokenFor = (u: { id: string; walletAddress: string }) =>
     new SignJWT({ addr: u.walletAddress }).setProtectedHeader({ alg: 'HS256' })
       .setSubject(u.id).setExpirationTime('1h').sign(new TextEncoder().encode(env.jwtSecret))

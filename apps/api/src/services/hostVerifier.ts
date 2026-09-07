@@ -1,7 +1,7 @@
 /**
  * Host-agnostic identity boundary.
  *
- * `SignatureVerifier` (see nimiqAuth.ts) bakes in the assumption that a host
+ * The interface this replaced took (message, publicKey, signature), which
  * proves identity with an Ed25519 signature over a message. That's true for
  * a wallet signing a login message, but Telegram proves identity with an
  * HMAC over `initData` keyed by the bot secret — there is no `publicKey` and
@@ -17,9 +17,9 @@ export interface HostCredential {
 }
 
 export interface HostIdentity {
-  /** Stabilny klucz tożsamości, unikalny w obrębie schematu. */
+  /** Stable identity key, unique within its scheme. */
   subject: string
-  /** Adres, na który użytkownik przyjmuje płatności — null, gdy host go nie zna. */
+  /** Where this user takes payment, or null when the host does not know one. */
   payoutAddress: string | null
 }
 
@@ -38,3 +38,18 @@ export interface HostVerifier {
   challenge(nonce: string): string | null
   verify(credential: HostCredential): Promise<HostIdentity | null>
 }
+
+// What this boundary does NOT yet make possible, so nobody reads "adapter
+// done" and walks into a wall. Adding a second scheme needs, in this order:
+//
+//   1. An identity key of (scheme, subject). Today user_profile.wallet_address
+//      is the key — not null, unique, with no scheme column — so two schemes
+//      could produce colliding subjects.
+//   2. A storable `payoutAddress: null`. wallet_address is NOT NULL, so a host
+//      that cannot name an address has nowhere to live; routes/auth.ts refuses
+//      that case loudly on purpose.
+//   3. A registry keyed by scheme. AppDeps holds exactly one verifier, and the
+//      wire format still carries Nimiq's shape (see the note in routes/auth.ts
+//      on why generalising it early costs users a 400 for no benefit).
+//
+// Full reasoning: private/docs/specs/2026-09-07-host-adapter-boundary.md §4.1.

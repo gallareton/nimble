@@ -31,7 +31,15 @@ export async function pairAndClaim(browser: Browser) {
 }
 
 // BLIK-style single step: amount + reference + code on one form.
-export async function submitCharge(receiver: Page, code: string, amount: string, reference?: string) {
+/**
+ * @param unit which pricing unit to charge in. The Charge screen defaults to
+ * USD (a till prices goods in money, not in NIM), so a test that means NIM has
+ * to say so — this helper silently produced USD-priced charges for a while
+ * after the vendor POS work landed, and the suite went red unnoticed.
+ */
+export async function submitCharge(receiver: Page, code: string, amount: string,
+  reference?: string, unit: 'USD' | 'NIM' = 'NIM') {
+  await receiver.getByRole('button', { name: new RegExp(`^${unit}$`) }).click()
   await receiver.getByLabel(/amount/i).fill(amount)
   if (reference) await receiver.getByLabel(/reference/i).fill(reference)
   await receiver.getByLabel(/code/i).fill(code)

@@ -1,17 +1,19 @@
 import { env } from '../env'
 import type { HostCredential, HostIdentity, HostVerifier } from './hostVerifier'
 
-export interface SignatureVerifier {
-  verify(message: string, publicKeyHex: string, signatureHex: string):
-    Promise<{ valid: boolean; address: string | null }>
-}
-
 // Real implementation. Byte format verified on device (Task 16): Nimiq Pay
 // signs the Keyguard "Signed Message" digest, not the raw message bytes:
 //   sha256('\x16Nimiq Signed Message:\n' + byteLength + message)
 // Raw utf-8 is kept as a fallback candidate for other wallet implementations.
-export const nimiqVerifier: SignatureVerifier = {
-  async verify(message, publicKeyHex, signatureHex) {
+/**
+ * The Nimiq signature primitive. Internal to this adapter — the boundary the
+ * app depends on is HostVerifier, not this. Kept as its own export because
+ * nimiqVerifier.test.ts pins the byte format, which was established
+ * empirically on a device and is the single riskiest thing in this file.
+ */
+export const nimiqVerifier = {
+  async verify(message: string, publicKeyHex: string, signatureHex: string):
+    Promise<{ valid: boolean; address: string | null }> {
     try {
       const { Hash, PublicKey, Signature } = await import('@nimiq/core')
       const pk = PublicKey.fromHex(publicKeyHex)

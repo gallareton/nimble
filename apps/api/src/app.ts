@@ -4,7 +4,6 @@ import fastifyStatic from '@fastify/static'
 import { ZodError } from 'zod'
 import { env } from './env'
 import type { Db } from './db/client'
-import type { SignatureVerifier } from './services/nimiqAuth'
 import { SessionEvents } from './services/events'
 import { authenticate } from './plugins/auth'
 import { authRoutes } from './routes/auth'
@@ -17,8 +16,9 @@ import { shiftRoutes } from './routes/shifts'
 import { nullRates, type RateProvider } from './services/rates'
 import type { ChainClient } from './services/monitor'
 import type { BalanceReader } from './services/balances'
+import type { HostVerifier } from './services/hostVerifier'
 export interface AppDeps {
-  db: Db; verifier: SignatureVerifier; events: SessionEvents; rates?: RateProvider
+  db: Db; hostVerifier: HostVerifier; events: SessionEvents; rates?: RateProvider
   // late-bound: the chain client connects after listen()
   chainRef?: { current: ChainClient | null }
   balances?: BalanceReader

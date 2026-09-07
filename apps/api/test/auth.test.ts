@@ -4,14 +4,23 @@ import { SessionEvents } from '../src/services/events'
 import { freshDb } from './helpers/db'
 import { loginMessage } from '../src/services/nimiqAuth'
 import { env } from '../src/env'
+import type { HostVerifier } from '../src/services/hostVerifier'
 
 const { db, close } = await freshDb()
-const okVerifier = { verify: async () => ({ valid: true, address: 'NQ52 TEST ADDR' }) }
-const badVerifier = { verify: async () => ({ valid: false, address: null }) }
+const okVerifier: HostVerifier = {
+  scheme: 'test',
+  challenge: (nonce) => loginMessage(nonce),
+  verify: async () => ({ subject: 'NQ52 TEST ADDR', payoutAddress: 'NQ52 TEST ADDR' }),
+}
+const badVerifier: HostVerifier = {
+  scheme: 'test',
+  challenge: (nonce) => loginMessage(nonce),
+  verify: async () => null,
+}
 afterAll(close)
 
 it('challenge → verify issues JWT and creates profile', async () => {
-  const app = buildApp({ db, verifier: okVerifier, events: new SessionEvents() })
+  const app = buildApp({ db, hostVerifier: okVerifier, events: new SessionEvents() })
   const ch = await app.inject({ method: 'POST', url: '/v1/auth/challenge' })
   expect(ch.statusCode).toBe(200)
   const { nonce } = ch.json()
@@ -23,13 +32,13 @@ it('challenge → verify issues JWT and creates profile', async () => {
 })
 
 it('rejects bad signature and reused nonce', async () => {
-  const app = buildApp({ db, verifier: badVerifier, events: new SessionEvents() })
+  const app = buildApp({ db, hostVerifier: badVerifier, events: new SessionEvents() })
   const { nonce } = (await app.inject({ method: 'POST', url: '/v1/auth/challenge' })).json()
   const v = await app.inject({ method: 'POST', url: '/v1/auth/verify',
     payload: { nonce, publicKey: 'aa', signature: 'bb' } })
   expect(v.statusCode).toBe(401)
 
-  const app2 = buildApp({ db, verifier: okVerifier, events: new SessionEvents() })
+  const app2 = buildApp({ db, hostVerifier: okVerifier, events: new SessionEvents() })
   const { nonce: n2 } = (await app2.inject({ method: 'POST', url: '/v1/auth/challenge' })).json()
   await app2.inject({ method: 'POST', url: '/v1/auth/verify', payload: { nonce: n2, publicKey: 'a', signature: 'b' } })
   const replay = await app2.inject({ method: 'POST', url: '/v1/auth/verify', payload: { nonce: n2, publicKey: 'a', signature: 'b' } })
@@ -37,7 +46,7 @@ it('rejects bad signature and reused nonce', async () => {
 })
 
 it('protected route rejects missing token', async () => {
-  const app = buildApp({ db, verifier: okVerifier, events: new SessionEvents() })
+  const app = buildApp({ db, hostVerifier: okVerifier, events: new SessionEvents() })
   app.get('/protected', { preHandler: app.authenticate }, async req => req.user)
   const r = await app.inject({ url: '/protected' })
   expect(r.statusCode).toBe(401)
@@ -47,7 +56,7 @@ it('the signed message names the origin and is built once for both endpoints', a
   // The attack this closes: with a bare "NIMble login <nonce>" an attacker
   // could take a nonce from our challenge endpoint, get the victim to sign
   // that string in some other Mini App, and replay it here.
-  const app = buildApp({ db, verifier: okVerifier, events: new SessionEvents() })
+  const app = buildApp({ db, hostVerifier: okVerifier, events: new SessionEvents() })
   const res = await app.inject({ method: 'POST', url: '/v1/auth/challenge' })
   const { nonce, message } = res.json()
 

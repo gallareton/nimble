@@ -2,7 +2,8 @@ import { buildApp } from './app'
 import { makeDb } from './db/client'
 import { env, DEV_JWT_SECRET, DEV_CODE_PEPPER } from './env'
 import { SessionEvents } from './services/events'
-import { nimiqVerifier } from './services/nimiqAuth'
+import { nimiqHostVerifier } from './services/nimiqAuth'
+import type { HostVerifier } from './services/hostVerifier'
 import { startSweeper } from './services/sweeper'
 import { startMonitor } from './services/monitor'
 import { makeNimiqChainClient } from './services/nimiqChain'
@@ -25,11 +26,19 @@ if (process.env.NODE_ENV === 'production') {
 // carries the address ("mock-pk:<address>") so two browser contexts can act
 // as two different users.
 const MOCK_DEFAULT_ADDRESS = 'NQ07 0000 0000 0000 0000 0000 0000 0000 0000'
-const mockVerifier = {
-  verify: async (_msg: string, publicKey: string) => {
-    if (!publicKey.startsWith('mock-pk')) return { valid: false, address: null }
+// This is the boundary's own proof: a scheme that verifies no signature at
+// all. It trusts the prefix so E2E can drive two distinct users through one
+// browser. That it fits HostVerifier without contortion is the evidence the
+// seam sits at the right height — if it had needed bending, the shape would
+// be wrong.
+const mockVerifier: HostVerifier = {
+  scheme: 'mock',
+  challenge: (nonce) => nimiqHostVerifier.challenge(nonce),
+  verify: async ({ payload }) => {
+    const publicKey = payload.publicKey ?? ''
+    if (!publicKey.startsWith('mock-pk')) return null
     const address = publicKey.includes(':') ? publicKey.slice(publicKey.indexOf(':') + 1) : MOCK_DEFAULT_ADDRESS
-    return { valid: true, address }
+    return { subject: address, payoutAddress: address }
   },
 }
 
@@ -38,7 +47,7 @@ const events = new SessionEvents()
 const rates = makeCoingeckoRates()
 const chainRef = { current: null as import('./services/monitor').ChainClient | null }
 const balances = makeBalanceReader(env.nimiqRpcUrl)
-const app = buildApp({ db, verifier: env.mockAuth ? mockVerifier : nimiqVerifier, events, rates, chainRef, balances })
+const app = buildApp({ db, hostVerifier: env.mockAuth ? mockVerifier : nimiqHostVerifier, events, rates, chainRef, balances })
 startSweeper(db, events)
 
 if (env.fakeChain) {

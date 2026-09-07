@@ -4,7 +4,6 @@ import { SignJWT } from 'jose'
 import type { FastifyInstance } from 'fastify'
 import { AuthVerifyRequest } from '@nimble/shared'
 import { authNonce, authSession, userProfile } from '../db/schema'
-import { loginMessage } from '../services/nimiqAuth'
 import { env } from '../env'
 
 // Refresh tokens are opaque secrets; only their sha256 lands in the DB, so a
@@ -19,27 +18,56 @@ async function issueJwt(userId: string, address: string) {
 }
 
 export async function authRoutes(app: FastifyInstance) {
-  const { db, verifier } = app.deps
+  const { db, hostVerifier } = app.deps
 
   app.post('/v1/auth/challenge', async () => {
     const nonce = randomBytes(16).toString('hex')
     await db.insert(authNonce).values({ nonce })
-    return { nonce, message: loginMessage(nonce) }
+    const message = hostVerifier.challenge(nonce)
+    // A scheme with no challenge (Telegram's initData, say) has nothing to
+    // show the user. Omit the field rather than sending null, which invites a
+    // client to render it.
+    return message === null ? { nonce } : { nonce, message }
   })
 
   app.post('/v1/auth/verify', async (req, reply) => {
     const body = AuthVerifyRequest.parse(req.body)
-    // consume nonce atomically: only unused + fresh (5 min)
-    const [row] = await db.update(authNonce).set({ usedAt: new Date() })
-      .where(and(eq(authNonce.nonce, body.nonce), isNull(authNonce.usedAt)))
-      .returning()
-    if (!row || Date.now() - row.createdAt.getTime() > 300_000)
-      return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'invalid nonce' } })
 
-    const { valid, address } = await verifier.verify(
-      loginMessage(body.nonce), body.publicKey, body.signature)
-    if (!valid || !address)
+    // Our nonce is the replay defence only for schemes that issue a challenge
+    // over it. A scheme with no challenge carries its own (Telegram's initData
+    // has auth_date), and consuming ours there would look like protection
+    // while providing none — see the note on HostVerifier.challenge.
+    if (hostVerifier.challenge(body.nonce) !== null) {
+      // consume nonce atomically: only unused + fresh (5 min)
+      const [row] = await db.update(authNonce).set({ usedAt: new Date() })
+        .where(and(eq(authNonce.nonce, body.nonce), isNull(authNonce.usedAt)))
+        .returning()
+      if (!row || Date.now() - row.createdAt.getTime() > 300_000)
+        return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'invalid nonce' } })
+    }
+
+    // The wire format still speaks Nimiq's shape on purpose: a user with the
+    // Mini App already open holds the old JavaScript, and generalising the
+    // request body would hand them a 400 for no benefit until a second host
+    // exists. The route adapts it to the credential the boundary wants.
+    const identity = await hostVerifier.verify({
+      scheme: hostVerifier.scheme,
+      nonce: body.nonce,
+      payload: { publicKey: body.publicKey, signature: body.signature },
+    })
+    if (!identity)
       return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'invalid signature' } })
+
+    // wallet_address is NOT NULL, so a host that cannot name a payout address
+    // has nowhere to be stored yet. No shipped scheme produces this, so it is
+    // a misconfiguration, not a user path — refuse loudly rather than writing
+    // an empty address. Lifting this needs the identity migration in the spec.
+    const address = identity.payoutAddress
+    if (!address) {
+      req.log.error({ scheme: hostVerifier.scheme },
+        'host verifier returned an identity with no payout address; user_profile cannot store it')
+      return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'invalid signature' } })
+    }
 
     const [user] = await db.insert(userProfile).values({ walletAddress: address })
       .onConflictDoUpdate({ target: userProfile.walletAddress, set: { walletAddress: address } })
