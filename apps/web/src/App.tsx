@@ -6,6 +6,7 @@ import { History } from './screens/History'
 import { Home } from './screens/Home'
 import { NewRemoteCharge } from './screens/NewRemoteCharge'
 import { Pay } from './screens/Pay'
+import { RemoteCharge } from './screens/RemoteCharge'
 import { Receipt } from './screens/Receipt'
 import { Settings } from './screens/Settings'
 import { Shift } from './screens/Shift'
@@ -24,6 +25,10 @@ export function App() {
         <Route path="/pay" element={<RequireAuth><Pay /></RequireAuth>} />
         <Route path="/charge" element={<RequireAuth><Charge /></RequireAuth>} />
         <Route path="/charge/remote" element={<RequireAuth><NewRemoteCharge /></RequireAuth>} />
+        {/* Unauthenticated: the payer following a shared link may have no
+            account yet — same reasoning as the API route it calls. Login
+            happens inline, on accept, not as a route gate. */}
+        <Route path="/r/:id" element={<RemoteCharge />} />
         <Route path="/session/:id" element={<RequireAuth><Approval /></RequireAuth>} />
         <Route path="/receipt/:id" element={<RequireAuth><Receipt /></RequireAuth>} />
         <Route path="/history" element={<RequireAuth><History /></RequireAuth>} />

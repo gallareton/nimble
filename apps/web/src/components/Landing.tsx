@@ -1,17 +1,21 @@
 import { useEffect, useRef } from 'react'
 import { toCanvas } from 'qrcode'
-import { APP_STORE, DEEPLINK, PLAY_STORE } from '../lib/host'
+import { APP_STORE, DEEPLINK, PLAY_STORE, remoteChargeDeeplink } from '../lib/host'
 import { t } from '../i18n'
 import { DemoVideo } from './DemoVideo'
 
 // Shown when the page is opened in a plain browser instead of Nimiq Pay.
-export function Landing() {
+// When `chargeId` is given (a remote-charge link opened outside Nimiq Pay),
+// the deep link and QR code go straight to that bill instead of the app's
+// home screen, so the payer doesn't land somewhere they have to re-find it.
+export function Landing({ chargeId }: { chargeId?: string } = {}) {
   const qrRef = useRef<HTMLCanvasElement>(null)
+  const deeplink = chargeId ? remoteChargeDeeplink(chargeId) : DEEPLINK
 
   useEffect(() => {
     // jsdom has no canvas 2d context - QR is progressive enhancement only
-    if (qrRef.current) toCanvas(qrRef.current, DEEPLINK, { width: 180, margin: 1 }).catch(() => {})
-  }, [])
+    if (qrRef.current) toCanvas(qrRef.current, deeplink, { width: 180, margin: 1 }).catch(() => {})
+  }, [deeplink])
 
   return (
     <main>
@@ -19,7 +23,7 @@ export function Landing() {
         <h1 className="brand">NIM<em>ble</em></h1>
         <p>{t('Pay or get paid with a 6-digit code.')}</p>
         <p className="quiet">{t('NIMble is a Mini App — it runs inside the Nimiq Pay wallet.')}</p>
-        <a className="btn-link" href={DEEPLINK}>
+        <a className="btn-link" href={deeplink}>
           <button className="primary">{t('Open in Nimiq Pay')}</button>
         </a>
         <p className="quiet">

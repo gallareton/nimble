@@ -181,6 +181,14 @@ const pl: Record<string, string> = {
   'Create bill': 'Wystaw rachunek',
   'Could not create the bill. Check your connection and try again.': 'Nie udało się wystawić rachunku. Sprawdź połączenie i spróbuj ponownie.',
   "Bill someone who isn't here": 'Wystaw rachunek komuś, kogo nie ma przy ladzie',
+  'This link is not valid.': 'Ten link jest nieprawidłowy.',
+  'This bill has expired. Ask {name} for a new link.': 'Ten rachunek wygasł. Poproś {name} o nowy link.',
+  'This bill has already been paid.': 'Ten rachunek został już opłacony.',
+  'Someone already accepted this bill.': 'Ktoś już zaakceptował ten rachunek.',
+  'You cannot pay your own bill.': 'Nie możesz zapłacić własnego rachunku.',
+  'Accept & pay': 'Akceptuj i zapłać',
+  'Expires {date}': 'Wygasa {date}',
+  'Could not load this bill. Check your connection and try again.': 'Nie udało się wczytać rachunku. Sprawdź połączenie i spróbuj ponownie.',
 }
 
 const de: Record<string, string> = {
@@ -353,6 +361,14 @@ const de: Record<string, string> = {
   'Create bill': 'Rechnung erstellen',
   'Could not create the bill. Check your connection and try again.': 'Rechnung konnte nicht erstellt werden. Verbindung prüfen und erneut versuchen.',
   "Bill someone who isn't here": 'Jemandem eine Rechnung stellen, der nicht hier ist',
+  'This link is not valid.': 'Dieser Link ist ungültig.',
+  'This bill has expired. Ask {name} for a new link.': 'Diese Rechnung ist abgelaufen. Bitte {name} um einen neuen Link.',
+  'This bill has already been paid.': 'Diese Rechnung wurde bereits bezahlt.',
+  'Someone already accepted this bill.': 'Jemand hat diese Rechnung bereits angenommen.',
+  'You cannot pay your own bill.': 'Du kannst deine eigene Rechnung nicht bezahlen.',
+  'Accept & pay': 'Annehmen & bezahlen',
+  'Expires {date}': 'Läuft ab am {date}',
+  'Could not load this bill. Check your connection and try again.': 'Rechnung konnte nicht geladen werden. Verbindung prüfen und erneut versuchen.',
 }
 
 const es: Record<string, string> = {
@@ -525,6 +541,14 @@ const es: Record<string, string> = {
   'Create bill': 'Crear factura',
   'Could not create the bill. Check your connection and try again.': 'No se pudo crear la factura. Comprueba la conexión e inténtalo de nuevo.',
   "Bill someone who isn't here": 'Cobrar a alguien que no está aquí',
+  'This link is not valid.': 'Este enlace no es válido.',
+  'This bill has expired. Ask {name} for a new link.': 'Esta factura ha caducado. Pide a {name} un enlace nuevo.',
+  'This bill has already been paid.': 'Esta factura ya ha sido pagada.',
+  'Someone already accepted this bill.': 'Alguien ya aceptó esta factura.',
+  'You cannot pay your own bill.': 'No puedes pagar tu propia factura.',
+  'Accept & pay': 'Aceptar y pagar',
+  'Expires {date}': 'Caduca el {date}',
+  'Could not load this bill. Check your connection and try again.': 'No se pudo cargar la factura. Comprueba tu conexión e inténtalo de nuevo.',
 }
 
 const fr: Record<string, string> = {
@@ -697,6 +721,14 @@ const fr: Record<string, string> = {
   'Create bill': 'Créer la facture',
   'Could not create the bill. Check your connection and try again.': 'Impossible de créer la facture. Vérifiez la connexion et réessayez.',
   "Bill someone who isn't here": "Facturer quelqu'un qui n'est pas là",
+  'This link is not valid.': "Ce lien n'est pas valide.",
+  'This bill has expired. Ask {name} for a new link.': 'Cette facture a expiré. Demandez à {name} un nouveau lien.',
+  'This bill has already been paid.': 'Cette facture a déjà été payée.',
+  'Someone already accepted this bill.': "Quelqu'un a déjà accepté cette facture.",
+  'You cannot pay your own bill.': 'Vous ne pouvez pas payer votre propre facture.',
+  'Accept & pay': 'Accepter et payer',
+  'Expires {date}': 'Expire le {date}',
+  'Could not load this bill. Check your connection and try again.': 'Impossible de charger la facture. Vérifiez votre connexion et réessayez.',
 }
 
 const pt: Record<string, string> = {
@@ -869,6 +901,14 @@ const pt: Record<string, string> = {
   'Create bill': 'Criar fatura',
   'Could not create the bill. Check your connection and try again.': 'Não foi possível criar a fatura. Verifique a ligação e tente novamente.',
   "Bill someone who isn't here": 'Faturar alguém que não está aqui',
+  'This link is not valid.': 'Este link não é válido.',
+  'This bill has expired. Ask {name} for a new link.': 'Esta fatura expirou. Peça a {name} um novo link.',
+  'This bill has already been paid.': 'Esta fatura já foi paga.',
+  'Someone already accepted this bill.': 'Alguém já aceitou esta fatura.',
+  'You cannot pay your own bill.': 'Não pode pagar a sua própria fatura.',
+  'Accept & pay': 'Aceitar e pagar',
+  'Expires {date}': 'Expira em {date}',
+  'Could not load this bill. Check your connection and try again.': 'Não foi possível carregar a fatura. Verifique a ligação e tente novamente.',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

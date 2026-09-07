@@ -5,6 +5,7 @@ import { CodeDisplay } from '../src/components/CodeDisplay'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { Approval } from '../src/screens/Approval'
 import { Charge, toMinorUnits } from '../src/screens/Charge'
+import { RemoteCharge } from '../src/screens/RemoteCharge'
 
 it('CodeDisplay groups digits and is screen-reader friendly', () => {
   render(<CodeDisplay code="482731" />)
@@ -270,4 +271,118 @@ it('toMinorUnits parses fiat text to integer minor units, rejecting garbage and 
   expect(toMinorUnits('abc')).toBeNull()
   expect(toMinorUnits('')).toBeNull()
   expect(toMinorUnits('1'.repeat(20))).toBeNull() // a till will never see a 20-digit price
+})
+
+// RemoteCharge only shows its "in Nimiq Pay" preview once the host is
+// detected — outside that, it renders Landing instead (tested separately
+// below). These helpers flip that detection the same way test/network.test.ts
+// does, so each test controls which branch it exercises.
+function enterNimiqPay() {
+  ;(window as never as { nimiqPay: object }).nimiqPay = {}
+}
+function leaveNimiqPay() {
+  delete (window as never as { nimiqPay?: object }).nimiqPay
+}
+
+function renderRemoteCharge(api: unknown, opts?: { token?: string | null; login?: () => Promise<unknown> }) {
+  return render(
+    <MemoryRouter initialEntries={['/r/rc1']}>
+      <Routes>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <Route path="/r/:id" element={<RemoteCharge api={api as any} token={opts?.token ?? 't1'} login={opts?.login} />} />
+        <Route path="/session/:id" element={<p>session screen {/* eslint-disable-line */}</p>} />
+      </Routes>
+    </MemoryRouter>,
+  )
+}
+
+it('RemoteCharge shows amount, description and receiver for an open bill', async () => {
+  cleanup()
+  enterNimiqPay()
+  const api = {
+    getChargeRequest: vi.fn(async () => ({
+      amountLuna: '250000', fiatAmountMinor: 250, fiatCurrency: 'USD', reference: 'Soda',
+      receiverDisplayName: 'Kiosk', receiverAddressTail: 'XY12',
+      expiresAt: new Date(Date.now() + 3600_000).toISOString(), state: 'open',
+    })),
+  }
+  renderRemoteCharge(api)
+
+  await waitFor(() => expect(api.getChargeRequest).toHaveBeenCalledWith('rc1'))
+  expect(await screen.findByText('Kiosk')).toBeTruthy()
+  expect(screen.getByText('2.5 NIM')).toBeTruthy()
+  expect(screen.getByText('Soda')).toBeTruthy()
+  expect(screen.getByText(/XY12/)).toBeTruthy()
+  leaveNimiqPay()
+})
+
+it('RemoteCharge distinguishes an expired bill from an already-paid one', async () => {
+  cleanup()
+  enterNimiqPay()
+  const expiredApi = {
+    getChargeRequest: vi.fn(async () => ({
+      amountLuna: '250000', fiatAmountMinor: null, fiatCurrency: null, reference: null,
+      receiverDisplayName: 'Kiosk', receiverAddressTail: 'XY12',
+      expiresAt: new Date(Date.now() - 1000).toISOString(), state: 'expired',
+    })),
+  }
+  renderRemoteCharge(expiredApi)
+  await waitFor(() => expect(expiredApi.getChargeRequest).toHaveBeenCalledWith('rc1'))
+  const expiredMsg = await screen.findByRole('alert')
+  expect(expiredMsg.textContent).toMatch(/expired/i)
+
+  cleanup()
+  const paidApi = {
+    getChargeRequest: vi.fn(async () => ({
+      amountLuna: '250000', fiatAmountMinor: null, fiatCurrency: null, reference: null,
+      receiverDisplayName: 'Kiosk', receiverAddressTail: 'XY12',
+      expiresAt: new Date(Date.now() - 1000).toISOString(), state: 'paid',
+    })),
+  }
+  renderRemoteCharge(paidApi)
+  await waitFor(() => expect(paidApi.getChargeRequest).toHaveBeenCalledWith('rc1'))
+  const paidMsg = await screen.findByRole('alert')
+  expect(paidMsg.textContent).toMatch(/already been paid/i)
+  expect(paidMsg.textContent).not.toEqual(expiredMsg.textContent)
+  leaveNimiqPay()
+})
+
+it('RemoteCharge accepting an open bill calls accept and lands on /session/:id', async () => {
+  cleanup()
+  enterNimiqPay()
+  const api = {
+    getChargeRequest: vi.fn(async () => ({
+      amountLuna: '250000', fiatAmountMinor: 250, fiatCurrency: 'USD', reference: 'Soda',
+      receiverDisplayName: 'Kiosk', receiverAddressTail: 'XY12',
+      expiresAt: new Date(Date.now() + 3600_000).toISOString(), state: 'open',
+    })),
+    acceptChargeRequest: vi.fn(async () => ({ sessionId: 's99', chargeId: 'c99' })),
+  }
+  renderRemoteCharge(api)
+
+  await screen.findByText('Kiosk')
+  fireEvent.click(screen.getByRole('button', { name: /accept/i }))
+
+  await waitFor(() => expect(api.acceptChargeRequest).toHaveBeenCalledWith('rc1', expect.any(String)))
+  expect(await screen.findByText(/session screen/i)).toBeTruthy()
+  leaveNimiqPay()
+})
+
+it('RemoteCharge opened outside Nimiq Pay shows the landing page with a link to this bill', async () => {
+  cleanup()
+  leaveNimiqPay() // not in Nimiq Pay — the default in this test environment
+  const api = { getChargeRequest: vi.fn(async () => ({
+    amountLuna: '250000', fiatAmountMinor: null, fiatCurrency: null, reference: null,
+    receiverDisplayName: 'Kiosk', receiverAddressTail: 'XY12',
+    expiresAt: new Date(Date.now() + 3600_000).toISOString(), state: 'open',
+  })) }
+  renderRemoteCharge(api)
+
+  const link = await screen.findByRole('link', { name: /open in nimiq pay/i })
+  const href = link.getAttribute('href') ?? ''
+  expect(href).toContain('nimiqpay://miniapp?url=')
+  expect(decodeURIComponent(href)).toContain('/r/rc1')
+  // Landing page for a plain-browser open never previews the bill itself —
+  // the preview only exists once inside Nimiq Pay.
+  expect(api.getChargeRequest).not.toHaveBeenCalled()
 })
