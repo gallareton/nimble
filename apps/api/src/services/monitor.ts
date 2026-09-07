@@ -30,6 +30,24 @@ export interface ChainClient {
  * Returns false when the transition did not apply, so callers can tell the
  * difference between "moved" and "someone else moved it".
  */
+const LUNA_PER_NIM = 100_000n
+const RATE_SCALE = 100_000_000n
+
+/**
+ * Luna → whole fiat cents at `fiatPerNim`, rounded half-up, integer-only.
+ *
+ * Mirrors the scaling in priceInLuna (services/pricing.ts) so the two are
+ * inverses: a price converted to luna and back lands on the cent it started
+ * from. Floats are avoided for the same reason they are avoided there — this
+ * number reaches receipts and exports.
+ */
+export function centsFromLuna(luna: bigint, fiatPerNim: number): number {
+  const rateScaled = BigInt(Math.round(fiatPerNim * Number(RATE_SCALE)))
+  const numerator = luna * rateScaled * 100n
+  const denominator = LUNA_PER_NIM * RATE_SCALE
+  return Number((numerator + denominator / 2n) / denominator) // round half up
+}
+
 async function setStatus(db: Db, events: SessionEvents, tx: typeof chainTransaction.$inferSelect,
   sessionId: string, from: string, to: string, meta?: object): Promise<boolean> {
   assertTransition(from as SessionStatus, to as SessionStatus)
@@ -129,7 +147,25 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
           amountLuna: tx.amountAtomic.toString(), amountNim: lunaToNim(tx.amountAtomic),
           asset: 'NIM', network: 'nimiq', hash: tx.hash, sender: tx.sender, recipient: tx.recipient,
           reference: c.reference, confirmedAt: new Date().toISOString(),
-          ...(usdPerNim ? { usdPerNim, amountUsd: Number(lunaToNim(tx.amountAtomic)) * usdPerNim } : {}),
+          // The price the vendor typed, copied verbatim — never re-derived.
+          // Deriving it from the NIM amount is what once showed 2.51 for a
+          // sale entered as 2.50, and it disagreed with the shift report,
+          // which reads this same figure off the charge row.
+          ...(c.fiatAmountMinor !== null
+            ? { priceFiatMinor: c.fiatAmountMinor, priceFiatCurrency: c.fiatCurrency }
+            : {}),
+          // What the transferred NIM was worth at confirmation, in whole
+          // cents, integer arithmetic — no float on a money path. For a
+          // fiat-priced sale this equals the price; for one priced directly
+          // in NIM it is the only fiat figure there is.
+          ...(usdPerNim
+            ? {
+                usdPerNim,
+                settledFiatMinor: centsFromLuna(tx.amountAtomic, usdPerNim),
+                // Kept for receipts written before settledFiatMinor existed.
+                amountUsd: Number(lunaToNim(tx.amountAtomic)) * usdPerNim,
+              }
+            : {}),
           // Provenance travels with the receipt: an export has to say which rate
           // was used, when it was taken and by whom.
           ...(quote ? { fxRateAt: quote.at, fxSource: quote.source } : {}),

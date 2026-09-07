@@ -7,7 +7,7 @@ import { Landing } from '../components/Landing'
 import { inNimiqPay } from '../lib/host'
 import { t } from '../i18n'
 import { describeError } from '../lib/errors'
-import { formatUsdValue } from '../lib/fiat'
+import { FiatBadge } from '../lib/fiat'
 
 export function Home() {
   const { api, token, login } = useApp()
@@ -95,8 +95,7 @@ export function Home() {
                     {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}
                     {r.pending ? <><br />{t('Paid — finalizing…')}</> : null}</span>
                   <span className="amt">{String(r.snapshot.amountNim)} NIM
-                    {typeof r.snapshot.amountUsd === 'number' &&
-                      <small className="fiat">{formatUsdValue(r.snapshot.amountUsd)}</small>}</span>
+                    <FiatBadge snapshot={r.snapshot} /></span>
                 </Link>
               </li>
             ))}

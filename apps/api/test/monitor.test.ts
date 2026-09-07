@@ -5,6 +5,8 @@ import { SessionEvents } from '../src/services/events'
 import { monitorTick, startMonitor } from '../src/services/monitor'
 import { freshDb } from './helpers/db'
 import { authedApp, makeUser } from './helpers/actors'
+import { centsFromLuna } from '../src/services/monitor'
+import { priceInLuna } from '../src/services/pricing'
 
 const { db, close } = await freshDb()
 afterAll(close)
@@ -152,4 +154,12 @@ it('startMonitor skips a tick that would overlap a still-running one', async () 
   stop()
   expect(concurrentCalls).toBe(0)
   expect(calls).toBeGreaterThan(1) // the guard skips overlaps, it doesn't stall the monitor
+})
+
+it('centsFromLuna is the integer inverse of priceInLuna, to the cent', () => {
+  // A price converted to luna and back must land on the cent it started from.
+  // Doing this with floats is what produced 2.51 for a sale entered as 2.50.
+  const quote = { value: 0.004, at: '2026-09-07T10:00:00.000Z', source: 'test' }
+  for (const minor of [1, 250, 999, 1234, 100_000])
+    expect(centsFromLuna(priceInLuna(minor, quote), quote.value)).toBe(minor)
 })

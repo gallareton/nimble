@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useAppOptional } from '../AppContext'
 import type { Api, HistoryItem } from '../api/client'
 import { t } from '../i18n'
-import { formatUsdValue } from '../lib/fiat'
+import { FiatBadge } from '../lib/fiat'
 
 const FILTERS_KEY = 'nimble:historyFilters'
 const POLL_MS = 5000
@@ -150,8 +150,7 @@ export function History({ api: apiProp }: { api?: Api } = {}) {
                   {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}<br />
                   {r.pending ? t('Paid — finalizing…') : new Date(r.createdAt).toLocaleString()}</span>
                 <span className="amt">{String(r.snapshot.amountNim)} NIM
-                  {typeof r.snapshot.amountUsd === 'number' &&
-                    <small className="fiat">{formatUsdValue(r.snapshot.amountUsd)}</small>}</span>
+                  <FiatBadge snapshot={r.snapshot} /></span>
               </Link>
             </li>
           ))}
