@@ -277,6 +277,11 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       {report && <ReportSummary report={report} />}
       {actionError && <p role="alert">{actionError}</p>}
       {shift && (
+        <p>
+          <Link to="/charge/remote">{t('Bill someone who isn\'t here')}</Link>
+        </p>
+      )}
+      {shift && (
         <button disabled={busy} onClick={close}>{t('Close the shift')}</button>
       )}
       {report && !shift && (

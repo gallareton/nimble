@@ -1,4 +1,4 @@
-import type { AffordabilityResponse, ClaimResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
+import type { AffordabilityResponse, ClaimResponse, CreateChargeRequestResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
@@ -80,6 +80,15 @@ export class Api {
   createCharge(sessionId: string, amountLuna: string, reference?: string, idemKey?: string) {
     return this.#post<{ chargeId: string; version: number }>(
       `/v1/sessions/${sessionId}/charges`, { amountLuna, reference }, idemKey)
+  }
+  // Idempotency here isn't cosmetic decoration copied from the other POSTs:
+  // a bill for someone off-premises has no in-person retry — a dropped
+  // response must not risk minting a second charge request for the same sale.
+  createChargeRequest(
+    opts: { amountLuna?: string; fiatAmountMinor?: number; fiatCurrency?: string; reference?: string },
+    idemKey?: string,
+  ) {
+    return this.#post<CreateChargeRequestResponse>('/v1/charge-requests', opts, idemKey)
   }
   getSession(id: string) { return this.#get<SessionView>(`/v1/sessions/${id}`) }
   reject(chargeId: string) { return this.#post<{ status: string }>(`/v1/charges/${chargeId}/reject`) }

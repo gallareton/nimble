@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { Shift } from '../src/screens/Shift'
+import { NewRemoteCharge } from '../src/screens/NewRemoteCharge'
 import { ApiError } from '../src/api/client'
 
 const noShift = { getCurrentShift: vi.fn(async () => null), openShift: vi.fn() }
@@ -268,4 +269,59 @@ it('tells the vendor a shift is already open instead of failing silently on a 40
     .toMatch(/already open/i))
   // The button re-enables so the vendor can retry, rather than staying stuck.
   expect((screen.getByText('Open a shift') as HTMLButtonElement).disabled).toBe(false)
+})
+
+interface RemoteChargeOpts { amountLuna?: string; fiatAmountMinor?: number; fiatCurrency?: string; reference?: string }
+
+it('issues a remote bill in USD and sends fiatAmountMinor in cents, not a float', async () => {
+  localStorage.clear()
+  const createChargeRequest = vi.fn(async (_opts: RemoteChargeOpts) => ({ id: 'cr1', expiresAt: '2026-09-08T12:00:00.000Z' }))
+  const api = { createChargeRequest }
+  render(<MemoryRouter><NewRemoteCharge api={api as never} /></MemoryRouter>)
+
+  fireEvent.change(screen.getByLabelText(/Amount \(USD\)/i), { target: { value: '12.34' } })
+  fireEvent.click(screen.getByRole('button', { name: /Create bill/i }))
+
+  await waitFor(() => expect(createChargeRequest).toHaveBeenCalledTimes(1))
+  const [opts] = createChargeRequest.mock.calls[0]
+  expect(opts.fiatAmountMinor).toBe(1234)
+  expect(Number.isInteger(opts.fiatAmountMinor)).toBe(true)
+  expect(opts.fiatCurrency).toBe('USD')
+  expect(opts.amountLuna).toBeUndefined()
+})
+
+it('sends amountLuna when the vendor prices the bill in NIM', async () => {
+  const createChargeRequest = vi.fn(async (_opts: RemoteChargeOpts) => ({ id: 'cr2', expiresAt: '2026-09-08T12:00:00.000Z' }))
+  const api = { createChargeRequest }
+  render(<MemoryRouter><NewRemoteCharge api={api as never} /></MemoryRouter>)
+
+  fireEvent.click(screen.getByRole('button', { name: 'NIM' }))
+  fireEvent.change(screen.getByLabelText(/Amount \(NIM\)/i), { target: { value: '2.5' } })
+  fireEvent.click(screen.getByRole('button', { name: /Create bill/i }))
+
+  await waitFor(() => expect(createChargeRequest).toHaveBeenCalledTimes(1))
+  const [opts] = createChargeRequest.mock.calls[0]
+  expect(opts.amountLuna).toBe('250000')
+  expect(opts.fiatAmountMinor).toBeUndefined()
+})
+
+it('shows the bill link on screen after issuing it, and lets the vendor copy it', async () => {
+  localStorage.clear()
+  const writeText = vi.fn(async () => {})
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+  const api = {
+    createChargeRequest: vi.fn(async () => ({ id: 'cr3', expiresAt: '2026-09-08T12:00:00.000Z' })),
+  }
+  render(<MemoryRouter><NewRemoteCharge api={api as never} /></MemoryRouter>)
+
+  fireEvent.change(screen.getByLabelText(/Amount \(USD\)/i), { target: { value: '5.00' } })
+  fireEvent.click(screen.getByRole('button', { name: /Create bill/i }))
+
+  await waitFor(() => expect(api.createChargeRequest).toHaveBeenCalledTimes(1))
+  const link = await screen.findByText(/\/r\/cr3/)
+  expect(link).toBeTruthy()
+
+  fireEvent.click(screen.getByText('Copy'))
+  await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/r/cr3')))
+  await waitFor(() => expect(screen.getByText('Copied')).toBeTruthy())
 })

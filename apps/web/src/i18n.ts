@@ -176,6 +176,11 @@ const pl: Record<string, string> = {
   'Copy': 'Kopiuj',
   "Offline — payments can't be accepted until the connection is back.": 'Offline — nie można przyjmować płatności, dopóki połączenie nie wróci.',
   'This account is short by {amount} NIM.': 'Na tym koncie brakuje {amount} NIM.',
+  'Remote bill': 'Rachunek zdalny',
+  'Share this link with the payer.': 'Udostępnij ten link płatnikowi.',
+  'Create bill': 'Wystaw rachunek',
+  'Could not create the bill. Check your connection and try again.': 'Nie udało się wystawić rachunku. Sprawdź połączenie i spróbuj ponownie.',
+  "Bill someone who isn't here": 'Wystaw rachunek komuś, kogo nie ma przy ladzie',
 }
 
 const de: Record<string, string> = {
@@ -343,6 +348,11 @@ const de: Record<string, string> = {
   'Copy': 'Kopieren',
   "Offline — payments can't be accepted until the connection is back.": 'Offline — Zahlungen können erst wieder angenommen werden, wenn die Verbindung zurück ist.',
   'This account is short by {amount} NIM.': 'Diesem Konto fehlen {amount} NIM.',
+  'Remote bill': 'Fernrechnung',
+  'Share this link with the payer.': 'Teile diesen Link mit dem Zahler.',
+  'Create bill': 'Rechnung erstellen',
+  'Could not create the bill. Check your connection and try again.': 'Rechnung konnte nicht erstellt werden. Verbindung prüfen und erneut versuchen.',
+  "Bill someone who isn't here": 'Jemandem eine Rechnung stellen, der nicht hier ist',
 }
 
 const es: Record<string, string> = {
@@ -510,6 +520,11 @@ const es: Record<string, string> = {
   'Copy': 'Copiar',
   "Offline — payments can't be accepted until the connection is back.": 'Sin conexión — no se pueden aceptar pagos hasta que vuelva la conexión.',
   'This account is short by {amount} NIM.': 'A esta cuenta le faltan {amount} NIM.',
+  'Remote bill': 'Factura remota',
+  'Share this link with the payer.': 'Comparte este enlace con quien paga.',
+  'Create bill': 'Crear factura',
+  'Could not create the bill. Check your connection and try again.': 'No se pudo crear la factura. Comprueba la conexión e inténtalo de nuevo.',
+  "Bill someone who isn't here": 'Cobrar a alguien que no está aquí',
 }
 
 const fr: Record<string, string> = {
@@ -677,6 +692,11 @@ const fr: Record<string, string> = {
   'Copy': 'Copier',
   "Offline — payments can't be accepted until the connection is back.": "Hors ligne — impossible d'accepter un paiement tant que la connexion n'est pas rétablie.",
   'This account is short by {amount} NIM.': 'Il manque {amount} NIM sur ce compte.',
+  'Remote bill': 'Facture à distance',
+  'Share this link with the payer.': 'Partagez ce lien avec le payeur.',
+  'Create bill': 'Créer la facture',
+  'Could not create the bill. Check your connection and try again.': 'Impossible de créer la facture. Vérifiez la connexion et réessayez.',
+  "Bill someone who isn't here": "Facturer quelqu'un qui n'est pas là",
 }
 
 const pt: Record<string, string> = {
@@ -844,6 +864,11 @@ const pt: Record<string, string> = {
   'Copy': 'Copiar',
   "Offline — payments can't be accepted until the connection is back.": 'Offline — não é possível aceitar pagamentos até a conexão voltar.',
   'This account is short by {amount} NIM.': 'Esta conta está com {amount} NIM em falta.',
+  'Remote bill': 'Fatura remota',
+  'Share this link with the payer.': 'Partilhe este link com quem paga.',
+  'Create bill': 'Criar fatura',
+  'Could not create the bill. Check your connection and try again.': 'Não foi possível criar a fatura. Verifique a ligação e tente novamente.',
+  "Bill someone who isn't here": 'Faturar alguém que não está aqui',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

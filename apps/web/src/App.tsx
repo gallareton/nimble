@@ -4,6 +4,7 @@ import { Approval } from './screens/Approval'
 import { Charge } from './screens/Charge'
 import { History } from './screens/History'
 import { Home } from './screens/Home'
+import { NewRemoteCharge } from './screens/NewRemoteCharge'
 import { Pay } from './screens/Pay'
 import { Receipt } from './screens/Receipt'
 import { Settings } from './screens/Settings'
@@ -22,6 +23,7 @@ export function App() {
         <Route path="/" element={<Home />} />
         <Route path="/pay" element={<RequireAuth><Pay /></RequireAuth>} />
         <Route path="/charge" element={<RequireAuth><Charge /></RequireAuth>} />
+        <Route path="/charge/remote" element={<RequireAuth><NewRemoteCharge /></RequireAuth>} />
         <Route path="/session/:id" element={<RequireAuth><Approval /></RequireAuth>} />
         <Route path="/receipt/:id" element={<RequireAuth><Receipt /></RequireAuth>} />
         <Route path="/history" element={<RequireAuth><History /></RequireAuth>} />
