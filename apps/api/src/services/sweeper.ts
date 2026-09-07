@@ -1,5 +1,5 @@
-import { and, eq, inArray, isNotNull, lt, or } from 'drizzle-orm'
-import { charge, paymentSession, idempotencyRecord, claimAttempt, authNonce } from '../db/schema'
+import { and, eq, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm'
+import { charge, paymentSession, idempotencyRecord, claimAttempt, authNonce, chargeRequest } from '../db/schema'
 import { CLAIM_WINDOW_MS } from '../routes/sessions'
 import type { Db } from '../db/client'
 import type { SessionEvents } from './events'
@@ -69,11 +69,19 @@ export async function sweepOnce(db: Db, events: SessionEvents) {
       lt(authNonce.createdAt, new Date(now.getTime() - AUTH_NONCE_RETENTION_MS)),
     )).returning()
 
+  // Only unmaterialized requests (session_id still null) — a request that
+  // did become a session is the sole record of where a sale in a shift
+  // report came from, so it's never touched here, expired or not.
+  const purgedChargeRequests = await db.delete(chargeRequest)
+    .where(and(lt(chargeRequest.expiresAt, now), isNull(chargeRequest.sessionId)))
+    .returning()
+
   return {
     expired: expired.length, cancelled: cancelled.length, timedOut,
     idempotencyPurged: purgedIdem.length,
     claimAttemptsPurged: purgedClaims.length,
     authNoncesPurged: purgedNonces.length,
+    chargeRequestsPurged: purgedChargeRequests.length,
   }
 }
 

@@ -43,6 +43,21 @@ export const CreateChargeRequest = z.object({
   b => b.fiatAmountMinor === undefined || b.fiatCurrency !== undefined,
   'fiatCurrency is required with fiatAmountMinor',
 )
+/** A remote charge: the receiver bills a payer who isn't at the counter.
+ *  Same pricing shape as CreateChargeRequest — either luna direct or fiat
+ *  minor units the server converts and freezes with a quote. */
+export const CreateChargeRequestRequest = z.object({
+  amountLuna: PositiveLunaString.optional(),
+  fiatAmountMinor: z.number().int().positive().optional(),
+  fiatCurrency: FiatCurrency.optional(),
+  reference: z.string().max(100).optional(),
+}).refine(
+  b => (b.amountLuna === undefined) !== (b.fiatAmountMinor === undefined),
+  'provide either amountLuna or fiatAmountMinor',
+).refine(
+  b => b.fiatAmountMinor === undefined || b.fiatCurrency !== undefined,
+  'fiatCurrency is required with fiatAmountMinor',
+)
 export const RegisterTxRequest = z.object({ hash: z.string().min(16).max(128) })
 export const AuthChallengeResponse = z.object({ nonce: z.string(), message: z.string() })
 export const AuthVerifyRequest = z.object({
@@ -73,6 +88,25 @@ export interface AffordabilityResponse {
 
 export type ClaimRequestT = z.infer<typeof ClaimRequest>
 export type CreateChargeRequestT = z.infer<typeof CreateChargeRequest>
+export type CreateChargeRequestRequestT = z.infer<typeof CreateChargeRequestRequest>
+
+export interface CreateChargeRequestResponse { id: string; expiresAt: string }
+
+/** What an unauthenticated payer sees when previewing a remote-charge link.
+ *  Deliberately excludes anything internal (ids, full address) — see the
+ *  route's own comment for why its failure modes are distinguishable, unlike
+ *  the six-digit code-claim flow's uniform generic error. */
+export interface ChargeRequestPreview {
+  amountLuna: string
+  fiatAmountMinor: number | null
+  fiatCurrency: string | null
+  reference: string | null
+  receiverDisplayName: string
+  receiverAddressTail: string
+  expiresAt: string
+  state: 'open' | 'expired' | 'paid'
+}
+export interface AcceptChargeRequestResponse { sessionId: string; chargeId: string }
 
 export const OpenShiftRequest = z.object({ operatorLabel: z.string().min(1).max(60) })
 
