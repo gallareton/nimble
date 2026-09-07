@@ -1,11 +1,10 @@
-import { randomBytes } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { paymentSession } from '../db/schema'
 import { env } from '../env'
+import { TicketStore } from '../services/ticketStore'
 
-const TICKET_TTL_MS = 30_000
-const tickets = new Map<string, { sessionId: string; expiresAt: number }>()
+const tickets = new TicketStore()
 
 export async function sseRoutes(app: FastifyInstance) {
   const { db, events } = app.deps
@@ -15,20 +14,14 @@ export async function sseRoutes(app: FastifyInstance) {
     const [s] = await db.select().from(paymentSession).where(eq(paymentSession.id, id))
     if (!s || (s.payerUserId !== req.user.userId && s.receiverUserId !== req.user.userId))
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'not found' } })
-    const ticket = randomBytes(16).toString('hex')
-    tickets.set(ticket, { sessionId: id, expiresAt: Date.now() + TICKET_TTL_MS })
-    return { ticket }
+    return { ticket: tickets.issue(id) }
   })
 
   app.get('/v1/sessions/:id/events', async (req, reply) => {
     const id = (req.params as { id: string }).id
     const ticket = (req.query as { ticket?: string }).ticket
-    const t = ticket ? tickets.get(ticket) : undefined
-    if (!t || t.sessionId !== id || t.expiresAt < Date.now()) {
-      if (ticket) tickets.delete(ticket)
+    if (!tickets.redeem(ticket, id))
       return reply.code(401).send({ error: { code: 'UNAUTHENTICATED', message: 'invalid ticket' } })
-    }
-    tickets.delete(ticket!) // single-use
 
     // reply.raw bypasses fastify's onSend hooks, so the CORS plugin never
     // decorates this response — set the header explicitly or browsers block
