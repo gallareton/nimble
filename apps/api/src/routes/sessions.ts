@@ -4,7 +4,7 @@ import { paymentSession, claimAttempt, charge, userProfile, chainTransaction } f
 import { env } from '../env'
 import { withIdempotency } from '../plugins/idempotency'
 import { generateCode, hashCode } from '../services/codeService'
-import { FX_BUFFER_BPS, priceInLuna } from '../services/pricing'
+import { priceInLuna } from '../services/pricing'
 import { ClaimRequest, parseLunaString } from '@nimble/shared'
 import { createHmac } from 'node:crypto'
 import { openShiftFor } from './shifts'
@@ -137,7 +137,6 @@ export async function sessionRoutes(app: FastifyInstance) {
           fxRate: quote ? String(quote.value) : null,
           fxRateAt: quote ? new Date(quote.at) : null,
           fxSource: quote?.source ?? null,
-          fxBufferBps: quote ? FX_BUFFER_BPS : null,
           recipientAddress: receiver.walletAddress, reference: reference ?? null,
         }).returning()
         return { won, c }

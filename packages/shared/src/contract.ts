@@ -95,7 +95,6 @@ export interface ShiftEntry {
   fxRate: string | null
   fxRateAt: string | null
   fxSource: string | null
-  fxBufferBps: number | null
 }
 
 /** One row of a vendor's shift history: enough to list without a full report per row. */

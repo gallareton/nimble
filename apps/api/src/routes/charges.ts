@@ -6,7 +6,7 @@ import { randomBytes } from 'node:crypto'
 import { charge, paymentSession, userProfile, chainTransaction } from '../db/schema'
 import type { Db } from '../db/client'
 import { withIdempotency } from '../plugins/idempotency'
-import { FX_BUFFER_BPS, priceInLuna } from '../services/pricing'
+import { priceInLuna } from '../services/pricing'
 import { requireIdemKey } from './sessions'
 import { openShiftFor } from './shifts'
 
@@ -75,7 +75,6 @@ export async function chargeRoutes(app: FastifyInstance) {
             fxRate: quote ? String(quote.value) : null,
             fxRateAt: quote ? new Date(quote.at) : null,
             fxSource: quote?.source ?? null,
-            fxBufferBps: quote ? FX_BUFFER_BPS : null,
             recipientAddress: receiver.walletAddress, reference: body.reference ?? null,
           }).returning()
           return c

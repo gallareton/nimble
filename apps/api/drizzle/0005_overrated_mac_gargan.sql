@@ -1,0 +1,1 @@
+ALTER TABLE "charge" DROP COLUMN "fx_buffer_bps";

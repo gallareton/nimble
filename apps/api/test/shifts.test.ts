@@ -3,7 +3,6 @@ import { afterAll, expect, it } from 'vitest'
 import { chainTransaction, charge } from '../src/db/schema'
 import { monitorTick } from '../src/services/monitor'
 import { SessionEvents } from '../src/services/events'
-import { FX_BUFFER_BPS } from '../src/services/pricing'
 import { freshDb } from './helpers/db'
 import { authedApp, makeUser } from './helpers/actors'
 
@@ -109,20 +108,19 @@ it('a closed shift with a confirmed fiat sale reports the same non-zero numbers 
   expect(entry.fxRate).toBe('0.004')
   expect(entry.fxRateAt).not.toBeNull()
   expect(entry.fxSource).toBe('test-fixture')
-  expect(entry.fxBufferBps).toBe(FX_BUFFER_BPS)
   // occurredAt comes from the receipt snapshot written when the monitor
   // confirms the transaction, not from the charge's createdAt.
   expect(entry.occurredAt).not.toBeNull()
 })
 
-it('the fx buffer is its own column: (amount_fiat_minor / fx_rate) * (1 + fx_buffer_bps/10000) reconciles to amount_crypto', async () => {
+it('the export reconciles: amount_fiat_minor / fx_rate equals amount_crypto, with nothing added', async () => {
   const { t } = await vendor()
   const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
     payload: { operatorLabel: 'Ana' }, headers: auth(t) })).json()
 
-  // 1234 minor units at a 0.004 quote: naive division gives 3085 NIM, but the
-  // 50 bps merchant buffer means 3100.425 NIM was actually charged. Both
-  // numbers have to be recoverable from the exported columns.
+  // 1234 minor units at a 0.004 quote is exactly 3085 NIM. There is no
+  // merchant buffer: what the vendor typed is what the payer is charged.
+  // This is the regression guard for "entered 2.50, history showed 2.51".
   await confirmFiatSale(id, t, 1234)
   await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
 
@@ -133,21 +131,18 @@ it('the fx buffer is its own column: (amount_fiat_minor / fx_rate) * (1 + fx_buf
   const cells = dataRow.split(',')
   const cell = (name: string) => cells[cols.indexOf(name)]
 
+  expect(cols).not.toContain('fx_buffer_bps')
+
   const amountFiatMinor = Number(cell('amount_fiat_minor'))
   const fxRate = Number(cell('fx_rate'))
-  const fxBufferBps = Number(cell('fx_buffer_bps'))
   const amountCrypto = Number(cell('amount_crypto'))
 
   expect(amountFiatMinor).toBe(1234)
   expect(fxRate).toBe(0.004)
-  expect(fxBufferBps).toBe(FX_BUFFER_BPS)
 
-  // The buffer is padding on TOP of the raw quote (the merchant demands more
-  // NIM per fiat unit to absorb FX risk), so it multiplies rather than
-  // divides — see priceInLuna in src/services/pricing.ts.
-  const expectedNim = (amountFiatMinor / 100 / fxRate) * (1 + fxBufferBps / 10_000)
+  const expectedNim = amountFiatMinor / 100 / fxRate
   expect(Math.abs(amountCrypto - expectedNim)).toBeLessThan(0.0001) // ceil-rounding tolerance
-  expect(amountCrypto).toBeCloseTo(3100.425, 3)
+  expect(amountCrypto).toBeCloseTo(3085, 3)
 })
 
 it('a vendor cannot read another vendor shift', async () => {
@@ -257,7 +252,7 @@ it('exports RFC 4180 CSV with a BOM, CRLF and the rate columns', async () => {
   expect(res.body.startsWith('﻿')).toBe(true)
   const [header] = res.body.slice(1).split('\r\n')
   expect(header).toBe('local_number,occurred_at_utc,status,amount_fiat_minor,fiat_currency,' +
-    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,fx_buffer_bps,reference,operator,shift_id')
+    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,reference,operator,shift_id')
 
   const json = await app.inject({ url: `/v1/shifts/${id}/export?format=json`, headers: auth(t) })
   expect(json.json().shift.operatorLabel).toBe('Ana, "the boss"')

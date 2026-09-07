@@ -72,10 +72,6 @@ export const charge = pgTable('charge', {
   fxRate: text('fx_rate'),
   fxRateAt: timestamp('fx_rate_at', { withTimezone: true }),
   fxSource: text('fx_source'),
-  // The merchant's own markup on the quote (FX_BUFFER_BPS at freeze time).
-  // Kept separate from fx_rate, which stays the raw quote: (amount_fiat_minor
-  // / fx_rate) * (1 + fx_buffer_bps/10000) is what reconciles to amount_crypto.
-  fxBufferBps: integer('fx_buffer_bps'),
 })
 
 export const chainTransaction = pgTable('chain_transaction', {
