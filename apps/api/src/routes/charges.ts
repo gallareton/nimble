@@ -7,6 +7,7 @@ import { charge, paymentSession, userProfile, chainTransaction } from '../db/sch
 import type { Db } from '../db/client'
 import { withIdempotency } from '../plugins/idempotency'
 import { priceInLuna } from '../services/pricing'
+import { insertCharge } from '../services/charges'
 import { requireIdemKey } from './sessions'
 import { openShiftFor } from './shifts'
 
@@ -67,7 +68,7 @@ export async function chargeRoutes(app: FastifyInstance) {
           if (!locked) return null
           const [receiver] = await tx.select().from(userProfile).where(eq(userProfile.id, req.user.userId))
           const openShift = await openShiftFor(tx as unknown as Db, req.user.userId)
-          const [c] = await tx.insert(charge).values({
+          const c = await insertCharge(tx as unknown as Db, {
             sessionId, amountAtomic,
             shiftId: openShift?.id ?? null,
             fiatAmountMinor: body.fiatAmountMinor ?? null,
@@ -76,7 +77,7 @@ export async function chargeRoutes(app: FastifyInstance) {
             fxRateAt: quote ? new Date(quote.at) : null,
             fxSource: quote?.source ?? null,
             recipientAddress: receiver.walletAddress, reference: body.reference ?? null,
-          }).returning()
+          })
           return c
         })
         if (!result) return { code: 409, body: { error: { code: 'CHARGE_EXISTS', message: 'charge window closed or already charged' } } }

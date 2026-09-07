@@ -5,6 +5,7 @@ import { env } from '../env'
 import { withIdempotency } from '../plugins/idempotency'
 import { generateCode, hashCode } from '../services/codeService'
 import { priceInLuna } from '../services/pricing'
+import { insertCharge } from '../services/charges'
 import { ClaimRequest, parseLunaString } from '@nimble/shared'
 import { createHmac } from 'node:crypto'
 import { openShiftFor } from './shifts'
@@ -129,7 +130,7 @@ export async function sessionRoutes(app: FastifyInstance) {
         // Every charge this route creates gets stamped, luna-priced too — a
         // vendor's day must contain all their sales, not only the fiat ones.
         const openShift = await openShiftFor(tx as unknown as Db, req.user.userId)
-        const [c] = await tx.insert(charge).values({
+        const c = await insertCharge(tx as unknown as Db, {
           sessionId: won.id, amountAtomic,
           shiftId: openShift?.id ?? null,
           fiatAmountMinor: fiatAmountMinor ?? null,
@@ -138,7 +139,7 @@ export async function sessionRoutes(app: FastifyInstance) {
           fxRateAt: quote ? new Date(quote.at) : null,
           fxSource: quote?.source ?? null,
           recipientAddress: receiver.walletAddress, reference: reference ?? null,
-        }).returning()
+        })
         return { won, c }
       })
 

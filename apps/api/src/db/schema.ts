@@ -74,6 +74,33 @@ export const charge = pgTable('charge', {
   fxSource: text('fx_source'),
 })
 
+// A remote charge: the receiver bills a payer who isn't at the counter and
+// shares the link. `id` is the public link token, so it MUST stay
+// unguessable — defaultRandom() (uuid v4), never anything sequential.
+//
+// No shift_id here, deliberately: a request raised during one shift but paid
+// after it closes would change a closed shift's contents, breaking "a closed
+// shift reports the same rows forever". The shift stamp happens at payment
+// time (when the resulting `charge` row is created), not at request time.
+export const chargeRequest = pgTable('charge_request', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  receiverUserId: uuid('receiver_user_id').notNull().references(() => userProfile.id),
+  amountAtomic: bigint('amount_atomic', { mode: 'bigint' }).notNull(),
+  fiatAmountMinor: integer('fiat_amount_minor'),
+  fiatCurrency: text('fiat_currency'),
+  fxRate: text('fx_rate'),
+  fxRateAt: timestamp('fx_rate_at', { withTimezone: true }),
+  fxSource: text('fx_source'),
+  reference: text('reference'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  sessionId: uuid('session_id').references(() => paymentSession.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  // A request materializes at most one session: enforced by the database,
+  // not application code, same pattern as one_open_shift_per_user.
+  uniqueIndex('one_session_per_request').on(t.sessionId).where(sql`session_id is not null`),
+])
+
 export const chainTransaction = pgTable('chain_transaction', {
   id: uuid('id').primaryKey().defaultRandom(),
   chargeId: uuid('charge_id').notNull().references(() => charge.id),
