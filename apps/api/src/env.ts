@@ -21,5 +21,11 @@ export const env = {
   mockAuth: process.env.MOCK_AUTH === '1',
   fakeChain: process.env.FAKE_CHAIN === '1',
   corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+  // Named in the message the wallet asks the user to sign, so they can see
+  // which site is asking. Deliberately NOT corsOrigin: production serves the
+  // Mini App same-origin and never sets CORS_ORIGIN, so that variable still
+  // holds its localhost default there — harmless for CORS, wrong in a
+  // security prompt.
+  appOrigin: process.env.APP_ORIGIN ?? 'nimble.gallareton.pl',
   webDist: process.env.WEB_DIST ?? '',
 }

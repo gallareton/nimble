@@ -15,6 +15,8 @@ services:
       NIMIQ_NETWORK: ${NIMIQ_NETWORK:-TestAlbatross}
       # Optional: the API defaults to the matching public RPC per network.
       NIMIQ_RPC_URL: ${NIMIQ_RPC_URL:-}
+      # Named in the wallet's sign-in prompt so the user sees who is asking.
+      APP_ORIGIN: ${APP_ORIGIN:-nimble.gallareton.pl}
       NODE_ENV: production
     depends_on:
       db:
