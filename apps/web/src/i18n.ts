@@ -195,6 +195,16 @@ const pl: Record<string, string> = {
   'Accept & pay': 'Akceptuj i zapłać',
   'Expires {date}': 'Wygasa {date}',
   'Could not load this bill. Check your connection and try again.': 'Nie udało się wczytać rachunku. Sprawdź połączenie i spróbuj ponownie.',
+  'Transactions': 'Transakcje',
+  '↩ Refund of sale #{n}': '↩ Zwrot sprzedaży #{n}',
+  '↩ Refund of a sale from {date}': '↩ Zwrot sprzedaży z {date}',
+  'Refund': 'Zwrot',
+  'Amount to refund (NIM)': 'Kwota zwrotu (NIM)',
+  'Reason (optional)': 'Powód (opcjonalnie)',
+  'This cannot be undone once you sign it in your wallet.': 'Tego nie da się cofnąć po podpisaniu w portfelu.',
+  'The refund cannot be more than the original amount.': 'Zwrot nie może być większy niż kwota pierwotna.',
+  'Could not create the refund. Check your connection and try again.': 'Nie udało się utworzyć zwrotu. Sprawdź połączenie i spróbuj ponownie.',
+  'Send refund': 'Wyślij zwrot',
 }
 
 const de: Record<string, string> = {
@@ -381,6 +391,16 @@ const de: Record<string, string> = {
   'Accept & pay': 'Annehmen & bezahlen',
   'Expires {date}': 'Läuft ab am {date}',
   'Could not load this bill. Check your connection and try again.': 'Rechnung konnte nicht geladen werden. Verbindung prüfen und erneut versuchen.',
+  'Transactions': 'Transaktionen',
+  '↩ Refund of sale #{n}': '↩ Rückerstattung von Verkauf #{n}',
+  '↩ Refund of a sale from {date}': '↩ Rückerstattung eines Verkaufs vom {date}',
+  'Refund': 'Rückerstattung',
+  'Amount to refund (NIM)': 'Rückerstattungsbetrag (NIM)',
+  'Reason (optional)': 'Grund (optional)',
+  'This cannot be undone once you sign it in your wallet.': 'Dies kann nach der Unterschrift in Ihrer Wallet nicht rückgängig gemacht werden.',
+  'The refund cannot be more than the original amount.': 'Die Rückerstattung darf den ursprünglichen Betrag nicht überschreiten.',
+  'Could not create the refund. Check your connection and try again.': 'Rückerstattung konnte nicht erstellt werden. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
+  'Send refund': 'Rückerstattung senden',
 }
 
 const es: Record<string, string> = {
@@ -567,6 +587,16 @@ const es: Record<string, string> = {
   'Accept & pay': 'Aceptar y pagar',
   'Expires {date}': 'Caduca el {date}',
   'Could not load this bill. Check your connection and try again.': 'No se pudo cargar la factura. Comprueba tu conexión e inténtalo de nuevo.',
+  'Transactions': 'Transacciones',
+  '↩ Refund of sale #{n}': '↩ Reembolso de la venta #{n}',
+  '↩ Refund of a sale from {date}': '↩ Reembolso de una venta del {date}',
+  'Refund': 'Reembolso',
+  'Amount to refund (NIM)': 'Importe a reembolsar (NIM)',
+  'Reason (optional)': 'Motivo (opcional)',
+  'This cannot be undone once you sign it in your wallet.': 'Esto no se puede deshacer una vez que lo firmes en tu monedero.',
+  'The refund cannot be more than the original amount.': 'El reembolso no puede superar el importe original.',
+  'Could not create the refund. Check your connection and try again.': 'No se pudo crear el reembolso. Comprueba tu conexión e inténtalo de nuevo.',
+  'Send refund': 'Enviar reembolso',
 }
 
 const fr: Record<string, string> = {
@@ -753,6 +783,16 @@ const fr: Record<string, string> = {
   'Accept & pay': 'Accepter et payer',
   'Expires {date}': 'Expire le {date}',
   'Could not load this bill. Check your connection and try again.': 'Impossible de charger la facture. Vérifiez votre connexion et réessayez.',
+  'Transactions': 'Transactions',
+  '↩ Refund of sale #{n}': "↩ Remboursement de la vente #{n}",
+  '↩ Refund of a sale from {date}': "↩ Remboursement d'une vente du {date}",
+  'Refund': 'Remboursement',
+  'Amount to refund (NIM)': 'Montant à rembourser (NIM)',
+  'Reason (optional)': 'Motif (facultatif)',
+  'This cannot be undone once you sign it in your wallet.': 'Ceci est irréversible une fois signé dans votre portefeuille.',
+  'The refund cannot be more than the original amount.': "Le remboursement ne peut pas dépasser le montant d'origine.",
+  'Could not create the refund. Check your connection and try again.': 'Impossible de créer le remboursement. Vérifiez votre connexion et réessayez.',
+  'Send refund': 'Envoyer le remboursement',
 }
 
 const pt: Record<string, string> = {
@@ -939,6 +979,16 @@ const pt: Record<string, string> = {
   'Accept & pay': 'Aceitar e pagar',
   'Expires {date}': 'Expira em {date}',
   'Could not load this bill. Check your connection and try again.': 'Não foi possível carregar a fatura. Verifique a ligação e tente novamente.',
+  'Transactions': 'Transações',
+  '↩ Refund of sale #{n}': '↩ Reembolso da venda #{n}',
+  '↩ Refund of a sale from {date}': '↩ Reembolso de uma venda de {date}',
+  'Refund': 'Reembolso',
+  'Amount to refund (NIM)': 'Valor a reembolsar (NIM)',
+  'Reason (optional)': 'Motivo (opcional)',
+  'This cannot be undone once you sign it in your wallet.': 'Isto não pode ser desfeito depois de assinar na sua carteira.',
+  'The refund cannot be more than the original amount.': 'O reembolso não pode ser superior ao valor original.',
+  'Could not create the refund. Check your connection and try again.': 'Não foi possível criar o reembolso. Verifique a ligação e tente novamente.',
+  'Send refund': 'Enviar reembolso',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }

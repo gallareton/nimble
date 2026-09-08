@@ -1,8 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { Shift } from '../src/screens/Shift'
 import { NewRemoteCharge } from '../src/screens/NewRemoteCharge'
+import { Refund } from '../src/screens/Refund'
 import { ApiError } from '../src/api/client'
 
 const noShift = { getCurrentShift: vi.fn(async () => null), openShift: vi.fn() }
@@ -441,4 +442,108 @@ it('lists issued bills and cancels one, so a vendor can undo a mistake', async (
   // The list reloads from the server rather than trusting local state: whether
   // the cancel really took is the server's answer to give.
   await waitFor(() => expect(screen.queryByText(/Soda/)).toBeNull())
+})
+
+// --- Task 4: refund from the shift report ------------------------------
+
+const saleEntry = {
+  chargeId: 'c1', localNumber: 1, occurredAt: '2026-09-08T09:00:00.000Z',
+  status: 'CONFIRMED', amountNim: '10', asset: 'NIM', network: 'nimiq', hash: 'abc',
+  reference: 'Coffee', amountFiatMinor: null, fiatCurrency: null,
+  fxRate: null, fxRateAt: null, fxSource: null,
+  refundOfLocalNumber: null, refundOfOccurredAt: null,
+}
+const refundOfSaleEntry = {
+  chargeId: 'c2', localNumber: 2, occurredAt: '2026-09-08T10:00:00.000Z',
+  status: 'CONFIRMED', amountNim: '-4', asset: 'NIM', network: 'nimiq', hash: 'def',
+  reference: 'partial', amountFiatMinor: null, fiatCurrency: null,
+  fxRate: null, fxRateAt: null, fxSource: null,
+  refundOfLocalNumber: 1, refundOfOccurredAt: '2026-09-08T09:00:00.000Z',
+}
+const unconfirmedEntry = {
+  chargeId: 'c3', localNumber: 3, occurredAt: '2026-09-08T11:00:00.000Z',
+  status: 'AWAITING_PAYER_APPROVAL', amountNim: '5', asset: 'NIM', network: 'nimiq', hash: null,
+  reference: null, amountFiatMinor: null, fiatCurrency: null,
+  fxRate: null, fxRateAt: null, fxSource: null,
+  refundOfLocalNumber: null, refundOfOccurredAt: null,
+}
+
+it('lists the report entries — a sale and a refund, the refund negative and pointing back at the sale', async () => {
+  const report = {
+    shift: { id: 's1', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null },
+    totals: { count: 2, confirmed: 1, refunded: 1, failed: 0, grossNim: '6', grossFiatMinor: null,
+      fiatCurrency: null, averageTicketNim: '10' },
+    entries: [saleEntry, refundOfSaleEntry], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null })),
+    getShiftReport: vi.fn(async () => report),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+
+  await waitFor(() => expect(screen.getByText('10 NIM')).toBeTruthy())
+  expect(screen.getByText('Coffee')).toBeTruthy()
+  expect(screen.getByText('-4 NIM')).toBeTruthy()
+  expect(screen.getByText(/Refund of sale #1/)).toBeTruthy()
+})
+
+it('shows the refund action only on a confirmed sale, never on a refund entry or an unconfirmed one', async () => {
+  const report = {
+    shift: { id: 's1', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null },
+    totals: { count: 3, confirmed: 1, refunded: 1, failed: 0, grossNim: '6', grossFiatMinor: null,
+      fiatCurrency: null, averageTicketNim: '10' },
+    entries: [saleEntry, refundOfSaleEntry, unconfirmedEntry], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null })),
+    getShiftReport: vi.fn(async () => report),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+
+  await waitFor(() => expect(screen.getByText('10 NIM')).toBeTruthy())
+  const refundLinks = screen.getAllByRole('link', { name: 'Refund' })
+  expect(refundLinks.length).toBe(1)
+  expect(refundLinks[0].getAttribute('href')).toBe('/refund/c1')
+})
+
+it('rejects a refund amount bigger than the original sale before sending anything', async () => {
+  const createRefund = vi.fn()
+  const api = { createRefund }
+  render(
+    <MemoryRouter initialEntries={[{ pathname: '/refund/c1', state: { amountNim: '10', reference: 'Coffee' } }]}>
+      <Routes>
+        <Route path="/refund/:chargeId" element={<Refund api={api as never} />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+
+  const input = await screen.findByLabelText(/Amount to refund/i)
+  fireEvent.change(input, { target: { value: '20' } })
+  fireEvent.click(screen.getByRole('button', { name: /Send refund/i }))
+
+  await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/cannot be more than/i))
+  expect(createRefund).not.toHaveBeenCalled()
+})
+
+it('moves to the session approval screen after creating a refund', async () => {
+  const createRefund = vi.fn(async (_id: string, _opts: { amountLuna?: string; reason?: string }) =>
+    ({ refundId: 'r1', sessionId: 'sess1', chargeId: 'c9' }))
+  const api = { createRefund }
+  render(
+    <MemoryRouter initialEntries={[{ pathname: '/refund/c1', state: { amountNim: '10', reference: 'Coffee' } }]}>
+      <Routes>
+        <Route path="/refund/:chargeId" element={<Refund api={api as never} />} />
+        <Route path="/session/:id" element={<div>session screen</div>} />
+      </Routes>
+    </MemoryRouter>,
+  )
+
+  const input = await screen.findByLabelText(/Amount to refund/i)
+  fireEvent.change(input, { target: { value: '4' } })
+  fireEvent.click(screen.getByRole('button', { name: /Send refund/i }))
+
+  await waitFor(() => expect(createRefund).toHaveBeenCalledTimes(1))
+  expect(createRefund.mock.calls[0][0]).toBe('c1')
+  expect(createRefund.mock.calls[0][1]).toEqual({ amountLuna: '400000', reason: undefined })
+  await waitFor(() => expect(screen.getByText('session screen')).toBeTruthy())
 })

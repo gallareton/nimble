@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
+import type { ShiftEntry, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
+import { StatusBadge } from '../components/StatusBadge'
 import { t } from '../i18n'
 import { usePoll } from '../lib/usePoll'
 
@@ -46,6 +47,58 @@ function ReportSummary({ report }: { report: ShiftReport }) {
         {report.totals.failed > 0 && ` · ${report.totals.failed} ${t('failed')}`}
       </p>
       {report.fiatIncomplete && <p className="quiet">{t('Some sales had no exchange rate, so the fiat total is partial.')}</p>}
+    </section>
+  )
+}
+
+// The summary above shows totals only — a vendor looking at their own shift
+// wants to see what they actually sold, not just the sum of it. A refund is
+// marked up beyond its negative sign (§ spec: "not only by the sign") because
+// a glance at a long list must not depend on reading a minus sign correctly.
+// Only a CONFIRMED sale with no refund pointers of its own is refundable —
+// an unconfirmed entry has no money to give back yet, and a refund cannot
+// itself be refunded.
+function isRefundEntry(e: ShiftEntry): boolean {
+  return e.refundOfLocalNumber !== null || e.refundOfOccurredAt !== null
+}
+
+function EntryList({ entries }: { entries: ShiftEntry[] }) {
+  if (entries.length === 0) return null
+  return (
+    <section className="form-card">
+      <h2>{t('Transactions')}</h2>
+      <ul className="entries">
+        {entries.map(e => {
+          const refund = isRefundEntry(e)
+          const refundable = !refund && e.status === 'CONFIRMED'
+          return (
+            <li key={e.chargeId} className={refund ? 'entries__row entries__row--refund' : 'entries__row'}>
+              <div className="entries__main">
+                <span className="quiet">#{e.localNumber} · {new Date(e.occurredAt).toLocaleTimeString()}</span>
+                <span className="amt">{e.amountNim} NIM</span>
+              </div>
+              <div className="entries__meta">
+                <StatusBadge status={e.status} />
+                {e.reference && <span className="quiet">{e.reference}</span>}
+              </div>
+              {refund && (
+                <p className="quiet entries__refund-tag">
+                  {e.refundOfLocalNumber !== null
+                    ? t('↩ Refund of sale #{n}').replace('{n}', String(e.refundOfLocalNumber))
+                    : t('↩ Refund of a sale from {date}').replace('{date}', new Date(e.refundOfOccurredAt!).toLocaleDateString())}
+                </p>
+              )}
+              {refundable && (
+                <p>
+                  <Link to={`/refund/${e.chargeId}`} state={{ amountNim: e.amountNim, reference: e.reference }}>
+                    {t('Refund')}
+                  </Link>
+                </p>
+              )}
+            </li>
+          )
+        })}
+      </ul>
     </section>
   )
 }
@@ -260,6 +313,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
         </p>
         <p className="quiet">{pastReport.shift.operatorLabel}</p>
         <ReportSummary report={pastReport} />
+        <EntryList entries={pastReport.entries} />
         {actionError && <p role="alert">{actionError}</p>}
         <p>
           <a href="#" onClick={e => { e.preventDefault(); void download(pastReport.shift.id, 'csv') }}>{t('Download CSV')}</a>
@@ -305,6 +359,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       )}
       {shift && <p className="quiet">{shift.operatorLabel}</p>}
       {report && <ReportSummary report={report} />}
+      {report && <EntryList entries={report.entries} />}
       {actionError && <p role="alert">{actionError}</p>}
       {/* Not gated on an open shift: a remote bill produces receipts, on-chain
           reconciliation and live status whether or not one is running — only

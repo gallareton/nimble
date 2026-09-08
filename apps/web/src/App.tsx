@@ -8,6 +8,7 @@ import { NewRemoteCharge } from './screens/NewRemoteCharge'
 import { Pay } from './screens/Pay'
 import { RemoteCharge } from './screens/RemoteCharge'
 import { Receipt } from './screens/Receipt'
+import { Refund } from './screens/Refund'
 import { Settings } from './screens/Settings'
 import { Shift } from './screens/Shift'
 import type { ReactNode } from 'react'
@@ -34,6 +35,7 @@ export function App() {
         <Route path="/history" element={<RequireAuth><History /></RequireAuth>} />
         <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
         <Route path="/shift" element={<RequireAuth><Shift /></RequireAuth>} />
+        <Route path="/refund/:chargeId" element={<RequireAuth><Refund /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppProvider>

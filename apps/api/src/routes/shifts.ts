@@ -161,6 +161,7 @@ export async function buildReport(db: Db, row: typeof shift.$inferSelect): Promi
     const originalLocal = originalId ? localByChargeId.get(originalId) : undefined
 
     return {
+      chargeId: x.c.id,
       localNumber: i + 1,
       occurredAt: local.occurredAt,
       status,

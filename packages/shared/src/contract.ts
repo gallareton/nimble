@@ -143,6 +143,10 @@ export interface ShiftView {
  * negative and refundOf* pointing back at the sale it refunds.
  */
 export interface ShiftEntry {
+  /** The underlying charge's id — needed by the client to call POST
+   *  /v1/charges/:id/refunds against this entry. Added additively for
+   *  Task 4 (refund-from-report): nothing else in the shape changed. */
+  chargeId: string
   localNumber: number
   occurredAt: string
   status: SessionStatus

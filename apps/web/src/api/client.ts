@@ -1,4 +1,4 @@
-import type { AcceptChargeRequestResponse, AffordabilityResponse, ChargeRequestPreview, ClaimResponse, OutstandingBillsResponse, CreateChargeRequestResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
+import type { AcceptChargeRequestResponse, AffordabilityResponse, ChargeRequestPreview, ClaimResponse, OutstandingBillsResponse, CreateChargeRequestResponse, CreateRefundResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
@@ -99,6 +99,13 @@ export class Api {
   cancelChargeRequest(id: string) { return this.#delete<void>(`/v1/charge-requests/${id}`) }
   acceptChargeRequest(id: string, idemKey?: string) {
     return this.#post<AcceptChargeRequestResponse>(`/v1/charge-requests/${id}/accept`, undefined, idemKey)
+  }
+  // Idempotent like createChargeRequest, and for the same reason: a refund
+  // has no in-person retry either — the vendor taps once, the tap may drop
+  // on the way back, and a second automatic attempt must not mint a second
+  // refund of the same sale.
+  createRefund(chargeId: string, opts: { amountLuna?: string; reason?: string }, idemKey?: string) {
+    return this.#post<CreateRefundResponse>(`/v1/charges/${chargeId}/refunds`, opts, idemKey)
   }
   reject(chargeId: string) { return this.#post<{ status: string }>(`/v1/charges/${chargeId}/reject`) }
   cancel(sessionId: string) { return this.#post<{ status: string }>(`/v1/sessions/${sessionId}/cancel`) }

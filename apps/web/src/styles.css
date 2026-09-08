@@ -380,6 +380,23 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .list .amt .fiat { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
 .list li.pending a { opacity: 0.55; }
 
+.entries { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.entries__row {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 16px;
+}
+.entries__main { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.entries__meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+/* A refund must read differently at a glance, not only by its minus sign —
+   a left accent bar plus a tinted background carry that even in a quick scan. */
+.entries__row--refund {
+  border-left: 3px solid var(--nimiq-red);
+  background: rgba(217, 68, 50, 0.06);
+}
+.entries__refund-tag { margin: 2px 0 0; }
+
 .footer-nav { color: var(--muted); font-size: 14px; text-align: center; }
 .footer-nav a { color: var(--muted); font-weight: 600; }
 
