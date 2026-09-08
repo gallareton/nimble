@@ -12,10 +12,10 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Bill from': 'Rachunek od',
+  'Pay in Nimiq Pay': 'Zapłać w Nimiq Pay',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Zmiany, sumy dobowe, eksport CSV i rachunki zdalne już działają; zwroty, napiwki i zweryfikowany profil firmy w przygotowaniu.",
   'Copy the link': 'Skopiuj link',
-  'Copy the Nimiq Pay link': 'Skopiuj link do Nimiq Pay',
-  'Opens Nimiq Pay directly, if their phone has it.': 'Otwiera od razu Nimiq Pay, jeśli telefon go ma.',
   'Price': 'Cena',
   'Close': 'Zamknij',
   'Back': 'Wstecz',
@@ -191,10 +191,10 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Bill from': 'Rechnung von',
+  'Pay in Nimiq Pay': 'In Nimiq Pay bezahlen',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Schichten, Tagessummen, CSV-Export und Fernrechnungen sind live; Erstattungen, Trinkgeld und ein verifiziertes Firmenprofil folgen.",
   'Copy the link': 'Link kopieren',
-  'Copy the Nimiq Pay link': 'Nimiq-Pay-Link kopieren',
-  'Opens Nimiq Pay directly, if their phone has it.': 'Öffnet Nimiq Pay direkt, sofern installiert.',
   'Price': 'Preis',
   'Close': 'Schließen',
   'Back': 'Zurück',
@@ -370,10 +370,10 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Bill from': 'Factura de',
+  'Pay in Nimiq Pay': 'Pagar en Nimiq Pay',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Turnos, totales diarios, exportación CSV y facturas remotas ya funcionan; devoluciones, propinas y perfil de empresa verificado están en camino.",
   'Copy the link': 'Copiar el enlace',
-  'Copy the Nimiq Pay link': 'Copiar el enlace de Nimiq Pay',
-  'Opens Nimiq Pay directly, if their phone has it.': 'Abre Nimiq Pay directamente, si lo tiene instalado.',
   'Price': 'Precio',
   'Close': 'Cerrar',
   'Back': 'Atrás',
@@ -549,10 +549,10 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Bill from': 'Note de',
+  'Pay in Nimiq Pay': 'Payer dans Nimiq Pay',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Postes, totaux du jour, export CSV et notes à distance sont en ligne ; remboursements, pourboires et profil professionnel vérifié à suivre.",
   'Copy the link': 'Copier le lien',
-  'Copy the Nimiq Pay link': 'Copier le lien Nimiq Pay',
-  'Opens Nimiq Pay directly, if their phone has it.': 'Ouvre directement Nimiq Pay, si le téléphone en dispose.',
   'Price': 'Prix',
   'Close': 'Fermer',
   'Back': 'Retour',
@@ -728,10 +728,10 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Bill from': 'Fatura de',
+  'Pay in Nimiq Pay': 'Pagar no Nimiq Pay',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Turnos, totais diários, exportação CSV e faturas remotas já funcionam; reembolsos, gorjetas e perfil de empresa verificado a seguir.",
   'Copy the link': 'Copiar a ligação',
-  'Copy the Nimiq Pay link': 'Copiar a ligação do Nimiq Pay',
-  'Opens Nimiq Pay directly, if their phone has it.': 'Abre o Nimiq Pay diretamente, se o telemóvel o tiver.',
   'Price': 'Preço',
   'Close': 'Fechar',
   'Back': 'Voltar',

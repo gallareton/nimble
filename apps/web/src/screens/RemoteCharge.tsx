@@ -36,11 +36,12 @@ export function RemoteCharge(props: { api?: Api; token?: string | null; login?: 
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(() => {
-    // Outside Nimiq Pay the component renders Landing instead (below) and
-    // never needs the preview — skip the request so a plain-browser open of
-    // this link doesn't burn the preview endpoint's per-IP rate budget for
-    // nothing.
-    if (!id || !inNimiqPay()) return
+    // Fetched in a plain browser too, on purpose. Opening this link outside
+    // Nimiq Pay means a landing page, a blue button and then the wallet's own
+    // "unknown link" warning — three steps during which the person has no
+    // idea what they are about to approve. The preview endpoint is public
+    // precisely so we can show them the amount and the vendor first.
+    if (!id) return
     setNotFound(false)
     setLoadError(null)
     api.getChargeRequest(id).then(setPreview).catch(e => {
@@ -54,7 +55,7 @@ export function RemoteCharge(props: { api?: Api; token?: string | null; login?: 
   // Opened in a plain browser: send them to the app via a deep link that
   // points at this exact bill, not the generic home screen — see
   // Landing's own comment.
-  if (!inNimiqPay()) return <Landing chargeId={id} />
+  if (!inNimiqPay()) return <Landing chargeId={id} bill={preview} />
 
   const accept = async () => {
     if (!id) return

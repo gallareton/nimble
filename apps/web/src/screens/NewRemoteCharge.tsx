@@ -7,7 +7,7 @@ import { ApiError } from '../api/client'
 import { t } from '../i18n'
 import { formatUsd, useUsdRate } from '../lib/fiat'
 import { copyText } from '../lib/copy'
-import { remoteChargeDeeplink, remoteChargeUrl } from '../lib/host'
+import { remoteChargeUrl } from '../lib/host'
 import { toMinorUnits } from './Charge'
 
 type Unit = 'USD' | 'NIM'
@@ -38,7 +38,7 @@ export function NewRemoteCharge(props: { api?: Api }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<{ id: string; expiresAt: string } | null>(null)
-  const [copiedWhich, setCopiedWhich] = useState<'url' | 'deeplink' | null>(null)
+  const [copied, setCopied] = useState(false)
   const usdRate = useUsdRate(api)
 
   const chooseUnit = (next: Unit) => {
@@ -55,7 +55,7 @@ export function NewRemoteCharge(props: { api?: Api }) {
 
   const submit = async () => {
     setError(null)
-    setCopiedWhich(null)
+    setCopied(false)
 
     if (unit === 'USD') {
       const fiatAmountMinor = toMinorUnits(amount)
@@ -103,17 +103,15 @@ export function NewRemoteCharge(props: { api?: Api }) {
 
   // Which of the two links was copied last, so the button that was pressed is
   // the one that says "Copied" — a single shared flag would light up both.
-  const copyLink = async (which: 'url' | 'deeplink') => {
+  const copyLink = async () => {
     if (!created) return
-    const text = which === 'url' ? remoteChargeUrl(created.id) : remoteChargeDeeplink(created.id)
-    const ok = await copyText(text)
-    if (ok) setCopiedWhich(which)
+    const ok = await copyText(remoteChargeUrl(created.id))
+    if (ok) setCopied(true)
     else setError(t('Could not copy the export. Select the text and copy it manually.'))
   }
 
   if (created) {
     const url = remoteChargeUrl(created.id)
-    const deeplink = remoteChargeDeeplink(created.id)
     return (
       <main>
         <header className="top-bar">
@@ -124,18 +122,11 @@ export function NewRemoteCharge(props: { api?: Api }) {
           <p className="quiet">{t('Share this link with the payer.')}</p>
           <textarea id="remote-charge-link" className="export-textarea" readOnly value={url} />
           <div className="actions">
-            <button aria-label={t('Copy the link')} onClick={() => void copyLink('url')}>
-              {copiedWhich === 'url' ? t('Copied') : t('Copy')}
+            <button aria-label={t('Copy the link')} onClick={() => void copyLink()}>
+              {copied ? t('Copied') : t('Copy')}
             </button>
           </div>
 
-          <p className="quiet">{t('Opens Nimiq Pay directly, if their phone has it.')}</p>
-          <textarea id="remote-charge-deeplink" className="export-textarea" readOnly value={deeplink} />
-          <div className="actions">
-            <button aria-label={t('Copy the Nimiq Pay link')} onClick={() => void copyLink('deeplink')}>
-              {copiedWhich === 'deeplink' ? t('Copied') : t('Copy')}
-            </button>
-          </div>
         </section>
         <p className="footer-nav"><Link to="/shift">‹ {t('Shift')}</Link></p>
       </main>

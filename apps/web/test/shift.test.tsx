@@ -322,19 +322,17 @@ it('shows the bill link on screen after issuing it, and lets the vendor copy it'
   // anyone, the nimiqpay:// one that jumps straight into the wallet. The
   // deeplink used to be unselectable body text, which made the very thing you
   // need on a phone the one thing you could not take with you.
+  // One link, and it is the ordinary https one. A nimiqpay:// link was offered
+  // here until a device test showed messengers do not linkify it at all and a
+  // browser address bar sends it to a search engine — so it was a trap: the
+  // vendor would copy something that does nothing for the customer.
   const plain = await screen.findByDisplayValue(/^https?:\/\/.*\/r\/cr3$/)
-  const deeplink = await screen.findByDisplayValue(/^nimiqpay:\/\/miniapp\?url=/)
-  // textarea keeps its text as a property, not an attribute
-  expect((deeplink as HTMLTextAreaElement).value).toContain(encodeURIComponent('/r/cr3'))
   expect(plain).toBeTruthy()
+  expect(screen.queryByDisplayValue(/^nimiqpay:\/\//)).toBeNull()
 
-  // Distinct accessible names, so a screen-reader user can tell two identical
-  // "Copy" buttons apart.
   fireEvent.click(screen.getByRole('button', { name: /Copy the link/i }))
   await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/r/cr3')))
-
-  fireEvent.click(screen.getByRole('button', { name: /Copy the Nimiq Pay link/i }))
-  await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('nimiqpay://')))
+  await waitFor(() => expect(screen.getByText('Copied')).toBeTruthy())
 })
 
 it('keeps the sales list live while a shift is open', async () => {

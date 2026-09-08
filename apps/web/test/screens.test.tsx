@@ -378,11 +378,17 @@ it('RemoteCharge opened outside Nimiq Pay shows the landing page with a link to 
   })) }
   renderRemoteCharge(api)
 
-  const link = await screen.findByRole('link', { name: /open in nimiq pay/i })
+  // The bill is shown BEFORE the button, on purpose: opening this link in a
+  // browser means a landing page, then a button, then the wallet's own
+  // "unknown link" warning — three steps during which the person would
+  // otherwise have no idea what they are being asked to approve. The preview
+  // endpoint is public exactly so this is possible.
+  await waitFor(() => expect(api.getChargeRequest).toHaveBeenCalledWith('rc1'))
+  expect(await screen.findByText('2.5 NIM')).toBeTruthy()
+  expect(screen.getByText('Kiosk')).toBeTruthy()
+
+  const link = await screen.findByRole('link', { name: /pay in nimiq pay/i })
   const href = link.getAttribute('href') ?? ''
   expect(href).toContain('nimiqpay://miniapp?url=')
   expect(decodeURIComponent(href)).toContain('/r/rc1')
-  // Landing page for a plain-browser open never previews the bill itself —
-  // the preview only exists once inside Nimiq Pay.
-  expect(api.getChargeRequest).not.toHaveBeenCalled()
 })

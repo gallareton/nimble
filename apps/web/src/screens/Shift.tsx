@@ -292,11 +292,12 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       {shift && <p className="quiet">{shift.operatorLabel}</p>}
       {report && <ReportSummary report={report} />}
       {actionError && <p role="alert">{actionError}</p>}
-      {shift && (
-        <p>
-          <Link to="/charge/remote">{t('Bill someone who isn\'t here')}</Link>
-        </p>
-      )}
+      {/* Not gated on an open shift: a remote bill produces receipts, on-chain
+          reconciliation and live status whether or not one is running — only
+          the report line needs a shift, and that is a bonus, not a condition. */}
+      <p>
+        <Link to="/charge/remote">{t('Bill someone who isn\'t here')}</Link>
+      </p>
       {shift && (
         <button disabled={busy} onClick={close}>{t('Close the shift')}</button>
       )}

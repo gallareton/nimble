@@ -2,13 +2,15 @@ import { useEffect, useRef } from 'react'
 import { toCanvas } from 'qrcode'
 import { APP_STORE, DEEPLINK, PLAY_STORE, remoteChargeDeeplink } from '../lib/host'
 import { t } from '../i18n'
+import { lunaToNim } from '@nimble/shared'
+import type { ChargeRequestPreview } from '@nimble/shared'
 import { DemoVideo } from './DemoVideo'
 
 // Shown when the page is opened in a plain browser instead of Nimiq Pay.
 // When `chargeId` is given (a remote-charge link opened outside Nimiq Pay),
 // the deep link and QR code go straight to that bill instead of the app's
 // home screen, so the payer doesn't land somewhere they have to re-find it.
-export function Landing({ chargeId }: { chargeId?: string } = {}) {
+export function Landing({ chargeId, bill }: { chargeId?: string; bill?: ChargeRequestPreview | null } = {}) {
   const qrRef = useRef<HTMLCanvasElement>(null)
   const deeplink = chargeId ? remoteChargeDeeplink(chargeId) : DEEPLINK
 
@@ -21,10 +23,26 @@ export function Landing({ chargeId }: { chargeId?: string } = {}) {
     <main>
       <div className="hero">
         <h1 className="brand">NIM<em>ble</em></h1>
-        <p>{t('Pay or get paid with a 6-digit code.')}</p>
-        <p className="quiet">{t('NIMble is a Mini App — it runs inside the Nimiq Pay wallet.')}</p>
+        {bill && bill.state === 'open' ? (
+          // Someone followed a bill link. Say what they are about to approve
+          // before sending them through a blue button and the wallet's own
+          // "unknown link" warning — three steps of not knowing otherwise.
+          <div className="bill-preview">
+            <p className="amt">{lunaToNim(BigInt(bill.amountLuna))} NIM</p>
+            {bill.fiatAmountMinor !== null && bill.fiatCurrency && (
+              <p className="quiet">{(bill.fiatAmountMinor / 100).toFixed(2)} {bill.fiatCurrency}</p>
+            )}
+            <p>{t('Bill from')} <strong>{bill.receiverDisplayName}</strong> …{bill.receiverAddressTail}</p>
+            {bill.reference && <p className="quiet">{bill.reference}</p>}
+          </div>
+        ) : (<>
+          <p>{t('Pay or get paid with a 6-digit code.')}</p>
+          <p className="quiet">{t('NIMble is a Mini App — it runs inside the Nimiq Pay wallet.')}</p>
+        </>)}
         <a className="btn-link" href={deeplink}>
-          <button className="primary">{t('Open in Nimiq Pay')}</button>
+          <button className="primary">
+            {bill && bill.state === 'open' ? t('Pay in Nimiq Pay') : t('Open in Nimiq Pay')}
+          </button>
         </a>
         <p className="quiet">
           Don't have it yet? Get Nimiq Pay for{' '}
