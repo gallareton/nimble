@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { Shift } from '../src/screens/Shift'
 import { NewRemoteCharge } from '../src/screens/NewRemoteCharge'
@@ -335,4 +335,32 @@ it('shows the bill link on screen after issuing it, and lets the vendor copy it'
 
   fireEvent.click(screen.getByRole('button', { name: /Copy the Nimiq Pay link/i }))
   await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('nimiqpay://')))
+})
+
+it('keeps the sales list live while a shift is open', async () => {
+  // The bug: the report was fetched once when the screen opened, so a sale a
+  // customer paid for seconds later never appeared. The till has no other way
+  // to learn about it — nobody touches the till when a remote bill is paid.
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  try {
+    const api = {
+      getCurrentShift: vi.fn(async () => ({ id: 's9', operatorLabel: 'Ana',
+        openedAt: '2026-09-08T08:00:00.000Z', closedAt: null })),
+      getShiftReport: vi.fn(async () => ({
+        shift: { id: 's9', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null },
+        totals: { count: 0, confirmed: 0, failed: 0, grossNim: '0', grossFiatMinor: null,
+          fiatCurrency: null, averageTicketNim: null },
+        entries: [], fiatIncomplete: false,
+      })),
+      getShifts: vi.fn(async () => []),
+    }
+    render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+
+    await waitFor(() => expect(api.getShiftReport).toHaveBeenCalledTimes(1))
+
+    await act(async () => { vi.advanceTimersByTime(11_000) })
+    await waitFor(() => expect(api.getShiftReport.mock.calls.length).toBeGreaterThan(1))
+  } finally {
+    vi.useRealTimers()
+  }
 })

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../AppContext'
 import type { HistoryItem } from '../api/client'
@@ -6,8 +6,11 @@ import { Intro, introSeen, markIntroSeen } from '../components/Intro'
 import { Landing } from '../components/Landing'
 import { inNimiqPay } from '../lib/host'
 import { t } from '../i18n'
+import { usePoll } from '../lib/usePoll'
 import { describeError } from '../lib/errors'
 import { FiatBadge } from '../lib/fiat'
+
+const RECENT_POLL_MS = 5000
 
 export function Home() {
   const { api, token, login } = useApp()
@@ -16,10 +19,16 @@ export function Home() {
   const [wrongNetwork, setWrongNetwork] = useState<null | 'test' | 'main' | 'lagging'>(null)
   const [intro, setIntro] = useState(!introSeen())
 
-  useEffect(() => {
+  const loadRecent = useCallback(() => {
     if (!token) return
     api.history().then(h => setRecent(h.items.slice(0, 3))).catch(() => {})
   }, [api, token])
+  useEffect(loadRecent, [loadRecent])
+
+  // A payment lands here as "finalizing" and used to stay that way until the
+  // screen was rebuilt: this list was fetched once and never again, and the
+  // home screen is exactly where a payer ends up right after paying.
+  usePoll(loadRecent, RECENT_POLL_MS, Boolean(token) && recent.some(r => r.pending))
 
   // Wallet on mainnet + server on testnet (or vice versa) would broadcast
   // payments our monitor can never confirm — detect it via chain height.

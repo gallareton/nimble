@@ -5,6 +5,7 @@ import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
+import { usePoll } from '../lib/usePoll'
 
 // Shared by both the open-a-shift view and the running/closed-shift view so
 // they can never drift apart the way they once did (span-wrapped fields in
@@ -54,6 +55,8 @@ function ReportSummary({ report }: { report: ShiftReport }) {
 // connectivity, so a vendor reviewing yesterday's takings on a bad
 // connection is never locked out. Only Charge, which mints new claims,
 // gates on `useOnline`.
+const REPORT_POLL_MS = 5000
+
 export function Shift({ api: apiProp }: { api?: Api } = {}) {
   const ctx = useAppOptional()
   const api = apiProp ?? ctx!.api
@@ -81,6 +84,19 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     // just means the section below never renders, no separate error state.
     void (api.getShifts?.() ?? Promise.resolve([])).then(setPastShifts).catch(() => {})
   }, [api])
+
+  // Sales arrive because a customer paid, so the till has no other way to
+  // learn about them: poll the whole time a shift is open, not just while
+  // something is already in flight. Without this the list stayed frozen at
+  // whatever it held when the screen was opened.
+  //
+  // Deliberately silent on failure — a dropped refresh is the next tick's
+  // problem, and turning a blip into an error banner over a list that is
+  // merely a few seconds stale would be worse than the staleness.
+  usePoll(() => {
+    if (!shift) return
+    void api.getShiftReport(shift.id).then(setReport).catch(() => {})
+  }, REPORT_POLL_MS, Boolean(shift) && !report?.shift.closedAt)
 
   const selectPastShift = async (id: string) => {
     setActionError(null)

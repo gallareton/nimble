@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useAppOptional } from '../AppContext'
 import type { Api, HistoryItem } from '../api/client'
 import { t } from '../i18n'
+import { usePoll } from '../lib/usePoll'
 import { FiatBadge } from '../lib/fiat'
 
 const FILTERS_KEY = 'nimble:historyFilters'
@@ -88,19 +89,15 @@ export function History({ api: apiProp }: { api?: Api } = {}) {
   // row turns into a finished receipt on its own. Merge by key — scrolled-in
   // older rows stay put.
   const hasPending = items.some(i => i.pending)
-  useEffect(() => {
-    if (!hasPending) return
-    const h = setInterval(() => {
-      void api.history(query()).then(res => {
-        setItems(prev => {
-          const fresh = res.items
-          const freshKeys = new Set(fresh.map(key))
-          return [...fresh, ...prev.filter(i => !freshKeys.has(key(i)))]
-        })
-      }).catch(() => {})
-    }, POLL_MS)
-    return () => clearInterval(h)
-  }, [hasPending, api])
+  usePoll(() => {
+    void api.history(query()).then(res => {
+      setItems(prev => {
+        const fresh = res.items
+        const freshKeys = new Set(fresh.map(key))
+        return [...fresh, ...prev.filter(i => !freshKeys.has(key(i)))]
+      })
+    }).catch(() => {})
+  }, POLL_MS, hasPending)
 
   return (
     <main>
