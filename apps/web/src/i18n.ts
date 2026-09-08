@@ -12,6 +12,7 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Shifts, daily totals, CSV export — and bills you can send to someone who is not at the counter.': 'Zmiany, sumy dobowe, eksport CSV — i rachunki, które wyślesz komuś, kogo nie ma przy ladzie.',
   'Copy the link': 'Skopiuj link',
   'Copy the Nimiq Pay link': 'Skopiuj link do Nimiq Pay',
   'Opens Nimiq Pay directly, if their phone has it.': 'Otwiera od razu Nimiq Pay, jeśli telefon go ma.',
@@ -31,14 +32,9 @@ const pl: Record<string, string> = {
   'Roadmap': 'Plany rozwoju',
   'Live today': 'Działa już dziś',
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Płatności 6-cyfrowym kodem — natychmiastowe na mainnecie i testnecie, paragony, sześć języków.',
-  'Request by link': 'Prośba o przelew linkiem',
-  'Share a payment request through any messenger.': 'Udostępnij żądanie płatności przez dowolny komunikator.',
   'Bill splitting': 'Podział rachunku',
   'One amount, many friends, settled live.': 'Jedna kwota, wielu znajomych, rozliczenie na żywo.',
   'Vendor mode': 'Tryb sprzedawcy',
-  'A professional POS: daily totals, exports, verified business profile.': 'Profesjonalny POS: dzienne podsumowania, eksporty, zweryfikowany profil firmy.',
-  'Cashlink cheques': 'Czeki cashlink',
-  'Prepaid codes anyone can redeem — even without the app.': 'Przedpłacone kody do odebrania przez każdego — nawet bez aplikacji.',
   'Phone-number transfers': 'Przelewy na numer telefonu',
   'Pay a contact by number; SMS invites for newcomers.': 'Płać znajomym po numerze; SMS-owe zaproszenia dla nowych.',
   'Merchant API': 'API dla sprzedawców',
@@ -195,6 +191,7 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Shifts, daily totals, CSV export — and bills you can send to someone who is not at the counter.': 'Schichten, Tagessummen, CSV-Export — und Rechnungen für Kundschaft, die nicht am Tresen steht.',
   'Copy the link': 'Link kopieren',
   'Copy the Nimiq Pay link': 'Nimiq-Pay-Link kopieren',
   'Opens Nimiq Pay directly, if their phone has it.': 'Öffnet Nimiq Pay direkt, sofern installiert.',
@@ -214,14 +211,9 @@ const de: Record<string, string> = {
   'Roadmap': 'Roadmap',
   'Live today': 'Heute live',
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Zahlen per 6-stelligem Code — sofort auf Mainnet und Testnet, Belege, sechs Sprachen.',
-  'Request by link': 'Anfrage per Link',
-  'Share a payment request through any messenger.': 'Teile eine Zahlungsanfrage über jeden Messenger.',
   'Bill splitting': 'Rechnung teilen',
   'One amount, many friends, settled live.': 'Ein Betrag, viele Freunde, live beglichen.',
   'Vendor mode': 'Händlermodus',
-  'A professional POS: daily totals, exports, verified business profile.': 'Ein professionelles POS: Tagessummen, Exporte, verifiziertes Firmenprofil.',
-  'Cashlink cheques': 'Cashlink-Schecks',
-  'Prepaid codes anyone can redeem — even without the app.': 'Prepaid-Codes, die jeder einlösen kann — auch ohne App.',
   'Phone-number transfers': 'Überweisung per Handynummer',
   'Pay a contact by number; SMS invites for newcomers.': 'Zahle Kontakte per Nummer; SMS-Einladungen für Neue.',
   'Merchant API': 'Händler-API',
@@ -378,6 +370,7 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Shifts, daily totals, CSV export — and bills you can send to someone who is not at the counter.': 'Turnos, totales diarios, exportación CSV — y facturas para quien no está en el mostrador.',
   'Copy the link': 'Copiar el enlace',
   'Copy the Nimiq Pay link': 'Copiar el enlace de Nimiq Pay',
   'Opens Nimiq Pay directly, if their phone has it.': 'Abre Nimiq Pay directamente, si lo tiene instalado.',
@@ -397,14 +390,9 @@ const es: Record<string, string> = {
   'Roadmap': 'Hoja de ruta',
   'Live today': 'Disponible hoy',
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Pagos con código de 6 dígitos — instantáneos en mainnet y testnet, recibos, seis idiomas.',
-  'Request by link': 'Solicitud por enlace',
-  'Share a payment request through any messenger.': 'Comparte una solicitud de pago por cualquier mensajería.',
   'Bill splitting': 'Dividir la cuenta',
   'One amount, many friends, settled live.': 'Un importe, muchos amigos, liquidado en vivo.',
   'Vendor mode': 'Modo vendedor',
-  'A professional POS: daily totals, exports, verified business profile.': 'Un TPV profesional: totales diarios, exportaciones, perfil de negocio verificado.',
-  'Cashlink cheques': 'Cheques Cashlink',
-  'Prepaid codes anyone can redeem — even without the app.': 'Códigos prepagados canjeables por cualquiera — incluso sin la app.',
   'Phone-number transfers': 'Transferencias por número de teléfono',
   'Pay a contact by number; SMS invites for newcomers.': 'Paga a un contacto por su número; invitaciones por SMS.',
   'Merchant API': 'API para comercios',
@@ -561,6 +549,7 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Shifts, daily totals, CSV export — and bills you can send to someone who is not at the counter.': "Postes, totaux du jour, export CSV — et des notes pour qui n'est pas au comptoir.",
   'Copy the link': 'Copier le lien',
   'Copy the Nimiq Pay link': 'Copier le lien Nimiq Pay',
   'Opens Nimiq Pay directly, if their phone has it.': 'Ouvre directement Nimiq Pay, si le téléphone en dispose.',
@@ -580,14 +569,9 @@ const fr: Record<string, string> = {
   'Roadmap': 'Feuille de route',
   'Live today': "Déjà disponible",
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Paiement par code à 6 chiffres — instantané sur mainnet et testnet, reçus, six langues.',
-  'Request by link': 'Demande par lien',
-  'Share a payment request through any messenger.': "Partagez une demande de paiement via n'importe quelle messagerie.",
   'Bill splitting': "Partage de l'addition",
   'One amount, many friends, settled live.': 'Un montant, plusieurs amis, réglé en direct.',
   'Vendor mode': 'Mode commerçant',
-  'A professional POS: daily totals, exports, verified business profile.': 'Un TPE professionnel : totaux quotidiens, exports, profil vérifié.',
-  'Cashlink cheques': 'Chèques Cashlink',
-  'Prepaid codes anyone can redeem — even without the app.': "Codes prépayés utilisables par tous — même sans l'app.",
   'Phone-number transfers': 'Virement par numéro de téléphone',
   'Pay a contact by number; SMS invites for newcomers.': 'Payez un contact par numéro ; invitations SMS pour les nouveaux.',
   'Merchant API': 'API commerçants',
@@ -744,6 +728,7 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Shifts, daily totals, CSV export — and bills you can send to someone who is not at the counter.': 'Turnos, totais diários, exportação CSV — e faturas para quem não está ao balcão.',
   'Copy the link': 'Copiar a ligação',
   'Copy the Nimiq Pay link': 'Copiar a ligação do Nimiq Pay',
   'Opens Nimiq Pay directly, if their phone has it.': 'Abre o Nimiq Pay diretamente, se o telemóvel o tiver.',
@@ -763,14 +748,9 @@ const pt: Record<string, string> = {
   'Roadmap': 'Roteiro',
   'Live today': 'Disponível hoje',
   'Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.': 'Pagamentos com código de 6 dígitos — instantâneos na mainnet e testnet, recibos, seis idiomas.',
-  'Request by link': 'Solicitação por link',
-  'Share a payment request through any messenger.': 'Compartilhe uma solicitação de pagamento por qualquer mensageiro.',
   'Bill splitting': 'Divisão de conta',
   'One amount, many friends, settled live.': 'Um valor, vários amigos, acertado ao vivo.',
   'Vendor mode': 'Modo vendedor',
-  'A professional POS: daily totals, exports, verified business profile.': 'Um POS profissional: totais diários, exportações, perfil verificado.',
-  'Cashlink cheques': 'Cheques Cashlink',
-  'Prepaid codes anyone can redeem — even without the app.': 'Códigos pré-pagos resgatáveis por qualquer um — mesmo sem o app.',
   'Phone-number transfers': 'Transferências por número de telefone',
   'Pay a contact by number; SMS invites for newcomers.': 'Pague um contato pelo número; convites por SMS.',
   'Merchant API': 'API para lojistas',

@@ -46,21 +46,13 @@ export function Landing({ chargeId }: { chargeId?: string } = {}) {
             <strong>{t('Live today')}</strong>
             <span>{t('Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.')}</span>
           </li>
-          <li className="rm-next">
-            <strong>{t('Request by link')}</strong>
-            <span>{t('Share a payment request through any messenger.')}</span>
+          <li className="rm-done">
+            <strong>{t('Vendor mode')}</strong>
+            <span>{t('Shifts, daily totals, CSV export — and bills you can send to someone who is not at the counter.')}</span>
           </li>
           <li className="rm-next">
             <strong>{t('Bill splitting')}</strong>
             <span>{t('One amount, many friends, settled live.')}</span>
-          </li>
-          <li className="rm-next">
-            <strong>{t('Vendor mode')}</strong>
-            <span>{t('A professional POS: daily totals, exports, verified business profile.')}</span>
-          </li>
-          <li className="rm-later">
-            <strong>{t('Cashlink cheques')}</strong>
-            <span>{t('Prepaid codes anyone can redeem — even without the app.')}</span>
           </li>
           <li className="rm-later">
             <strong>{t('Phone-number transfers')}</strong>
