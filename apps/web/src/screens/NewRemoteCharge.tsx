@@ -38,7 +38,7 @@ export function NewRemoteCharge(props: { api?: Api }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<{ id: string; expiresAt: string } | null>(null)
-  const [copyDone, setCopyDone] = useState(false)
+  const [copiedWhich, setCopiedWhich] = useState<'url' | 'deeplink' | null>(null)
   const usdRate = useUsdRate(api)
 
   const chooseUnit = (next: Unit) => {
@@ -55,7 +55,7 @@ export function NewRemoteCharge(props: { api?: Api }) {
 
   const submit = async () => {
     setError(null)
-    setCopyDone(false)
+    setCopiedWhich(null)
 
     if (unit === 'USD') {
       const fiatAmountMinor = toMinorUnits(amount)
@@ -101,10 +101,13 @@ export function NewRemoteCharge(props: { api?: Api }) {
     }
   }
 
-  const copyLink = async () => {
+  // Which of the two links was copied last, so the button that was pressed is
+  // the one that says "Copied" — a single shared flag would light up both.
+  const copyLink = async (which: 'url' | 'deeplink') => {
     if (!created) return
-    const ok = await copyText(remoteChargeUrl(created.id))
-    if (ok) setCopyDone(true)
+    const text = which === 'url' ? remoteChargeUrl(created.id) : remoteChargeDeeplink(created.id)
+    const ok = await copyText(text)
+    if (ok) setCopiedWhich(which)
     else setError(t('Could not copy the export. Select the text and copy it manually.'))
   }
 
@@ -121,9 +124,18 @@ export function NewRemoteCharge(props: { api?: Api }) {
           <p className="quiet">{t('Share this link with the payer.')}</p>
           <textarea id="remote-charge-link" className="export-textarea" readOnly value={url} />
           <div className="actions">
-            <button onClick={() => void copyLink()}>{copyDone ? t('Copied') : t('Copy')}</button>
+            <button aria-label={t('Copy the link')} onClick={() => void copyLink('url')}>
+              {copiedWhich === 'url' ? t('Copied') : t('Copy')}
+            </button>
           </div>
-          <p className="quiet">{deeplink}</p>
+
+          <p className="quiet">{t('Opens Nimiq Pay directly, if their phone has it.')}</p>
+          <textarea id="remote-charge-deeplink" className="export-textarea" readOnly value={deeplink} />
+          <div className="actions">
+            <button aria-label={t('Copy the Nimiq Pay link')} onClick={() => void copyLink('deeplink')}>
+              {copiedWhich === 'deeplink' ? t('Copied') : t('Copy')}
+            </button>
+          </div>
         </section>
         <p className="footer-nav"><Link to="/shift">‹ {t('Shift')}</Link></p>
       </main>

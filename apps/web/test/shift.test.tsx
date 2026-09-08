@@ -318,10 +318,21 @@ it('shows the bill link on screen after issuing it, and lets the vendor copy it'
   fireEvent.click(screen.getByRole('button', { name: /Create bill/i }))
 
   await waitFor(() => expect(api.createChargeRequest).toHaveBeenCalledTimes(1))
-  const link = await screen.findByText(/\/r\/cr3/)
-  expect(link).toBeTruthy()
+  // Both links are on screen and both are copyable: the plain one to send to
+  // anyone, the nimiqpay:// one that jumps straight into the wallet. The
+  // deeplink used to be unselectable body text, which made the very thing you
+  // need on a phone the one thing you could not take with you.
+  const plain = await screen.findByDisplayValue(/^https?:\/\/.*\/r\/cr3$/)
+  const deeplink = await screen.findByDisplayValue(/^nimiqpay:\/\/miniapp\?url=/)
+  // textarea keeps its text as a property, not an attribute
+  expect((deeplink as HTMLTextAreaElement).value).toContain(encodeURIComponent('/r/cr3'))
+  expect(plain).toBeTruthy()
 
-  fireEvent.click(screen.getByText('Copy'))
+  // Distinct accessible names, so a screen-reader user can tell two identical
+  // "Copy" buttons apart.
+  fireEvent.click(screen.getByRole('button', { name: /Copy the link/i }))
   await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/r/cr3')))
-  await waitFor(() => expect(screen.getByText('Copied')).toBeTruthy())
+
+  fireEvent.click(screen.getByRole('button', { name: /Copy the Nimiq Pay link/i }))
+  await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('nimiqpay://')))
 })

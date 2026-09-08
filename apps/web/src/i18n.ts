@@ -12,6 +12,9 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Copy the link': 'Skopiuj link',
+  'Copy the Nimiq Pay link': 'Skopiuj link do Nimiq Pay',
+  'Opens Nimiq Pay directly, if their phone has it.': 'Otwiera od razu Nimiq Pay, jeśli telefon go ma.',
   'Price': 'Cena',
   'Close': 'Zamknij',
   'Back': 'Wstecz',
@@ -192,6 +195,9 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Copy the link': 'Link kopieren',
+  'Copy the Nimiq Pay link': 'Nimiq-Pay-Link kopieren',
+  'Opens Nimiq Pay directly, if their phone has it.': 'Öffnet Nimiq Pay direkt, sofern installiert.',
   'Price': 'Preis',
   'Close': 'Schließen',
   'Back': 'Zurück',
@@ -372,6 +378,9 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Copy the link': 'Copiar el enlace',
+  'Copy the Nimiq Pay link': 'Copiar el enlace de Nimiq Pay',
+  'Opens Nimiq Pay directly, if their phone has it.': 'Abre Nimiq Pay directamente, si lo tiene instalado.',
   'Price': 'Precio',
   'Close': 'Cerrar',
   'Back': 'Atrás',
@@ -552,6 +561,9 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Copy the link': 'Copier le lien',
+  'Copy the Nimiq Pay link': 'Copier le lien Nimiq Pay',
+  'Opens Nimiq Pay directly, if their phone has it.': 'Ouvre directement Nimiq Pay, si le téléphone en dispose.',
   'Price': 'Prix',
   'Close': 'Fermer',
   'Back': 'Retour',
@@ -732,6 +744,9 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Copy the link': 'Copiar a ligação',
+  'Copy the Nimiq Pay link': 'Copiar a ligação do Nimiq Pay',
+  'Opens Nimiq Pay directly, if their phone has it.': 'Abre o Nimiq Pay diretamente, se o telemóvel o tiver.',
   'Price': 'Preço',
   'Close': 'Fechar',
   'Back': 'Voltar',
