@@ -462,3 +462,24 @@ it('the CSV export carries the refund reference in a new column appended at the 
   expect(refundRow[idx]).toBe('1') // the sale's local_number
   expect(refundRow[cols.indexOf('amount_crypto')]).toBe('-2.5')
 })
+
+it('the past-shifts list subtracts refunds, agreeing with the report it summarises', async () => {
+  // A list that disagrees with the report it summarises is the same class of
+  // bug as a sale entered at 2.50 showing as 2.51 — only in a place nobody
+  // reads twice, so it survives longer.
+  const { u, t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth(t) })).json()
+
+  const { charge: origCharge } = await confirmedSaleFor(u, id, 1_000_000n) // 10 NIM
+  const refundRes = await postRefund(origCharge.id, t, { amountLuna: '400000' }) // 4 NIM
+  await confirmSession(refundRes.json().sessionId)
+
+  const report = (await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth(t) })).json()
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+  const listed = (await app.inject({ url: '/v1/shifts', headers: auth(t) })).json()
+    .find((x: { id: string }) => x.id === id)
+
+  expect(listed.grossNim).toBe(report.totals.grossNim)   // 6, not 14
+  expect(listed.confirmed).toBe(report.totals.confirmed) // 1 sale, not 2
+})

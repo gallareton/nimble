@@ -232,13 +232,22 @@ export async function shiftRoutes(app: FastifyInstance) {
       operatorLabel: shift.operatorLabel,
       openedAt: shift.openedAt,
       closedAt: shift.closedAt,
+      // Refunds are charges too, stamped with the vendor's shift, so they
+      // land in this aggregate as well — and would count as income and as a
+      // sale unless subtracted here. buildReport already does that; a list
+      // disagreeing with the report it summarises is the same bug as the
+      // 2.50-shown-as-2.51 one, only in a place nobody reads twice.
       grossLuna: sql<string>`coalesce(sum(case when ${paymentSession.status} = 'CONFIRMED'
-        then ${charge.amountAtomic} else 0 end), 0)`,
-      confirmed: sql<number>`count(case when ${paymentSession.status} = 'CONFIRMED' then 1 end)::int`,
+        then (case when ${refund.id} is null then ${charge.amountAtomic}
+                   else -${charge.amountAtomic} end)
+        else 0 end), 0)`,
+      confirmed: sql<number>`count(case when ${paymentSession.status} = 'CONFIRMED'
+        and ${refund.id} is null then 1 end)::int`,
     })
       .from(shift)
       .leftJoin(charge, eq(charge.shiftId, shift.id))
       .leftJoin(paymentSession, eq(paymentSession.id, charge.sessionId))
+      .leftJoin(refund, eq(refund.sessionId, charge.sessionId))
       .where(and(eq(shift.userId, req.user.userId), isNotNull(shift.closedAt)))
       .groupBy(shift.id)
       .orderBy(desc(shift.openedAt), desc(shift.id))
