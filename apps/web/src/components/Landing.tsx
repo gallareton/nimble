@@ -46,9 +46,9 @@ export function Landing({ chargeId }: { chargeId?: string } = {}) {
             <strong>{t('Live today')}</strong>
             <span>{t('Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.')}</span>
           </li>
-          <li className="rm-done">
+          <li className="rm-next">
             <strong>{t('Vendor mode')}</strong>
-            <span>{t('Shifts, daily totals, CSV export — and bills you can send to someone who is not at the counter.')}</span>
+            <span>{t('Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.')}</span>
           </li>
           <li className="rm-next">
             <strong>{t('Bill splitting')}</strong>
