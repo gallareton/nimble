@@ -137,7 +137,11 @@ export interface ShiftView {
   id: string; operatorLabel: string; openedAt: string; closedAt: string | null
 }
 
-/** One sale as it appears in a shift report and its export. */
+/**
+ * One sale — or one refund — as it appears in a shift report and its export.
+ * A refund is a charge like any other, distinguished only by amountNim being
+ * negative and refundOf* pointing back at the sale it refunds.
+ */
 export interface ShiftEntry {
   localNumber: number
   occurredAt: string
@@ -152,6 +156,10 @@ export interface ShiftEntry {
   fxRate: string | null
   fxRateAt: string | null
   fxSource: string | null
+  /** For a refund: the original sale's localNumber, when that sale is in this same report. Null for a sale, and null for a refund whose sale is in a different (or no) report. */
+  refundOfLocalNumber: number | null
+  /** For a refund: when the original sale happened, always filled — the sale may be in a different, long-closed shift. Null for a sale. */
+  refundOfOccurredAt: string | null
 }
 
 /** One row of a vendor's shift history: enough to list without a full report per row. */
@@ -163,10 +171,12 @@ export interface ShiftListItem extends ShiftView {
 export interface ShiftReport {
   shift: ShiftView
   totals: {
-    count: number; confirmed: number; failed: number
+    count: number; confirmed: number; refunded: number; failed: number
+    /** Sales minus confirmed refunds — may go negative if a refund lands in a later shift than its sale. */
     grossNim: string
     grossFiatMinor: number | null
     fiatCurrency: string | null
+    /** From sales only, never from the net-of-refunds figure — a refund shouldn't skew the typical-transaction size. */
     averageTicketNim: string | null
   }
   entries: ShiftEntry[]

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, expect, it } from 'vitest'
-import { chainTransaction, charge } from '../src/db/schema'
+import { chainTransaction, charge, paymentSession } from '../src/db/schema'
+import { insertCharge } from '../src/services/charges'
 import { monitorTick } from '../src/services/monitor'
 import { SessionEvents } from '../src/services/events'
 import { freshDb } from './helpers/db'
@@ -58,6 +59,39 @@ async function confirmFiatSale(shiftId: string, rt: string, fiatAmountMinor: num
   await monitorTick(db, events, chain) // CONFIRMING → CONFIRMED, receipts written
 
   return { sessionId, chargeId: c.id, txHash: tx.hash }
+}
+
+/**
+ * Materializes a CONFIRMED sale directly (no monitor run needed — these
+ * tests only care about how a sale shows up in a report, not how a payment
+ * reaches CONFIRMED; that path is covered by confirmFiatSale above and by
+ * monitor.test.ts), stamped to whatever shift the caller wants (or none).
+ */
+async function confirmedSaleFor(receiver: { id: string; walletAddress: string },
+  shiftId: string | null, amountLuna: bigint) {
+  const payer = await makeUser(db, `NQ58 ${crypto.randomUUID().slice(0, 8)}`)
+  const [session] = await db.insert(paymentSession).values({
+    payerUserId: payer.id, receiverUserId: receiver.id, codeHash: crypto.randomUUID(),
+    status: 'CONFIRMED', expiresAt: new Date(Date.now() + 120_000),
+  }).returning()
+  const c = await insertCharge(db, {
+    sessionId: session.id, amountAtomic: amountLuna, recipientAddress: receiver.walletAddress,
+    reference: 'Sale', shiftId,
+  })
+  await db.insert(chainTransaction).values({
+    chargeId: c.id, sender: payer.walletAddress, recipient: c.recipientAddress,
+    amountAtomic: amountLuna, hash: crypto.randomUUID(), status: 'CONFIRMED',
+  })
+  return { payer, session, charge: c }
+}
+
+const postRefund = (chargeId: string, t: string, payload: object = {}) =>
+  app.inject({ method: 'POST', url: `/v1/charges/${chargeId}/refunds`, payload,
+    headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
+
+/** Confirms a refund session directly — the route leaves it AWAITING_PAYER_APPROVAL, and these tests care about the report, not the signing flow covered by refund.test.ts. */
+async function confirmSession(sessionId: string) {
+  await db.update(paymentSession).set({ status: 'CONFIRMED' }).where(eq(paymentSession.id, sessionId))
 }
 
 it('opens one shift, refuses a second, closes it and reports', async () => {
@@ -252,7 +286,7 @@ it('exports RFC 4180 CSV with a BOM, CRLF and the rate columns', async () => {
   expect(res.body.startsWith('﻿')).toBe(true)
   const [header] = res.body.slice(1).split('\r\n')
   expect(header).toBe('local_number,occurred_at_utc,status,amount_fiat_minor,fiat_currency,' +
-    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,reference,operator,shift_id')
+    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,reference,operator,shift_id,refund_of')
 
   const json = await app.inject({ url: `/v1/shifts/${id}/export?format=json`, headers: auth(t) })
   expect(json.json().shift.operatorLabel).toBe('Ana, "the boss"')
@@ -317,4 +351,114 @@ it('neutralizes spreadsheet formula injection in reference and operator columns'
   expect(dataRow).toContain(`"'=cmd|""/c calc"",""inject"`)
   // The dangerous operator should be prefixed with apostrophe and RFC 4180 quoted
   expect(dataRow).toContain(`"'=cmd|""/c calc"""`)
+})
+
+it('a report with a sale and its partial refund shows both entries, the refund negative', async () => {
+  const { u, t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth(t) })).json()
+
+  const { charge: origCharge } = await confirmedSaleFor(u, id, 1_000_000n) // 10 NIM
+  const refundRes = await postRefund(origCharge.id, t, { amountLuna: '400000' }) // 4 NIM
+  expect(refundRes.statusCode).toBe(201)
+  await confirmSession(refundRes.json().sessionId)
+
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+  const report = (await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth(t) })).json()
+
+  expect(report.entries.length).toBe(2)
+  const [sale, refundEntry] = report.entries
+
+  expect(sale.amountNim).toBe('10')
+  expect(sale.refundOfLocalNumber).toBeNull()
+  expect(sale.refundOfOccurredAt).toBeNull()
+
+  expect(refundEntry.amountNim).toBe('-4')
+  expect(refundEntry.refundOfLocalNumber).toBe(sale.localNumber)
+  expect(refundEntry.refundOfOccurredAt).toBe(sale.occurredAt)
+
+  // grossNim is sales minus confirmed refunds.
+  expect(report.totals.grossNim).toBe('6')
+  // confirmed counts only the sale, refunded counts only the refund.
+  expect(report.totals.confirmed).toBe(1)
+  expect(report.totals.refunded).toBe(1)
+})
+
+it('averageTicketNim is computed from sales only, not from the net-of-refunds amount', async () => {
+  const { u, t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth(t) })).json()
+
+  // Two sales, 10 NIM and 20 NIM: average of the sales alone is 15 NIM.
+  await confirmedSaleFor(u, id, 1_000_000n)
+  const { charge: bigSale } = await confirmedSaleFor(u, id, 2_000_000n)
+
+  // Refund 5 NIM off the second sale. Net proceeds are 25 NIM over 2 sales
+  // (12.5 average) — a wrong implementation dividing net by sale count would
+  // report 12.5 here instead of the correct 15.
+  const refundRes = await postRefund(bigSale.id, t, { amountLuna: '500000' })
+  expect(refundRes.statusCode).toBe(201)
+  await confirmSession(refundRes.json().sessionId)
+
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+  const report = (await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth(t) })).json()
+
+  expect(report.totals.confirmed).toBe(2)
+  expect(report.totals.refunded).toBe(1)
+  expect(report.totals.grossNim).toBe('25')
+  expect(report.totals.averageTicketNim).toBe('15')
+  expect(report.totals.averageTicketNim).not.toBe('12.5')
+})
+
+it('a refund of a sale from a different shift has refundOfLocalNumber null but refundOfOccurredAt filled', async () => {
+  const { u, t } = await vendor()
+
+  const { id: shift1 } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Morning' }, headers: auth(t) })).json()
+  const { charge: origCharge } = await confirmedSaleFor(u, shift1, 800_000n)
+  await app.inject({ method: 'POST', url: `/v1/shifts/${shift1}/close`, headers: auth(t) })
+
+  const { id: shift2 } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Evening' }, headers: auth(t) })).json()
+  const refundRes = await postRefund(origCharge.id, t)
+  expect(refundRes.statusCode).toBe(201)
+  await confirmSession(refundRes.json().sessionId)
+
+  await app.inject({ method: 'POST', url: `/v1/shifts/${shift2}/close`, headers: auth(t) })
+  const report2 = (await app.inject({ url: `/v1/shifts/${shift2}/report`, headers: auth(t) })).json()
+
+  expect(report2.entries.length).toBe(1)
+  const [refundEntry] = report2.entries
+  expect(refundEntry.refundOfLocalNumber).toBeNull()
+  expect(refundEntry.refundOfOccurredAt).not.toBeNull()
+})
+
+it('the CSV export carries the refund reference in a new column appended at the end', async () => {
+  const { u, t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth(t) })).json()
+
+  const { charge: origCharge } = await confirmedSaleFor(u, id, 1_000_000n)
+  const refundRes = await postRefund(origCharge.id, t, { amountLuna: '250000' })
+  await confirmSession(refundRes.json().sessionId)
+
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth(t) })
+  const res = await app.inject({ url: `/v1/shifts/${id}/export`, headers: auth(t) })
+  expect(res.statusCode).toBe(200)
+
+  const lines = res.body.slice(1).split('\r\n')
+  const header = lines[0]
+  expect(header.split(',')).toEqual([
+    'local_number', 'occurred_at_utc', 'status', 'amount_fiat_minor', 'fiat_currency',
+    'amount_crypto', 'asset', 'network', 'tx_hash', 'fx_rate', 'fx_rate_at',
+    'fx_source', 'reference', 'operator', 'shift_id', 'refund_of',
+  ])
+  const cols = header.split(',')
+  const idx = cols.indexOf('refund_of')
+
+  const saleRow = lines[1].split(',')
+  const refundRow = lines[2].split(',')
+  expect(saleRow[idx]).toBe('')
+  expect(refundRow[idx]).toBe('1') // the sale's local_number
+  expect(refundRow[cols.indexOf('amount_crypto')]).toBe('-2.5')
 })
