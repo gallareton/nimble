@@ -12,7 +12,9 @@ set -euo pipefail
 
 DEST=/var/backups/nimble
 KEEP_DAYS=14
-COMPOSE_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Resolve through the symlink in /usr/local/bin: without this, $0 points at
+# the link and the compose files are looked for next to it.
+COMPOSE_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
 mkdir -p "$DEST"
 
