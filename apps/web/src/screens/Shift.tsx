@@ -73,6 +73,8 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   const [exportPanel, setExportPanel] = useState<{ text: string; filename: string } | null>(null)
   const [copyDone, setCopyDone] = useState(false)
   const [pastShifts, setPastShifts] = useState<ShiftListItem[]>([])
+  // null = not asked yet; a number = asked, and this many bills are unpaid.
+  const [pendingBills, setPendingBills] = useState<number | null>(null)
 
   useEffect(() => {
     setLoadError(false)
@@ -144,13 +146,24 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     }
   }
 
+  // Asked for only when the vendor moves to close, not polled: this is the one
+  // moment the answer changes a decision, and a till does not need a standing
+  // count of it on screen all day.
   const close = async () => {
     if (!shift) return
     setBusy(true)
     setActionError(null)
     try {
+      if (pendingBills === null) {
+        // A bill paid after this shift closes lands in whatever shift is open
+        // then — or in none at all. The vendor can only act on that here, so
+        // say it once and let the next tap go through.
+        const { count } = await api.getOutstandingBills?.() ?? { count: 0 }
+        if (count > 0) { setPendingBills(count); return }
+      }
       setReport(await api.closeShift(shift.id))
       setShift(null)
+      setPendingBills(null)
     } catch {
       setActionError(t('Could not close the shift. Check your connection and try again.'))
     } finally {
@@ -298,9 +311,17 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       <p>
         <Link to="/charge/remote">{t('Bill someone who isn\'t here')}</Link>
       </p>
-      {shift && (
-        <button disabled={busy} onClick={close}>{t('Close the shift')}</button>
-      )}
+      {shift && (<>
+        {pendingBills !== null && (
+          <p role="alert" className="quiet">
+            {t('{n} bills are still unpaid. Anything paid after you close lands outside this report.')
+              .replace('{n}', String(pendingBills))}
+          </p>
+        )}
+        <button disabled={busy} onClick={close}>
+          {pendingBills !== null ? t('Close it anyway') : t('Close the shift')}
+        </button>
+      </>)}
       {report && !shift && (
         <p>
           <a href="#" onClick={e => { e.preventDefault(); void download(report.shift.id, 'csv') }}>{t('Download CSV')}</a>

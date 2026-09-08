@@ -1,4 +1,4 @@
-import type { AcceptChargeRequestResponse, AffordabilityResponse, ChargeRequestPreview, ClaimResponse, CreateChargeRequestResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
+import type { AcceptChargeRequestResponse, AffordabilityResponse, ChargeRequestPreview, ClaimResponse, OutstandingBillsResponse, CreateChargeRequestResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
@@ -94,6 +94,7 @@ export class Api {
   // Unauthenticated on purpose — same reason as the route itself: the payer
   // following a shared link may have no account yet.
   getChargeRequest(id: string) { return this.#get<ChargeRequestPreview>(`/v1/charge-requests/${id}`) }
+  getOutstandingBills() { return this.#get<OutstandingBillsResponse>('/v1/charge-requests/outstanding') }
   acceptChargeRequest(id: string, idemKey?: string) {
     return this.#post<AcceptChargeRequestResponse>(`/v1/charge-requests/${id}/accept`, undefined, idemKey)
   }

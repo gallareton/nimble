@@ -83,6 +83,21 @@ export async function chargeRequestRoutes(app: FastifyInstance) {
   // a nonexistent id gets would only leave a payer holding a real link from
   // a real receiver confused about what happened. So: not-found is a genuine
   // 404, while expired/already-accepted are told apart via `state` in a 200.
+  // Registered before the /:id route below. find-my-way does prefer a static
+  // segment over a parametric one, so this would win either way — but the two
+  // differ in authentication (this one requires it, the preview does not), and
+  // relying on router internals for that is not worth the cleverness.
+  //
+  // Vendor-scoped, not shift-scoped, which is why it is not part of the shift
+  // report: an outstanding bill may have been raised with no shift open at
+  // all, and a closed shift's report must never change after the fact.
+  app.get('/v1/charge-requests/outstanding', { preHandler: app.authenticate }, async (req) => {
+    const [row] = await db.select({ count: dsql<number>`count(*)::int` }).from(chargeRequest)
+      .where(and(eq(chargeRequest.receiverUserId, req.user.userId),
+        isNull(chargeRequest.sessionId), gt(chargeRequest.expiresAt, new Date())))
+    return { count: row?.count ?? 0 }
+  })
+
   app.get('/v1/charge-requests/:id', async (req, reply) => {
     const ipHash = createHmac('sha256', env.codePepper).update(req.ip).digest('hex')
     const since = new Date(Date.now() - CLAIM_WINDOW_MS)

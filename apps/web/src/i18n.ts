@@ -12,6 +12,8 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "Nieopłaconych rachunków: {n}. Co zostanie zapłacone po zamknięciu, nie wejdzie do tego raportu.",
+  'Close it anyway': "Zamknij mimo to",
   'Bill from': 'Rachunek od',
   'Pay in Nimiq Pay': 'Zapłać w Nimiq Pay',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Zmiany, sumy dobowe, eksport CSV i rachunki zdalne już działają; zwroty, napiwki i zweryfikowany profil firmy w przygotowaniu.",
@@ -191,6 +193,8 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "{n} Rechnungen sind noch offen. Was nach dem Schließen bezahlt wird, erscheint nicht in diesem Bericht.",
+  'Close it anyway': "Trotzdem schließen",
   'Bill from': 'Rechnung von',
   'Pay in Nimiq Pay': 'In Nimiq Pay bezahlen',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Schichten, Tagessummen, CSV-Export und Fernrechnungen sind live; Erstattungen, Trinkgeld und ein verifiziertes Firmenprofil folgen.",
@@ -370,6 +374,8 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "Quedan {n} facturas sin pagar. Lo que se pague tras el cierre no entrará en este informe.",
+  'Close it anyway': "Cerrar de todos modos",
   'Bill from': 'Factura de',
   'Pay in Nimiq Pay': 'Pagar en Nimiq Pay',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Turnos, totales diarios, exportación CSV y facturas remotas ya funcionan; devoluciones, propinas y perfil de empresa verificado están en camino.",
@@ -549,6 +555,8 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "{n} notes ne sont pas payées. Ce qui sera payé après la fermeture n'entrera pas dans ce rapport.",
+  'Close it anyway': "Fermer quand même",
   'Bill from': 'Note de',
   'Pay in Nimiq Pay': 'Payer dans Nimiq Pay',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Postes, totaux du jour, export CSV et notes à distance sont en ligne ; remboursements, pourboires et profil professionnel vérifié à suivre.",
@@ -728,6 +736,8 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "{n} faturas continuam por pagar. O que for pago após o fecho não entra neste relatório.",
+  'Close it anyway': "Fechar mesmo assim",
   'Bill from': 'Fatura de',
   'Pay in Nimiq Pay': 'Pagar no Nimiq Pay',
   'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Turnos, totais diários, exportação CSV e faturas remotas já funcionam; reembolsos, gorjetas e perfil de empresa verificado a seguir.",

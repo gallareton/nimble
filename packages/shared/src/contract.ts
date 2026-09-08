@@ -108,6 +108,11 @@ export interface ChargeRequestPreview {
 }
 export interface AcceptChargeRequestResponse { sessionId: string; chargeId: string }
 
+/** Bills this vendor has issued that nobody has paid yet and that have not
+ *  expired. Vendor-scoped, not shift-scoped: a bill can outlive the shift it
+ *  was raised in, which is exactly why closing one warrants a warning. */
+export interface OutstandingBillsResponse { count: number }
+
 export const OpenShiftRequest = z.object({ operatorLabel: z.string().min(1).max(60) })
 
 export interface ShiftView {

@@ -362,3 +362,55 @@ it('keeps the sales list live while a shift is open', async () => {
     vi.useRealTimers()
   }
 })
+
+it('warns before closing a shift while bills are still unpaid, then closes on the next tap', async () => {
+  // A bill paid after the shift closes lands in whatever shift is open then,
+  // or in none at all. Closing is the only moment the vendor can act on that.
+  const report = {
+    shift: { id: 's7', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null },
+    totals: { count: 0, confirmed: 0, failed: 0, grossNim: '0', grossFiatMinor: null,
+      fiatCurrency: null, averageTicketNim: null },
+    entries: [], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => report.shift),
+    getShiftReport: vi.fn(async () => report),
+    getShifts: vi.fn(async () => []),
+    getOutstandingBills: vi.fn(async () => ({ count: 2 })),
+    closeShift: vi.fn(async () => ({ ...report, shift: { ...report.shift, closedAt: 'x' } })),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
+
+  fireEvent.click(screen.getByText('Close the shift'))
+  await waitFor(() => expect(api.getOutstandingBills).toHaveBeenCalled())
+  expect(await screen.findByRole('alert')).toBeTruthy()
+  expect(screen.getByText(/2 bills are still unpaid/i)).toBeTruthy()
+  // The first tap warns and must NOT have closed anything.
+  expect(api.closeShift).not.toHaveBeenCalled()
+
+  fireEvent.click(screen.getByText('Close it anyway'))
+  await waitFor(() => expect(api.closeShift).toHaveBeenCalledTimes(1))
+})
+
+it('closes without a warning when no bills are outstanding', async () => {
+  const report = {
+    shift: { id: 's8', operatorLabel: 'Bo', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null },
+    totals: { count: 0, confirmed: 0, failed: 0, grossNim: '0', grossFiatMinor: null,
+      fiatCurrency: null, averageTicketNim: null },
+    entries: [], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => report.shift),
+    getShiftReport: vi.fn(async () => report),
+    getShifts: vi.fn(async () => []),
+    getOutstandingBills: vi.fn(async () => ({ count: 0 })),
+    closeShift: vi.fn(async () => ({ ...report, shift: { ...report.shift, closedAt: 'x' } })),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
+
+  fireEvent.click(screen.getByText('Close the shift'))
+  await waitFor(() => expect(api.closeShift).toHaveBeenCalledTimes(1))
+  expect(screen.queryByRole('alert')).toBeNull()
+})
