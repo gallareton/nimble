@@ -158,6 +158,30 @@ export const authNonce = pgTable('auth_nonce', {
   usedAt: timestamp('used_at', { withTimezone: true }),
 })
 
+// A refund is a transfer from the vendor back to the customer, not a reversal
+// of the original payment — the chain is append-only, so the original charge
+// stays exactly as it was and a second, independent charge moves value the
+// other way. That second charge rides the ordinary payment_session/charge
+// machinery (vendor as payer, customer as receiver): the monitor, receipts,
+// macro-block finality and on-chain reconciliation all already know how to
+// carry a session to CONFIRMED, so a refund needs none of that duplicated.
+// This table exists purely to record the link back to what it refunds —
+// nothing here participates in settling the transfer itself.
+export const refund = pgTable('refund', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  originalChargeId: uuid('original_charge_id').notNull().references(() => charge.id),
+  sessionId: uuid('session_id').notNull().references(() => paymentSession.id),
+  amountAtomic: bigint('amount_atomic', { mode: 'bigint' }).notNull(),
+  reason: text('reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  // One refund per session: the session is the refund's own payment, so this
+  // is really "a refund session settles at most one refund" — enforced here
+  // rather than trusted to application code, same pattern as the other
+  // one-per-X partial/unique indexes in this file.
+  uniqueIndex('one_refund_per_session').on(t.sessionId),
+])
+
 export const claimAttempt = pgTable('claim_attempt', {
   id: uuid('id').primaryKey().defaultRandom(),
   subjectType: text('subject_type').notNull(), // 'ip' | 'wallet'

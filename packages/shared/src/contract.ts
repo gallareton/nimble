@@ -121,6 +121,16 @@ export interface OutstandingBill {
 }
 export interface OutstandingBillsResponse { bills: OutstandingBill[] }
 
+/** A refund is a transfer back to the customer, not a reversal — amountLuna
+ *  omitted means a full refund of whatever remains refundable on the charge.
+ *  reason mirrors CreateChargeRequest.reference: same shape, same limit. */
+export const CreateRefundRequest = z.object({
+  amountLuna: PositiveLunaString.optional(),
+  reason: z.string().max(100).optional(),
+})
+export type CreateRefundRequestT = z.infer<typeof CreateRefundRequest>
+export interface CreateRefundResponse { refundId: string; sessionId: string; chargeId: string }
+
 export const OpenShiftRequest = z.object({ operatorLabel: z.string().min(1).max(60) })
 
 export interface ShiftView {

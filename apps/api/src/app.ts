@@ -10,6 +10,7 @@ import { authRoutes } from './routes/auth'
 import { sessionRoutes } from './routes/sessions'
 import { chargeRoutes } from './routes/charges'
 import { chargeRequestRoutes } from './routes/chargeRequests'
+import { refundRoutes } from './routes/refunds'
 import { sseRoutes } from './routes/sse'
 import { historyRoutes } from './routes/history'
 import { shiftRoutes } from './routes/shifts'
@@ -74,6 +75,7 @@ export function buildApp(deps: AppDeps) {
   app.register(sessionRoutes)
   app.register(chargeRoutes)
   app.register(chargeRequestRoutes)
+  app.register(refundRoutes)
   app.register(sseRoutes)
   app.register(historyRoutes)
   app.register(shiftRoutes)
