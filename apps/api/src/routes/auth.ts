@@ -2,9 +2,11 @@ import { createHash, randomBytes } from 'node:crypto'
 import { eq, gt, isNull, and } from 'drizzle-orm'
 import { SignJWT } from 'jose'
 import type { FastifyInstance } from 'fastify'
-import { AuthVerifyRequest } from '@nimble/shared'
+import { AuthVerifyRequest, SetCashierPinRequest, CashierUnlockRequest } from '@nimble/shared'
 import { authNonce, authSession, userProfile } from '../db/schema'
 import { env } from '../env'
+import { hashCode } from '../services/codeService'
+import { pinRateLimited, recordFailedPinAttempt, sendPinRateLimited, rejectIfCashierLocked } from '../services/cashierLock'
 
 // Refresh tokens are opaque secrets; only their sha256 lands in the DB, so a
 // leaked DB dump cannot be replayed. Idle sessions die after 30 days.
@@ -112,11 +114,63 @@ export async function authRoutes(app: FastifyInstance) {
   })
 
   app.patch('/v1/me', { preHandler: app.authenticate }, async (req, reply) => {
+    if (await rejectIfCashierLocked(db, req.user.userId, reply)) return
     const body = req.body as { displayName?: unknown }
     const displayName = typeof body?.displayName === 'string' ? body.displayName.trim().slice(0, 50) : ''
     if (!displayName)
       return reply.code(400).send({ error: { code: 'VALIDATION', message: 'displayName required' } })
     await db.update(userProfile).set({ displayName }).where(eq(userProfile.id, req.user.userId))
+    return { ok: true }
+  })
+
+  // Sets a fresh PIN, or changes an existing one. A PIN already on the
+  // profile must be proven with currentPin before it can be replaced — the
+  // lock is worthless if anyone holding the phone could just reset it.
+  // Rate-limited by the same per-profile counter as unlock: this is the same
+  // guessing surface (spec §5).
+  app.put('/v1/me/cashier-pin', { preHandler: app.authenticate }, async (req, reply) => {
+    if (await pinRateLimited(db, req.user.userId)) return sendPinRateLimited(reply)
+    const body = SetCashierPinRequest.parse(req.body)
+    const [u] = await db.select({ cashierPinHash: userProfile.cashierPinHash })
+      .from(userProfile).where(eq(userProfile.id, req.user.userId))
+    if (u?.cashierPinHash) {
+      const matches = body.currentPin !== undefined
+        && hashCode(body.currentPin, env.codePepper) === u.cashierPinHash
+      if (!matches) {
+        await recordFailedPinAttempt(db, req.user.userId)
+        return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'currentPin is required and must match' } })
+      }
+    }
+    await db.update(userProfile).set({ cashierPinHash: hashCode(body.pin, env.codePepper) })
+      .where(eq(userProfile.id, req.user.userId))
+    return { ok: true }
+  })
+
+  // Enables the lock. Deliberately no PIN required to flip this on — the
+  // owner steps away from the counter and locks with one tap — but it can
+  // never be turned on without a PIN already set, or it could never be
+  // turned back off (spec §3-4).
+  app.post('/v1/me/cashier-lock', { preHandler: app.authenticate }, async (req, reply) => {
+    const [u] = await db.select({ cashierPinHash: userProfile.cashierPinHash })
+      .from(userProfile).where(eq(userProfile.id, req.user.userId))
+    if (!u?.cashierPinHash)
+      return reply.code(409).send({ error: { code: 'PIN_NOT_SET', message: 'set a cashier PIN before enabling the lock' } })
+    await db.update(userProfile).set({ cashierLocked: true }).where(eq(userProfile.id, req.user.userId))
+    return { ok: true }
+  })
+
+  // Disables the lock. Requires the PIN, and is the reason the PIN-guessing
+  // rate limit exists at all: four digits is only 10,000 possibilities.
+  app.delete('/v1/me/cashier-lock', { preHandler: app.authenticate }, async (req, reply) => {
+    if (await pinRateLimited(db, req.user.userId)) return sendPinRateLimited(reply)
+    const body = CashierUnlockRequest.parse(req.body)
+    const [u] = await db.select({ cashierPinHash: userProfile.cashierPinHash })
+      .from(userProfile).where(eq(userProfile.id, req.user.userId))
+    if (!u?.cashierPinHash || hashCode(body.pin, env.codePepper) !== u.cashierPinHash) {
+      await recordFailedPinAttempt(db, req.user.userId)
+      return reply.code(401).send({ error: { code: 'AUTH_FAILED', message: 'incorrect PIN' } })
+    }
+    await db.update(userProfile).set({ cashierLocked: false }).where(eq(userProfile.id, req.user.userId))
     return { ok: true }
   })
 }

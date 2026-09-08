@@ -6,6 +6,7 @@ import { charge, chainTransaction, paymentSession, refund } from '../db/schema'
 import type { Db } from '../db/client'
 import { withIdempotency } from '../plugins/idempotency'
 import { insertCharge } from '../services/charges'
+import { rejectIfCashierLocked } from '../services/cashierLock'
 import { requireIdemKey } from './sessions'
 import { openShiftFor } from './shifts'
 
@@ -18,6 +19,7 @@ export async function refundRoutes(app: FastifyInstance) {
   // append-only, so this route materializes a second, independent charge and
   // records only the link back to what it refunds.
   app.post('/v1/charges/:id/refunds', { preHandler: app.authenticate }, async (req, reply) => {
+    if (await rejectIfCashierLocked(db, req.user.userId, reply)) return
     const key = requireIdemKey(req, reply); if (!key) return
     const chargeId = (req.params as { id: string }).id
     const body = CreateRefundRequest.parse(req.body)

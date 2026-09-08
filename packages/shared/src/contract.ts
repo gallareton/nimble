@@ -133,6 +133,15 @@ export interface CreateRefundResponse { refundId: string; sessionId: string; cha
 
 export const OpenShiftRequest = z.object({ operatorLabel: z.string().min(1).max(60) })
 
+// Cashier lock (BR-P09): a PIN, 4-8 digits, shared by the set/change and
+// unlock routes. currentPin is required only when a PIN already exists —
+// that's state the route knows, not the schema, so it's optional here.
+const CashierPin = z.string().regex(/^\d{4,8}$/, '4 to 8 digits')
+export const SetCashierPinRequest = z.object({ pin: CashierPin, currentPin: CashierPin.optional() })
+export const CashierUnlockRequest = z.object({ pin: CashierPin })
+export type SetCashierPinRequestT = z.infer<typeof SetCashierPinRequest>
+export type CashierUnlockRequestT = z.infer<typeof CashierUnlockRequest>
+
 export interface ShiftView {
   id: string; operatorLabel: string; openedAt: string; closedAt: string | null
 }

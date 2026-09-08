@@ -57,6 +57,13 @@
       "when": 1788876081344,
       "tag": "0007_cuddly_blue_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788895496442,
+      "tag": "0008_thin_mauler",
+      "breakpoints": true
     }
   ]
 }

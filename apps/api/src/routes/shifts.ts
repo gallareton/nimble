@@ -5,6 +5,7 @@ import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm
 import type { FastifyInstance } from 'fastify'
 import { chainTransaction, charge, paymentSession, receipt, refund, shift } from '../db/schema'
 import type { Db } from '../db/client'
+import { rejectIfCashierLocked } from '../services/cashierLock'
 
 /** lunaToNim() rejects negatives (it never has to format one on the sale path); refunds and a shift that refunds more than it sold both need a signed rendering. */
 function signedLunaToNim(v: bigint): string {
@@ -271,6 +272,7 @@ export async function shiftRoutes(app: FastifyInstance) {
   })
 
   app.post('/v1/shifts/:id/close', { preHandler: app.authenticate }, async (req, reply) => {
+    if (await rejectIfCashierLocked(db, req.user.userId, reply)) return
     const id = (req.params as { id: string }).id
     const [row] = await db.update(shift).set({ closedAt: new Date() })
       .where(and(eq(shift.id, id), eq(shift.userId, req.user.userId), isNull(shift.closedAt)))
@@ -288,6 +290,7 @@ export async function shiftRoutes(app: FastifyInstance) {
   })
 
   app.get('/v1/shifts/:id/export', { preHandler: app.authenticate }, async (req, reply) => {
+    if (await rejectIfCashierLocked(db, req.user.userId, reply)) return
     const id = (req.params as { id: string }).id
     const format = (req.query as { format?: string }).format ?? 'csv'
     const [row] = await db.select().from(shift)
