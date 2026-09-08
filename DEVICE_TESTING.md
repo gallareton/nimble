@@ -74,6 +74,103 @@ using other secure-context APIs, it will break here first.
       the success screen; reopen — the payment must reach CONFIRMED via
       reconciliation (or the "Finish registration" screen).
 
+## Ordered run-through, 2026-09-08
+
+Everything below is untested on a device. Ordered so each step builds on the
+one before and an early failure stops you wasting the rest — a broken payment
+makes a refund test meaningless.
+
+**Two phones, two wallets, both on testnet.** A vendor cannot pay their own
+bill (the API refuses it), so a single phone cannot exercise this.
+
+### 1. The loop still works (regression, ~2 min)
+
+- [ ] A shows a code, B claims it, A approves, both reach **Confirmed — final**.
+
+Everything after this assumes this passed. If it did not, stop and report it —
+nothing below is worth diagnosing on top of a broken payment.
+
+### 2. Shift and a sale priced in money
+
+- [ ] Open a shift with an operator name.
+- [ ] Charge screen defaults to **USD**; the NIM toggle is there.
+- [ ] Enter **2.50**, take the payment from B.
+- [ ] Sale reaches Confirmed.
+
+### 3. Live refresh — the fix from 2026-09-08
+
+- [ ] While the sale is finalizing, **stay on the home screen**: the grey
+      "finalizing" row turns into a finished receipt **by itself**, without
+      leaving and coming back. This used to hang forever.
+- [ ] Same on the shift screen: the sale appears in the report **without a
+      manual refresh**.
+- [ ] Background the app for a minute and return: the list is current
+      immediately, not after another wait.
+
+### 4. The 2.50 question — the fix from 2026-09-07
+
+- [ ] History shows **2.50 USD**, not 2.51.
+- [ ] The receipt shows **2.50**.
+- [ ] The shift report shows **2.50**. All three must agree; that they once
+      did not is what started this.
+
+### 5. Report entries and export
+
+- [ ] The shift report **lists individual sales**, not only the total (new).
+- [ ] Export the report. In a spreadsheet: amounts sum correctly, and a
+      reference typed as `=1+1` shows as text rather than evaluating.
+
+### 6. Remote bill
+
+- [ ] Issue a bill for 1.00 USD with a note.
+- [ ] It appears under **bills waiting to be paid**, with its expiry.
+- [ ] Copy the link. Send it to B **through a messenger** — check the
+      messenger renders it as a tappable link (this is why the
+      `nimiqpay://` form was dropped).
+- [ ] B taps it **with Nimiq Pay closed**: lands on the bill, sees the amount
+      and vendor, pays.
+- [ ] Issue another and tap it **with Nimiq Pay already open**. This is the
+      case that failed with the old link format — if it still fails, that is
+      worth reporting to Nimiq; if it works, the draft bug report is moot.
+- [ ] Issue a third and **cancel** it: it disappears from the list and the
+      link no longer pays.
+
+### 7. Wrong network
+
+- [ ] Switch B's wallet to **mainnet**, open a testnet bill link. Expect
+      "this bill is on the test network, switch Nimiq Pay" — **not** "no such
+      bill". Switch back afterwards.
+
+### 8. Refunds — needs a confirmed sale from step 2
+
+- [ ] From the shift report, refund **part** of the 2.50 sale.
+- [ ] Warning that a refund cannot be undone is visible **before** signing.
+- [ ] Sign it. It reaches Confirmed.
+- [ ] The report shows **two** rows: the sale, and the refund as a **negative**
+      amount referencing it.
+- [ ] The total is the difference, and the sale count did **not** go up.
+- [ ] B's history shows money coming back.
+- [ ] Try to refund more than what is left: refused.
+
+### 9. Closing a shift with a bill outstanding
+
+- [ ] Issue a bill, leave it unpaid, then close the shift.
+- [ ] Warning names how many bills are unpaid; the **first** tap does not
+      close. The second does.
+
+### 10. Signals and the balance check
+
+- [ ] The paid signal: sound and vibration on the vendor's phone. Note whether
+      Nimiq Pay's own incoming-transfer sound drowns ours — it did last time.
+- [ ] Pay with a wallet holding less than the charge: a line naming the
+      shortfall appears **and Confirm stays enabled** (the wallet is the
+      authority, not us).
+
+### 11. Offline
+
+- [ ] Turn off data on the vendor's phone and try to take a payment: refused
+      with a clear message rather than accepting something it cannot verify.
+
 ## Vendor POS — shift, daily report, export
 
 Added with the shift work. Everything here runs against the testnet stack.
