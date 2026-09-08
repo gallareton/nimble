@@ -547,3 +547,68 @@ it('moves to the session approval screen after creating a refund', async () => {
   expect(createRefund.mock.calls[0][1]).toEqual({ amountLuna: '400000', reason: undefined })
   await waitFor(() => expect(screen.getByText('session screen')).toBeTruthy())
 })
+
+// --- Task 2: cashier lock — hidden actions, working payment/report -----
+
+const lockedReport = {
+  shift: { id: 's1', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null },
+  totals: { count: 2, confirmed: 1, refunded: 1, failed: 0, grossNim: '6', grossFiatMinor: null,
+    fiatCurrency: null, averageTicketNim: '10' },
+  entries: [saleEntry, refundOfSaleEntry], fiatIncomplete: false,
+}
+
+it('hides refund and close-shift while the cashier lock is on, but leaves the report visible', async () => {
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null })),
+    getShiftReport: vi.fn(async () => lockedReport),
+    getMe: vi.fn(async () => ({ walletAddress: 'NQ1', displayName: null, cashierLocked: true, cashierPinSet: true })),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+
+  // The report itself — totals and the entries list — must still be there:
+  // this is the assertion guarding against the lock spilling into sales.
+  await waitFor(() => expect(screen.getByText('10 NIM')).toBeTruthy())
+  expect(screen.getByText('Coffee')).toBeTruthy()
+  await waitFor(() => expect(screen.getByText(/isn't broken/i)).toBeTruthy())
+
+  expect(screen.queryByRole('link', { name: 'Refund' })).toBeNull()
+  expect(screen.queryByText('Close the shift')).toBeNull()
+  // Accepting a bill (creating a charge request) is untouched by the lock.
+  expect(screen.getByText('Bill someone who isn\'t here')).toBeTruthy()
+})
+
+it('shows refund and close-shift normally when the cashier lock is off', async () => {
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null })),
+    getShiftReport: vi.fn(async () => lockedReport),
+    getMe: vi.fn(async () => ({ walletAddress: 'NQ1', displayName: null, cashierLocked: false, cashierPinSet: true })),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+
+  await waitFor(() => expect(screen.getByText('10 NIM')).toBeTruthy())
+  expect(screen.getAllByRole('link', { name: 'Refund' }).length).toBe(1)
+  expect(screen.getByText('Close the shift')).toBeTruthy()
+  expect(screen.queryByText(/isn't broken/i)).toBeNull()
+})
+
+it('hides the export links on a past shift\'s report while the cashier lock is on', async () => {
+  const past = [{ id: 'past-1', operatorLabel: 'Ana', openedAt: '2026-08-25T08:00:00.000Z',
+    closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1 }]
+  const pastReport = {
+    shift: past[0],
+    totals: { count: 1, confirmed: 1, failed: 0, grossNim: '400', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '400' },
+    entries: [], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => null),
+    getShifts: vi.fn(async () => past),
+    getShiftReport: vi.fn(async () => pastReport),
+    getMe: vi.fn(async () => ({ walletAddress: 'NQ1', displayName: null, cashierLocked: true, cashierPinSet: true })),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Ana')).toBeTruthy())
+  fireEvent.click(screen.getByText('Ana'))
+  await waitFor(() => expect(screen.getByText('400 NIM')).toBeTruthy())
+  expect(screen.queryByText('Download CSV')).toBeNull()
+  expect(screen.queryByText('Download JSON')).toBeNull()
+})

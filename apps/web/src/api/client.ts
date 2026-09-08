@@ -56,7 +56,7 @@ export class Api {
 
   #get<T>(path: string) { return this.#request<T>('GET', path) }
   #post<T>(path: string, body?: object, idemKey?: string) { return this.#request<T>('POST', path, body, idemKey) }
-  #delete<T>(path: string) { return this.#request<T>('DELETE', path) }
+  #delete<T>(path: string, body?: object) { return this.#request<T>('DELETE', path, body) }
 
   async login(wallet: WalletProvider): Promise<{ token: string; address: string; refreshToken: string }> {
     const { nonce, message } = await this.#post<{ nonce: string; message: string }>('/v1/auth/challenge')
@@ -162,8 +162,18 @@ export class Api {
   }
   getNetwork() { return this.#get<{ network: string; height: number | null }>('/v1/network') }
   getRate() { return this.#get<{ usdPerNim: number | null; asOf: string }>('/v1/rate') }
-  getMe() { return this.#get<{ walletAddress: string; displayName: string | null }>('/v1/me') }
+  getMe() {
+    return this.#get<{ walletAddress: string; displayName: string | null
+      cashierLocked: boolean; cashierPinSet: boolean }>('/v1/me')
+  }
   updateMe(body: { displayName: string }) { return this.#request<{ ok: true }>('PATCH', '/v1/me', body) }
+  // Cashier lock (spec §4). setCashierPin also changes an existing PIN when
+  // currentPin is supplied; the server requires it once a PIN already exists.
+  setCashierPin(body: { pin: string; currentPin?: string }) {
+    return this.#request<{ ok: true }>('PUT', '/v1/me/cashier-pin', body)
+  }
+  enableCashierLock() { return this.#post<{ ok: true }>('/v1/me/cashier-lock') }
+  disableCashierLock(pin: string) { return this.#delete<{ ok: true }>('/v1/me/cashier-lock', { pin }) }
 
   // Tickets are single-use: EventSource's built-in auto-reconnect would replay
   // a consumed ticket and die on 401 — manage reconnection manually and

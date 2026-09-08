@@ -62,7 +62,11 @@ function isRefundEntry(e: ShiftEntry): boolean {
   return e.refundOfLocalNumber !== null || e.refundOfOccurredAt !== null
 }
 
-function EntryList({ entries }: { entries: ShiftEntry[] }) {
+// `locked` only hides the "Refund" link — a convenience so a cashier under
+// an active lock never taps something the server (POST .../refunds) is
+// going to answer with 423 CASHIER_LOCKED anyway. Removing this prop would
+// not reopen refunds; only DELETE /v1/me/cashier-lock does that.
+function EntryList({ entries, locked }: { entries: ShiftEntry[]; locked: boolean }) {
   if (entries.length === 0) return null
   return (
     <section className="form-card">
@@ -70,7 +74,7 @@ function EntryList({ entries }: { entries: ShiftEntry[] }) {
       <ul className="entries">
         {entries.map(e => {
           const refund = isRefundEntry(e)
-          const refundable = !refund && e.status === 'CONFIRMED'
+          const refundable = !refund && e.status === 'CONFIRMED' && !locked
           return (
             <li key={e.chargeId} className={refund ? 'entries__row entries__row--refund' : 'entries__row'}>
               <div className="entries__main">
@@ -128,6 +132,11 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   const [pastShifts, setPastShifts] = useState<ShiftListItem[]>([])
   // null = not asked yet; a number = asked, and this many bills are unpaid.
   const [pendingBills, setPendingBills] = useState<number | null>(null)
+  // Cashier lock state (spec §6). This is display-only: the badge tells the
+  // cashier the till isn't broken, and it drives which of the four gated
+  // actions this screen offers — the server enforces the lock regardless of
+  // what this screen shows or hides.
+  const [locked, setLocked] = useState(false)
 
   useEffect(() => {
     setLoadError(false)
@@ -138,6 +147,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     // A vendor with no history yet should see nothing extra — an empty list
     // just means the section below never renders, no separate error state.
     void (api.getShifts?.() ?? Promise.resolve([])).then(setPastShifts).catch(() => {})
+    void api.getMe?.().then(me => setLocked(me.cashierLocked)).catch(() => {})
   }, [api])
 
   // Sales arrive because a customer paid, so the till has no other way to
@@ -290,6 +300,14 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     )
   }
 
+  // Shown on every view this screen renders — a cashier at the till must
+  // never wonder whether the app is broken versus deliberately locked.
+  const lockBadge = locked && (
+    <p role="status" className="cashier-lock-badge">
+      🔒 {t('Cashier lock is on — the till isn\'t broken.')}
+    </p>
+  )
+
   const exportPanelSection = exportPanel && (
     <section className="form-card export-panel">
       <p className="quiet">{exportPanel.filename}</p>
@@ -308,18 +326,25 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     return (
       <main>
         <h1>{t('Shift')}</h1>
+        {lockBadge}
         <p>
           <a href="#" onClick={e => { e.preventDefault(); backFromPastShift() }}>‹ {t('Back')}</a>
         </p>
         <p className="quiet">{pastReport.shift.operatorLabel}</p>
         <ReportSummary report={pastReport} />
-        <EntryList entries={pastReport.entries} />
+        <EntryList entries={pastReport.entries} locked={locked} />
         {actionError && <p role="alert">{actionError}</p>}
-        <p>
-          <a href="#" onClick={e => { e.preventDefault(); void download(pastReport.shift.id, 'csv') }}>{t('Download CSV')}</a>
-          {' · '}
-          <a href="#" onClick={e => { e.preventDefault(); void download(pastReport.shift.id, 'json') }}>{t('Download JSON')}</a>
-        </p>
+        {/* Export is one of the four gated operations (spec §5, GET
+            .../export → 423 CASHIER_LOCKED). Hiding these links while
+            locked is convenience, not the guard — the server rejects the
+            request regardless of whether this stayed on screen. */}
+        {!locked && (
+          <p>
+            <a href="#" onClick={e => { e.preventDefault(); void download(pastReport.shift.id, 'csv') }}>{t('Download CSV')}</a>
+            {' · '}
+            <a href="#" onClick={e => { e.preventDefault(); void download(pastReport.shift.id, 'json') }}>{t('Download JSON')}</a>
+          </p>
+        )}
         {exportPanelSection}
         <PastShiftsList items={pastShifts} onSelect={id => void selectPastShift(id)} />
         <p className="quiet">{t('NIMble tracks one station. Takings from another phone are not in this report.')}</p>
@@ -332,6 +357,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     return (
       <main>
         <h1>{t('Shift')}</h1>
+        {lockBadge}
         <div className="form-card">
           <label>
             {t('Who is on the till?')}
@@ -352,6 +378,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   return (
     <main>
       <h1>{t('Shift')}</h1>
+      {lockBadge}
       {report && !shift && (
         <p>
           <a href="#" onClick={e => { e.preventDefault(); backFromClosedShift() }}>‹ {t('Back')}</a>
@@ -359,15 +386,19 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       )}
       {shift && <p className="quiet">{shift.operatorLabel}</p>}
       {report && <ReportSummary report={report} />}
-      {report && <EntryList entries={report.entries} />}
+      {report && <EntryList entries={report.entries} locked={locked} />}
       {actionError && <p role="alert">{actionError}</p>}
       {/* Not gated on an open shift: a remote bill produces receipts, on-chain
           reconciliation and live status whether or not one is running — only
-          the report line needs a shift, and that is a bonus, not a condition. */}
+          the report line needs a shift, and that is a bonus, not a condition.
+          Bill creation and payment acceptance are outside the four gated
+          operations (spec §5) and stay available while locked. */}
       <p>
         <Link to="/charge/remote">{t('Bill someone who isn\'t here')}</Link>
       </p>
-      {shift && (<>
+      {/* Shift close is gated (spec §5, POST .../close → 423). Hiding the
+          button while locked is convenience, not the guard. */}
+      {shift && !locked && (<>
         {pendingBills !== null && (
           <p role="alert" className="quiet">
             {t('{n} bills are still unpaid. Anything paid after you close lands outside this report.')
@@ -378,7 +409,9 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
           {pendingBills !== null ? t('Close it anyway') : t('Close the shift')}
         </button>
       </>)}
-      {report && !shift && (
+      {/* Export is gated too (spec §5, GET .../export → 423) — same
+          convenience-not-guard note as above. */}
+      {report && !shift && !locked && (
         <p>
           <a href="#" onClick={e => { e.preventDefault(); void download(report.shift.id, 'csv') }}>{t('Download CSV')}</a>
           {' · '}

@@ -6,6 +6,8 @@ import { StatusBadge } from '../src/components/StatusBadge'
 import { Approval } from '../src/screens/Approval'
 import { Charge, toMinorUnits } from '../src/screens/Charge'
 import { RemoteCharge } from '../src/screens/RemoteCharge'
+import { ApiError } from '../src/api/client'
+import { Settings } from '../src/screens/Settings'
 
 it('CodeDisplay groups digits and is screen-reader friendly', () => {
   render(<CodeDisplay code="482731" />)
@@ -395,4 +397,57 @@ it('RemoteCharge opened outside Nimiq Pay shows the landing page with a link to 
   expect(href).toMatch(/^https:\/\/nimpay\.app\/miniapps\/open\//)
   expect(href).not.toContain('nimiqpay://')
   expect(href).toContain('/r/rc1')
+})
+
+// --- Task 2: cashier lock — Settings screen -----------------------------
+
+function meWith(overrides: { cashierLocked?: boolean; cashierPinSet?: boolean } = {}) {
+  return { walletAddress: 'NQ1', displayName: null,
+    cashierLocked: overrides.cashierLocked ?? false, cashierPinSet: overrides.cashierPinSet ?? false }
+}
+
+it('Settings states plainly that the PIN does not protect the wallet\'s funds', async () => {
+  const api = { getMe: vi.fn(async () => meWith()) }
+  render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(api.getMe).toHaveBeenCalled())
+  expect(screen.getByText(/does not protect your NIM/i)).toBeTruthy()
+})
+
+it('a correct PIN removes the cashier lock', async () => {
+  const disableCashierLock = vi.fn(async (pin: string) => { expect(pin).toBe('1234'); return { ok: true as const } })
+  const api = { getMe: vi.fn(async () => meWith({ cashierLocked: true, cashierPinSet: true })), disableCashierLock }
+  render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText(/isn't broken/i)).toBeTruthy())
+
+  fireEvent.change(screen.getByLabelText(/PIN to unlock/i), { target: { value: '1234' } })
+  fireEvent.click(screen.getByRole('button', { name: /unlock the till/i }))
+
+  await waitFor(() => expect(disableCashierLock).toHaveBeenCalledWith('1234'))
+  await waitFor(() => expect(screen.queryByText(/isn't broken/i)).toBeNull())
+})
+
+it('shows distinct messages for a wrong PIN and a rate-limited unlock attempt', async () => {
+  const wrongPinApi = {
+    getMe: vi.fn(async () => meWith({ cashierLocked: true, cashierPinSet: true })),
+    disableCashierLock: vi.fn(async () => { throw new ApiError('AUTH_FAILED', 'incorrect PIN', 401) }),
+  }
+  render(<MemoryRouter><Settings api={wrongPinApi as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText(/isn't broken/i)).toBeTruthy())
+  fireEvent.change(screen.getByLabelText(/PIN to unlock/i), { target: { value: '0000' } })
+  fireEvent.click(screen.getByRole('button', { name: /unlock the till/i }))
+  const wrongMsg = await screen.findByText(/incorrect pin/i)
+
+  cleanup()
+
+  const rateLimitedApi = {
+    getMe: vi.fn(async () => meWith({ cashierLocked: true, cashierPinSet: true })),
+    disableCashierLock: vi.fn(async () => { throw new ApiError('RATE_LIMITED', 'too many attempts', 429) }),
+  }
+  render(<MemoryRouter><Settings api={rateLimitedApi as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText(/isn't broken/i)).toBeTruthy())
+  fireEvent.change(screen.getByLabelText(/PIN to unlock/i), { target: { value: '1234' } })
+  fireEvent.click(screen.getByRole('button', { name: /unlock the till/i }))
+  const rateLimitedMsg = await screen.findByText(/wait a moment/i)
+
+  expect(wrongMsg.textContent).not.toBe(rateLimitedMsg.textContent)
 })

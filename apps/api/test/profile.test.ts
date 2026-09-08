@@ -12,12 +12,14 @@ it('GET /v1/me returns the saved profile', async () => {
 
   let r = await app.inject({ url: '/v1/me', headers: { authorization: `Bearer ${t}` } })
   expect(r.statusCode).toBe(200)
-  expect(r.json()).toEqual({ walletAddress: u.walletAddress, displayName: null })
+  expect(r.json()).toEqual({ walletAddress: u.walletAddress, displayName: null,
+    cashierLocked: false, cashierPinSet: false })
 
   await app.inject({ method: 'PATCH', url: '/v1/me', payload: { displayName: 'Gall' },
     headers: { authorization: `Bearer ${t}` } })
   r = await app.inject({ url: '/v1/me', headers: { authorization: `Bearer ${t}` } })
-  expect(r.json()).toEqual({ walletAddress: u.walletAddress, displayName: 'Gall' })
+  expect(r.json()).toEqual({ walletAddress: u.walletAddress, displayName: 'Gall',
+    cashierLocked: false, cashierPinSet: false })
 })
 
 it('GET /v1/me requires auth', async () => {

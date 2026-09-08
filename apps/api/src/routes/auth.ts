@@ -106,11 +106,17 @@ export async function authRoutes(app: FastifyInstance) {
     return { token, address: user.walletAddress, refreshToken: next }
   })
 
+  // cashierLocked/cashierPinSet ride along here so the till screen and the
+  // settings screen both know the lock state without a probe request — the
+  // hash itself never leaves the server, only whether one exists (spec §3).
   app.get('/v1/me', { preHandler: app.authenticate }, async (req) => {
     const [u] = await db.select({ walletAddress: userProfile.walletAddress,
-      displayName: userProfile.displayName })
+      displayName: userProfile.displayName, cashierLocked: userProfile.cashierLocked,
+      cashierPinHash: userProfile.cashierPinHash })
       .from(userProfile).where(eq(userProfile.id, req.user.userId))
-    return u
+    if (!u) return u
+    return { walletAddress: u.walletAddress, displayName: u.displayName,
+      cashierLocked: u.cashierLocked, cashierPinSet: u.cashierPinHash !== null }
   })
 
   app.patch('/v1/me', { preHandler: app.authenticate }, async (req, reply) => {
