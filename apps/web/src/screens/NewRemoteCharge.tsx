@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { nimToLuna, SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
+import { lunaToNim, nimToLuna, SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
+import type { OutstandingBill } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
@@ -39,6 +40,26 @@ export function NewRemoteCharge(props: { api?: Api }) {
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<{ id: string; expiresAt: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [bills, setBills] = useState<OutstandingBill[] | null>(null)
+
+  // A vendor who cannot see what they issued cannot correct a mistake: a bill
+  // typed wrong would stay payable for its full day. Loaded on entry and after
+  // every change, not polled — nobody else can add to this list.
+  const loadBills = useCallback(() => {
+    void api.getOutstandingBills?.().then(r => setBills(r.bills)).catch(() => setBills(null))
+  }, [api])
+  useEffect(loadBills, [loadBills])
+
+  const cancelBill = async (id: string) => {
+    setError(null)
+    try {
+      await api.cancelChargeRequest?.(id)
+    } catch {
+      // Most likely someone opened it in the meantime; reloading shows the truth.
+      setError(t('Could not cancel that bill. Someone may already be paying it.'))
+    }
+    loadBills()
+  }
   const usdRate = useUsdRate(api)
 
   const chooseUnit = (next: Unit) => {
@@ -68,6 +89,7 @@ export function NewRemoteCharge(props: { api?: Api }) {
         const res = await api.createChargeRequest(
           { fiatAmountMinor, fiatCurrency: SUPPORTED_FIAT_CURRENCY, reference: reference || undefined })
         setCreated(res)
+      loadBills()
       } catch (e) {
         if (e instanceof ApiError && e.code === 'RATE_LIMITED') setError(t('Too many attempts. Wait a moment.'))
         else if (e instanceof ApiError && e.code === 'NO_RATE') setError(t('No exchange rate available right now. Try again shortly.'))
@@ -93,6 +115,7 @@ export function NewRemoteCharge(props: { api?: Api }) {
     try {
       const res = await api.createChargeRequest({ amountLuna, reference: reference || undefined })
       setCreated(res)
+      loadBills()
     } catch (e) {
       if (e instanceof ApiError && e.code === 'RATE_LIMITED') setError(t('Too many attempts. Wait a moment.'))
       else setError(t('Could not create the bill. Check your connection and try again.'))
@@ -160,6 +183,27 @@ export function NewRemoteCharge(props: { api?: Api }) {
           {t('Create bill')}
         </button>
       </div>
+      {bills && bills.length > 0 && (
+          <section className="list-card">
+            <h2>{t('Bills waiting to be paid')}</h2>
+            <ul className="list">
+              {bills.map(b => (
+                <li key={b.id}>
+                  <span className="dir">
+                    {b.fiatAmountMinor !== null && b.fiatCurrency
+                      ? `${(b.fiatAmountMinor / 100).toFixed(2)} ${b.fiatCurrency}`
+                      : `${lunaToNim(BigInt(b.amountLuna))} NIM`}
+                    {b.reference ? ` · ${b.reference}` : ''}<br />
+                    <small className="quiet">
+                      {t('Expires')} {new Date(b.expiresAt).toLocaleString()}
+                    </small>
+                  </span>
+                  <button onClick={() => void cancelBill(b.id)}>{t('Cancel')}</button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       {error && <p role="alert">{error}</p>}
       <Link to="/shift" className="back-bottom"><button>‹ {t('Shift')}</button></Link>
     </main>

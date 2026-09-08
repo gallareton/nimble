@@ -8,6 +8,7 @@ import { t } from '../i18n'
 import { describeError } from '../lib/errors'
 import { formatUsdValue } from '../lib/fiat'
 import { inNimiqPay } from '../lib/host'
+import { networkChoice } from '../lib/network'
 import { uuid } from '../lib/uuid'
 import { ApiError, type Api } from '../api/client'
 
@@ -31,6 +32,12 @@ export function RemoteCharge(props: { api?: Api; token?: string | null; login?: 
 
   const [preview, setPreview] = useState<ChargeRequestPreview | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const [networkMismatch, setNetworkMismatch] = useState(false)
+  // The link names the stack that raised the bill; networkChoice() is the one
+  // the wallet put us on. Never auto-switch on this — a payment must reach the
+  // chain the wallet is actually on.
+  const asked = new URLSearchParams(window.location.search).get('n')
+  const wrongNetwork = (asked === 'main' || asked === 'test') && asked !== networkChoice().net
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -45,7 +52,13 @@ export function RemoteCharge(props: { api?: Api; token?: string | null; login?: 
     setNotFound(false)
     setLoadError(null)
     api.getChargeRequest(id).then(setPreview).catch(e => {
-      if (e instanceof ApiError && e.status === 404) setNotFound(true)
+      // A 404 here has two very different causes. The bill may genuinely not
+      // exist — or it may live on the other network, because the link says
+      // which stack raised it while the wallet decides which one we talk to.
+      // Saying "no such bill" to someone holding a real bill is simply wrong,
+      // and the fix is theirs to make: switch the wallet's network.
+      if (e instanceof ApiError && e.status === 404 && wrongNetwork) setNetworkMismatch(true)
+      else if (e instanceof ApiError && e.status === 404) setNotFound(true)
       else setLoadError(t('Could not load this bill. Check your connection and try again.'))
     })
   }, [api, id])
@@ -82,6 +95,16 @@ export function RemoteCharge(props: { api?: Api; token?: string | null; login?: 
     }
   }
 
+  if (networkMismatch) return (
+    <main>
+      <h1>{t('Remote bill')}</h1>
+      <p role="alert">
+        {asked === 'test'
+          ? t('This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.')
+          : t('This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.')}
+      </p>
+    </main>
+  )
   if (notFound) return <main><h1>{t('Remote bill')}</h1><p role="alert">{t('This link is not valid.')}</p></main>
   if (loadError) return <main><h1>{t('Remote bill')}</h1><p role="alert">{loadError}</p></main>
   if (!preview) return <main><p>{t('Loading…')}</p></main>

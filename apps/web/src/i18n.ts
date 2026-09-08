@@ -12,6 +12,11 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Ten rachunek jest na sieci testowej. Przełącz Nimiq Pay na Testnet, aby go opłacić.",
+  'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Ten rachunek jest na sieci głównej. Przełącz Nimiq Pay na Mainnet, aby go opłacić.",
+  'Bills waiting to be paid': "Rachunki czekające na zapłatę",
+  'Expires': "Wygasa",
+  'Could not cancel that bill. Someone may already be paying it.': "Nie udało się anulować tego rachunku. Ktoś może go właśnie opłacać.",
   '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "Nieopłaconych rachunków: {n}. Co zostanie zapłacone po zamknięciu, nie wejdzie do tego raportu.",
   'Close it anyway': "Zamknij mimo to",
   'Bill from': 'Rachunek od',
@@ -193,6 +198,11 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Diese Rechnung liegt im Testnetz. Wechsle Nimiq Pay auf Testnet, um sie zu bezahlen.",
+  'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Diese Rechnung liegt im Hauptnetz. Wechsle Nimiq Pay auf Mainnet, um sie zu bezahlen.",
+  'Bills waiting to be paid': "Offene Rechnungen",
+  'Expires': "Läuft ab",
+  'Could not cancel that bill. Someone may already be paying it.': "Rechnung konnte nicht storniert werden. Vielleicht bezahlt sie gerade jemand.",
   '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "{n} Rechnungen sind noch offen. Was nach dem Schließen bezahlt wird, erscheint nicht in diesem Bericht.",
   'Close it anyway': "Trotzdem schließen",
   'Bill from': 'Rechnung von',
@@ -374,6 +384,11 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Esta factura está en la red de pruebas. Cambia Nimiq Pay a Testnet para pagarla.",
+  'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Esta factura está en la red principal. Cambia Nimiq Pay a Mainnet para pagarla.",
+  'Bills waiting to be paid': "Facturas pendientes de pago",
+  'Expires': "Caduca",
+  'Could not cancel that bill. Someone may already be paying it.': "No se pudo cancelar esa factura. Puede que alguien ya la esté pagando.",
   '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "Quedan {n} facturas sin pagar. Lo que se pague tras el cierre no entrará en este informe.",
   'Close it anyway': "Cerrar de todos modos",
   'Bill from': 'Factura de',
@@ -555,6 +570,11 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Cette note est sur le réseau de test. Basculez Nimiq Pay sur Testnet pour la payer.",
+  'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Cette note est sur le réseau principal. Basculez Nimiq Pay sur Mainnet pour la payer.",
+  'Bills waiting to be paid': "Notes en attente de paiement",
+  'Expires': "Expire",
+  'Could not cancel that bill. Someone may already be paying it.': "Impossible d'annuler cette note. Quelqu'un est peut-être en train de la payer.",
   '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "{n} notes ne sont pas payées. Ce qui sera payé après la fermeture n'entrera pas dans ce rapport.",
   'Close it anyway': "Fermer quand même",
   'Bill from': 'Note de',
@@ -736,6 +756,11 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Esta fatura está na rede de teste. Mude o Nimiq Pay para Testnet para a pagar.",
+  'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Esta fatura está na rede principal. Mude o Nimiq Pay para Mainnet para a pagar.",
+  'Bills waiting to be paid': "Faturas à espera de pagamento",
+  'Expires': "Expira",
+  'Could not cancel that bill. Someone may already be paying it.': "Não foi possível cancelar essa fatura. Alguém pode estar a pagá-la.",
   '{n} bills are still unpaid. Anything paid after you close lands outside this report.': "{n} faturas continuam por pagar. O que for pago após o fecho não entra neste relatório.",
   'Close it anyway': "Fechar mesmo assim",
   'Bill from': 'Fatura de',

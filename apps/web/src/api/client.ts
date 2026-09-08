@@ -56,6 +56,7 @@ export class Api {
 
   #get<T>(path: string) { return this.#request<T>('GET', path) }
   #post<T>(path: string, body?: object, idemKey?: string) { return this.#request<T>('POST', path, body, idemKey) }
+  #delete<T>(path: string) { return this.#request<T>('DELETE', path) }
 
   async login(wallet: WalletProvider): Promise<{ token: string; address: string; refreshToken: string }> {
     const { nonce, message } = await this.#post<{ nonce: string; message: string }>('/v1/auth/challenge')
@@ -95,6 +96,7 @@ export class Api {
   // following a shared link may have no account yet.
   getChargeRequest(id: string) { return this.#get<ChargeRequestPreview>(`/v1/charge-requests/${id}`) }
   getOutstandingBills() { return this.#get<OutstandingBillsResponse>('/v1/charge-requests/outstanding') }
+  cancelChargeRequest(id: string) { return this.#delete<void>(`/v1/charge-requests/${id}`) }
   acceptChargeRequest(id: string, idemKey?: string) {
     return this.#post<AcceptChargeRequestResponse>(`/v1/charge-requests/${id}/accept`, undefined, idemKey)
   }

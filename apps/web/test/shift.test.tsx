@@ -376,7 +376,12 @@ it('warns before closing a shift while bills are still unpaid, then closes on th
     getCurrentShift: vi.fn(async () => report.shift),
     getShiftReport: vi.fn(async () => report),
     getShifts: vi.fn(async () => []),
-    getOutstandingBills: vi.fn(async () => ({ count: 2 })),
+    getOutstandingBills: vi.fn(async () => ({ bills: [
+      { id: 'b1', amountLuna: '250000', fiatAmountMinor: null, fiatCurrency: null,
+        reference: null, expiresAt: '2026-09-09T08:00:00.000Z' },
+      { id: 'b2', amountLuna: '500000', fiatAmountMinor: null, fiatCurrency: null,
+        reference: null, expiresAt: '2026-09-09T08:00:00.000Z' },
+    ] })),
     closeShift: vi.fn(async () => ({ ...report, shift: { ...report.shift, closedAt: 'x' } })),
   }
   render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
@@ -404,7 +409,7 @@ it('closes without a warning when no bills are outstanding', async () => {
     getCurrentShift: vi.fn(async () => report.shift),
     getShiftReport: vi.fn(async () => report),
     getShifts: vi.fn(async () => []),
-    getOutstandingBills: vi.fn(async () => ({ count: 0 })),
+    getOutstandingBills: vi.fn(async () => ({ bills: [] })),
     closeShift: vi.fn(async () => ({ ...report, shift: { ...report.shift, closedAt: 'x' } })),
   }
   render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
@@ -413,4 +418,27 @@ it('closes without a warning when no bills are outstanding', async () => {
   fireEvent.click(screen.getByText('Close the shift'))
   await waitFor(() => expect(api.closeShift).toHaveBeenCalledTimes(1))
   expect(screen.queryByRole('alert')).toBeNull()
+})
+
+it('lists issued bills and cancels one, so a vendor can undo a mistake', async () => {
+  // Issuing links you can neither see nor withdraw is half a feature: a bill
+  // typed wrong would stay payable for its full day.
+  const bill = { id: 'b1', amountLuna: '250000', fiatAmountMinor: 500, fiatCurrency: 'USD',
+    reference: 'Soda', expiresAt: '2026-09-09T08:00:00.000Z' }
+  let remaining = [bill]
+  const api = {
+    createChargeRequest: vi.fn(),
+    getOutstandingBills: vi.fn(async () => ({ bills: remaining })),
+    cancelChargeRequest: vi.fn(async (id: string) => { remaining = remaining.filter(b => b.id !== id) }),
+  }
+  render(<MemoryRouter><NewRemoteCharge api={api as never} /></MemoryRouter>)
+
+  expect(await screen.findByText(/Soda/)).toBeTruthy()
+  expect(screen.getByText(/5\.00 USD/)).toBeTruthy()
+
+  fireEvent.click(screen.getByRole('button', { name: /^Cancel$/i }))
+  await waitFor(() => expect(api.cancelChargeRequest).toHaveBeenCalledWith('b1'))
+  // The list reloads from the server rather than trusting local state: whether
+  // the cancel really took is the server's answer to give.
+  await waitFor(() => expect(screen.queryByText(/Soda/)).toBeNull())
 })

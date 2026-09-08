@@ -158,7 +158,8 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
         // A bill paid after this shift closes lands in whatever shift is open
         // then — or in none at all. The vendor can only act on that here, so
         // say it once and let the next tap go through.
-        const { count } = await api.getOutstandingBills?.() ?? { count: 0 }
+        const res = await api.getOutstandingBills?.()
+        const count = res?.bills.length ?? 0
         if (count > 0) { setPendingBills(count); return }
       }
       setReport(await api.closeShift(shift.id))

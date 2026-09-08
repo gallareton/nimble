@@ -1,5 +1,5 @@
 import { CreateChargeRequestRequest, parseLunaString } from '@nimble/shared'
-import { and, eq, gt, isNull, sql as dsql } from 'drizzle-orm'
+import { and, desc, eq, gt, isNull, sql as dsql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { createHmac, randomBytes } from 'node:crypto'
 import { chargeRequest, claimAttempt, paymentSession, userProfile } from '../db/schema'
@@ -92,10 +92,42 @@ export async function chargeRequestRoutes(app: FastifyInstance) {
   // report: an outstanding bill may have been raised with no shift open at
   // all, and a closed shift's report must never change after the fact.
   app.get('/v1/charge-requests/outstanding', { preHandler: app.authenticate }, async (req) => {
-    const [row] = await db.select({ count: dsql<number>`count(*)::int` }).from(chargeRequest)
+    const rows = await db.select().from(chargeRequest)
       .where(and(eq(chargeRequest.receiverUserId, req.user.userId),
         isNull(chargeRequest.sessionId), gt(chargeRequest.expiresAt, new Date())))
-    return { count: row?.count ?? 0 }
+      .orderBy(desc(chargeRequest.createdAt), desc(chargeRequest.id))
+      .limit(50)
+    return {
+      bills: rows.map(r => ({
+        id: r.id,
+        amountLuna: r.amountAtomic.toString(),
+        fiatAmountMinor: r.fiatAmountMinor,
+        fiatCurrency: r.fiatCurrency,
+        reference: r.reference,
+        expiresAt: r.expiresAt.toISOString(),
+      })),
+    }
+  })
+
+  // Issuing a link you cannot withdraw is half a feature: a bill typed wrong
+  // would otherwise stay payable for a day. Only the issuer, and only while
+  // nobody has accepted it — once a payer is on the hook the sale belongs to
+  // the normal payment lifecycle and is cancelled there, not here.
+  app.delete('/v1/charge-requests/:id', { preHandler: app.authenticate }, async (req, reply) => {
+    const id = (req.params as { id: string }).id
+    const [gone] = await db.delete(chargeRequest)
+      .where(and(eq(chargeRequest.id, id), eq(chargeRequest.receiverUserId, req.user.userId),
+        isNull(chargeRequest.sessionId)))
+      .returning()
+    if (gone) return reply.code(204).send()
+
+    // Distinguish "not yours / never existed" from "already accepted": the
+    // second is actionable (look in the payment, not here), the first is not.
+    const [exists] = await db.select({ sessionId: chargeRequest.sessionId }).from(chargeRequest)
+      .where(and(eq(chargeRequest.id, id), eq(chargeRequest.receiverUserId, req.user.userId)))
+    if (exists?.sessionId)
+      return reply.code(409).send({ error: { code: 'ALREADY_ACCEPTED', message: 'someone is already paying this bill' } })
+    return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'charge request not found' } })
   })
 
   app.get('/v1/charge-requests/:id', async (req, reply) => {
