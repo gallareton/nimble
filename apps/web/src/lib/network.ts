@@ -55,6 +55,19 @@ async function resolve(): Promise<NetworkChoice> {
   // No wallet (browser landing): nothing can be signed here, so the
   // remembered choice or mainnet — the norm per Nimiq — is safe.
   if (height === null) {
+    // A shared bill link carries the network it was raised on (?n=), because
+    // the reader's browser has no wallet to ask and would otherwise default
+    // to mainnet and 404 on a testnet bill.
+    //
+    // Honoured ONLY here, in the no-wallet branch. Inside Nimiq Pay the
+    // wallet's own chain decides and a URL parameter must never override it:
+    // a payment has to reach the chain the wallet is actually on, and that
+    // rule is what stops a crafted link from aiming a transfer at the wrong
+    // network.
+    const asked = new URLSearchParams(window.location.search).get('n')
+    if (asked === 'test' && test) return TEST
+    if (asked === 'main' && main) return MAIN
+
     const remembered = localStorage.getItem(REMEMBER_KEY)
     if (remembered === 'test' && test) return TEST
     return main ? MAIN : TEST

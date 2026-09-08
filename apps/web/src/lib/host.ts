@@ -25,12 +25,21 @@ export const APP_STORE = 'https://apps.apple.com/app/nimiq-pay/id6471844738'
 // writing, so both forms are built and the caller picks: the deep link for
 // opening straight into Nimiq Pay, the plain URL for anything else (e.g.
 // pasting into a browser or another chat app).
-export function remoteChargeUrl(id: string): string {
-  return `${APP_URL}/r/${id}`
+export function remoteChargeUrl(id: string, net?: 'main' | 'test' | 'single'): string {
+  // The network travels in the link because the recipient's browser has no
+  // wallet to ask. Without it, network detection falls back to mainnet and a
+  // testnet bill answers 404 — the reader gets a generic landing page and no
+  // idea a bill was ever there. Omitted for single-backend deployments,
+  // where there is nothing to choose.
+  const chosen = net ?? networkChoice().net
+  const q = chosen === 'main' || chosen === 'test' ? `?n=${chosen}` : ''
+  return `${APP_URL}/r/${id}${q}`
 }
 export function remoteChargeDeeplink(id: string): string {
   return `nimiqpay://miniapp?url=${encodeURIComponent(remoteChargeUrl(id))}`
 }
+
+import { networkChoice } from './network'
 
 const REMOTE_CHARGE_ID_RE = /\/r\/([^/?#]+)/
 
