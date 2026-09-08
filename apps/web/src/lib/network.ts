@@ -119,3 +119,21 @@ export function watchNetworkFlips() {
     })
   })
 }
+
+/**
+ * Ask the other backend for a public resource, for a reader with no wallet.
+ *
+ * A shared bill link may reach a browser whose network hint was stripped, and
+ * answering "no such bill" to someone holding a real one is simply wrong. Safe
+ * only because it is read-only and only used outside Nimiq Pay: inside the
+ * wallet, the chain it is on decides, and looking elsewhere would invite
+ * paying on a network the wallet is not actually on.
+ */
+export async function fetchFromOtherNetwork(path: string): Promise<Response | null> {
+  const other = choice.net === 'test' ? '/api/main' : choice.net === 'main' ? '/api/test' : null
+  if (!other) return null
+  try {
+    const res = await fetch(`${other}${path}`, { signal: AbortSignal.timeout(4000) })
+    return res.ok ? res : null
+  } catch { return null }
+}

@@ -8,7 +8,13 @@ import { t } from '../i18n'
 import { describeError } from '../lib/errors'
 import { formatUsdValue } from '../lib/fiat'
 import { inNimiqPay } from '../lib/host'
-import { networkChoice } from '../lib/network'
+import { fetchFromOtherNetwork, networkChoice } from '../lib/network'
+
+// Read-only, browser-only: see fetchFromOtherNetwork's comment.
+async function probeOtherNetwork(id: string): Promise<ChargeRequestPreview | null> {
+  const res = await fetchFromOtherNetwork(`/v1/charge-requests/${id}`)
+  return res ? (await res.json()) as ChargeRequestPreview : null
+}
 import { uuid } from '../lib/uuid'
 import { ApiError, type Api } from '../api/client'
 
@@ -57,6 +63,19 @@ export function RemoteCharge(props: { api?: Api; token?: string | null; login?: 
       // which stack raised it while the wallet decides which one we talk to.
       // Saying "no such bill" to someone holding a real bill is simply wrong,
       // and the fix is theirs to make: switch the wallet's network.
+      // In a plain browser there is no wallet to be wrong about, and the
+      // network hint may not have survived the share link, so a 404 is not
+      // yet an answer: look on the other stack before telling someone their
+      // bill does not exist. Never done inside Nimiq Pay — there the wallet's
+      // chain decides and probing the other one would only invite paying on
+      // a network the wallet is not on.
+      if (e instanceof ApiError && e.status === 404 && !inNimiqPay()) {
+        void probeOtherNetwork(id).then(found => {
+          if (found) setPreview(found)
+          else setNotFound(true)
+        })
+        return
+      }
       if (e instanceof ApiError && e.status === 404 && wrongNetwork) setNetworkMismatch(true)
       else if (e instanceof ApiError && e.status === 404) setNotFound(true)
       else setLoadError(t('Could not load this bill. Check your connection and try again.'))

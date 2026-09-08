@@ -387,8 +387,12 @@ it('RemoteCharge opened outside Nimiq Pay shows the landing page with a link to 
   expect(await screen.findByText('2.5 NIM')).toBeTruthy()
   expect(screen.getByText('Kiosk')).toBeTruthy()
 
+  // An App Link on nimpay.app, not the nimiqpay:// scheme: a custom scheme is
+  // not shareable — messengers do not linkify it and a browser address bar
+  // searches for it. This is the format the Nimiq team pointed at.
   const link = await screen.findByRole('link', { name: /pay in nimiq pay/i })
   const href = link.getAttribute('href') ?? ''
-  expect(href).toContain('nimiqpay://miniapp?url=')
-  expect(decodeURIComponent(href)).toContain('/r/rc1')
+  expect(href).toMatch(/^https:\/\/nimpay\.app\/miniapps\/open\//)
+  expect(href).not.toContain('nimiqpay://')
+  expect(href).toContain('/r/rc1')
 })

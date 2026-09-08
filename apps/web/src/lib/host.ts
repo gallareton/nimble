@@ -35,8 +35,24 @@ export function remoteChargeUrl(id: string, net?: 'main' | 'test' | 'single'): s
   const q = chosen === 'main' || chosen === 'test' ? `?n=${chosen}` : ''
   return `${APP_URL}/r/${id}${q}`
 }
+/**
+ * The shareable form of a bill link: an App Link on nimpay.app, not the
+ * `nimiqpay://` custom scheme.
+ *
+ * The custom scheme was tried and fails as something to share — messengers do
+ * not linkify an unknown scheme at all, and a phone's address bar sends it to
+ * a search engine. The Nimiq team pointed at this format instead
+ * (nimiq.dev/mini-apps, "Sharing your Mini App"); their reply confirmed a path
+ * is carried, which their own examples do not show.
+ *
+ * A query string is the open question — nothing documents whether `?n=`
+ * survives. Nothing here depends on it: it is a hint that saves a round trip,
+ * and RemoteCharge falls back to probing the other network when the bill is
+ * not on the one we guessed.
+ */
 export function remoteChargeDeeplink(id: string): string {
-  return `nimiqpay://miniapp?url=${encodeURIComponent(remoteChargeUrl(id))}`
+  const url = new URL(remoteChargeUrl(id))
+  return `https://nimpay.app/miniapps/open/${url.host}${url.pathname}${url.search}`
 }
 
 import { networkChoice } from './network'
