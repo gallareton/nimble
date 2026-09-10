@@ -9,6 +9,86 @@ with silent session refresh, on-chain reconciliation, production deploy —
 and, on top of it, the vendor POS: shifts, fiat pricing, daily report and
 CSV export, plus an advisory balance pre-check on the approval screen.
 
+## The point of sale — what NIMble is becoming
+
+A review on 10 September reframed the product, and the reframing is right.
+NIMble is not a payment app with a vendor mode. It is **a till for a small
+shop, in which NIM is one way to pay**. The payment loop — the six-digit
+code, macro-block finality, receipts on both sides, on-chain
+reconciliation — is the foundation, not the product. The product is what
+a stallholder says at the end of the day: *on this phone I have my
+products, I serve customers, I know who worked the till and what sold, and
+the money lands in my own wallet with no terminal in between.*
+
+That is two promises, and they are worth keeping apart:
+
+| Promise | What it means |
+|---|---|
+| **Organising sales** | catalogue, cart, staff, shifts, receipts with line items, reports by product and by cashier |
+| **Taking payment** | a NIM transfer straight to the business's wallet |
+
+The first is why an owner keeps the app open all day. The second only
+decides how a customer can pay.
+
+### The target model
+
+- **A business is not a cashier's wallet.** Today `user_profile.wallet_address`
+  is both the identity and the payout address, which is why the cashier
+  PIN lock exists at all — it papers over a missing separation. The target
+  is three distinct things: *who* acts (a staff member, identified by their
+  own wallet), *on whose behalf* (the business), and *where the money goes*
+  (the business's payout wallet, changed only by the owner as a deliberate
+  act, never as a profile preference). A cashier can then take payments
+  without ever holding the keys to the takings.
+- **A sale is not a charge.** A charge says how much NIM was due, to
+  where, and whether it arrived. A sale says what was sold, how many, at
+  what price, by whom, during which shift. Line items are stored as
+  snapshots: tomorrow's price change must never rewrite yesterday's report.
+- **Membership, not just login.** A wallet signature proves control of an
+  address; that this address is Piotr on till 1 is something the owner
+  confirms. `member = staff + business + role + access status`, so revoking
+  someone leaves their history intact.
+- **Corrections leave a trace.** Finished operations are never deleted;
+  a correction is a new event attributed to a person. This gives an audit
+  trail, not theft prevention — the system cannot see goods handed over
+  with no sale rung up, and the app must never promise that it can.
+- **Cash is a payment method from day one.** A till that only sees NIM
+  sales is not a picture of the business; it is worse than a notebook.
+  Recording a cash sale moves no money and needs no integration.
+- **Personal phone first.** A cashier logs in with their own Nimiq Pay and
+  picks the business. A shared tablet on the counter is a different
+  authorisation design (the staff member authorises a terminal session
+  from their own phone) and comes later, not alongside.
+
+### What is built now, and what waits
+
+The two-day competition slice takes only what is **additive** on a live
+database — new tables and nullable columns, no rework of sessions,
+shifts or identity:
+
+| Now | Later |
+|---|---|
+| Product catalogue with categories, pinned items, retire-not-delete | Business entity, members, roles, owner approval of shifts |
+| Sales as documents with snapshotted line items | Registers / tills as first-class things; shared tablet |
+| Cart on the till; one-off items outside the catalogue | Discounts, corrections with an audit event |
+| Cash or NIM per sale | A price and reporting currency per business (USD stays for now) |
+| Report by product and by operator label | Suppliers, stock, multiple locations |
+| Merchant API: API keys, create and poll a bill by your own reference | Webhooks (a delivery subsystem of its own: retries, signing, replay) |
+
+### Two things the till cannot do, said plainly
+
+**It is not a fiscal cash register.** In Poland most retail sales legally
+require one, and NIMble is not a homologated device and will not become
+one. For a Polish stall it is a ledger *beside* the fiscal register, not
+instead of it. This alone suggests the first pilot market is not Poland,
+even though the BLIK metaphor comes from there. The report is an aid to
+bookkeeping, not bookkeeping.
+
+**It cannot prevent theft.** Attributing a sale to a cashier gives the
+owner a trail — who sold, who refunded, who closed the shift. It does not
+catch goods that were never rung up. That needs stock control or
+procedure, and the app will not claim otherwise.
+
 ## Next — deepen the core loop
 
 **Remote charge.** A vendor bills a customer who is not at the counter:
@@ -35,13 +115,14 @@ it must reach the report exactly like a sale rung up in person.
 watch them settle live. Socially sticky; technically a loop over the
 existing session flow.
 
-**Merchant polish — mostly shipped.** The vendor mode landed: shifts with
-an operator label (one open per vendor, enforced by a partial index),
-pricing in USD or NIM with the quote frozen on the charge row, a daily
-report, CSV export, a full-screen paid signal for the till, and an
-offline guard that refuses a payment the till cannot verify. What remains
-is the verified-business profile with a tax id replacing today's
-"Unverified profile" badge, plus refunds, a cashier PIN, and tips.
+**Vendor mode — shipped, and superseded by the point of sale above.**
+Shifts with an operator label, pricing in USD or NIM with the quote frozen
+on the charge row, a daily report, CSV export, a full-screen paid signal,
+an offline guard, remote bills, refunds as a payment run backward, a
+cashier PIN lock, nightly database backups. What remains — a business
+profile with a tax id, tips — is folded into the target model: a tax id
+typed by the vendor verifies nothing, and showing it next to the word
+"verified" would build trust nothing backs.
 
 ## Later — grow the network
 
@@ -52,10 +133,14 @@ invitation — no funds move until the recipient registers. Requires an
 inbound SMS provider and a privacy-first directory (hashed numbers,
 rate-limited lookups, opt-in discovery).
 
-**External integrations API.** Public charge API + webhooks so webshops
-and cash registers can create charges and observe settlement — the
-checkout use case BLIK started from. This is also where the business
-model lives: merchant tooling stays paid, P2P stays free.
+**Merchant API — the basic form is in the competition slice.** API keys
+issued and revoked by the owner, create a bill with your own external
+reference, poll its state until it is paid and read the transaction hash.
+That is enough for a webshop to take NIM. What waits is webhooks — not
+because they are hard to fire, but because delivery, retries, signing and
+replay protection are a subsystem, and a webhook that fires once and is
+lost is worse than a poll. This is also where the business model lives:
+merchant tooling stays paid, P2P stays free.
 
 ## USDT — supported by design, gated by verification
 
