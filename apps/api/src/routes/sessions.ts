@@ -1,6 +1,6 @@
-import { and, eq, gt, isNull, inArray, sql as dsql } from 'drizzle-orm'
+import { and, asc, eq, gt, isNull, inArray, sql as dsql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
-import { paymentSession, claimAttempt, charge, userProfile, chainTransaction } from '../db/schema'
+import { paymentSession, claimAttempt, charge, userProfile, chainTransaction, sale, saleItem } from '../db/schema'
 import { env } from '../env'
 import { withIdempotency } from '../plugins/idempotency'
 import { generateCode, hashCode } from '../services/codeService'
@@ -9,7 +9,14 @@ import { insertCharge } from '../services/charges'
 import { ClaimRequest, parseLunaString } from '@nimble/shared'
 import { createHmac } from 'node:crypto'
 import { openShiftFor } from './shifts'
+import { composeSaleReference } from './sales'
 import type { Db } from '../db/client'
+
+/** Thrown to abort the claim transaction (rolling back the won code) when the
+ *  attached sale turns out invalid — carries the response to send instead. */
+class ClaimAbort extends Error {
+  constructor(public response: { code: number; body: unknown }) { super('claim_abort') }
+}
 
 export const CODE_TTL_MS = 120_000
 export const CLAIM_WINDOW_MS = 60_000
@@ -80,27 +87,30 @@ export async function sessionRoutes(app: FastifyInstance) {
       ])
       return reply.code(404).send(CODE_UNAVAILABLE)
     }
-    const { code, amountLuna, fiatAmountMinor, fiatCurrency, reference } = parsed.data
-    const priced = amountLuna !== undefined || fiatAmountMinor !== undefined
+    const { code, amountLuna, fiatAmountMinor, fiatCurrency, reference, saleId } = parsed.data
+    const priced = amountLuna !== undefined || fiatAmountMinor !== undefined || saleId !== undefined
 
     // Fingerprint what the client asked for, not what the rate turned it
     // into: a retry with the same key must replay the original 200 even if
     // the quote moved between the first attempt and the retry — or if the
     // rate provider is unreachable on the retry, which is precisely when a
     // vendor retries.
-    const idemPayload = fiatAmountMinor !== undefined
-      ? JSON.stringify({ code, fiatAmountMinor, fiatCurrency, reference: reference ?? null })
-      : amountLuna
-        ? JSON.stringify({ code, amountLuna, reference: reference ?? null })
-        : code
+    const idemPayload = saleId !== undefined
+      ? JSON.stringify({ code, saleId, reference: reference ?? null })
+      : fiatAmountMinor !== undefined
+        ? JSON.stringify({ code, fiatAmountMinor, fiatCurrency, reference: reference ?? null })
+        : amountLuna
+          ? JSON.stringify({ code, amountLuna, reference: reference ?? null })
+          : code
     const { code: status, body } = await withIdempotency<any>(db, `claim:${req.user.userId}`, key, idemPayload, async () => {
-      // Priced in fiat? Freeze a quote now, same as the charges route — the
-      // export has to state the rate that applied at the moment of sale, not
-      // today's. Fetched here, inside the idempotency-guarded handler, so a
-      // replay of an already-successful claim never depends on the rate
-      // provider being reachable — idempotency must not depend on the rate.
+      // Priced in fiat, or priced from a sale (also fiat under the hood)?
+      // Freeze a quote now, same as the charges route — the export has to
+      // state the rate that applied at the moment of sale, not today's.
+      // Fetched here, inside the idempotency-guarded handler, so a replay of
+      // an already-successful claim never depends on the rate provider being
+      // reachable — idempotency must not depend on the rate.
       let quote = null
-      if (fiatAmountMinor !== undefined) {
+      if (fiatAmountMinor !== undefined || saleId !== undefined) {
         quote = (await app.deps.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
         if (!quote)
           return { code: 503, body: { error: { code: 'NO_RATE', message: 'no exchange rate available' } } }
@@ -108,40 +118,66 @@ export async function sessionRoutes(app: FastifyInstance) {
       // BLIK-style: when the receiver supplies the amount up front, claiming
       // and charging happen in one atomic transaction — the payer's next SSE
       // event is already AWAITING_PAYER_APPROVAL with the charge attached.
-      const result = await db.transaction(async tx => {
-        const [won] = await tx.update(paymentSession).set({
-          receiverUserId: req.user.userId,
-          status: priced ? 'AWAITING_PAYER_APPROVAL' : 'CLAIMED',
-          claimedAt: new Date(),
-          chargeDeadlineAt: new Date(Date.now() + CLAIM_WINDOW_MS),
-        }).where(and(
-          eq(paymentSession.codeHash, hashCode(code, env.codePepper)),
-          eq(paymentSession.status, 'AVAILABLE'),
-          gt(paymentSession.expiresAt, new Date()),
-          isNull(paymentSession.receiverUserId),
-          dsql`${paymentSession.payerUserId} <> ${req.user.userId}`,
-        )).returning()
-        if (!won) return null
-        if (!priced) return { won, c: null }
-        const amountAtomic = fiatAmountMinor !== undefined
-          ? priceInLuna(fiatAmountMinor, quote!)
-          : parseLunaString(amountLuna!)
-        const [receiver] = await tx.select().from(userProfile).where(eq(userProfile.id, req.user.userId))
-        // Every charge this route creates gets stamped, luna-priced too — a
-        // vendor's day must contain all their sales, not only the fiat ones.
-        const openShift = await openShiftFor(tx as unknown as Db, req.user.userId)
-        const c = await insertCharge(tx as unknown as Db, {
-          sessionId: won.id, amountAtomic,
-          shiftId: openShift?.id ?? null,
-          fiatAmountMinor: fiatAmountMinor ?? null,
-          fiatCurrency: fiatCurrency ?? null,
-          fxRate: quote ? String(quote.value) : null,
-          fxRateAt: quote ? new Date(quote.at) : null,
-          fxSource: quote?.source ?? null,
-          recipientAddress: receiver.walletAddress, reference: reference ?? null,
+      let result
+      try {
+        result = await db.transaction(async tx => {
+          const [won] = await tx.update(paymentSession).set({
+            receiverUserId: req.user.userId,
+            status: priced ? 'AWAITING_PAYER_APPROVAL' : 'CLAIMED',
+            claimedAt: new Date(),
+            chargeDeadlineAt: new Date(Date.now() + CLAIM_WINDOW_MS),
+          }).where(and(
+            eq(paymentSession.codeHash, hashCode(code, env.codePepper)),
+            eq(paymentSession.status, 'AVAILABLE'),
+            gt(paymentSession.expiresAt, new Date()),
+            isNull(paymentSession.receiverUserId),
+            dsql`${paymentSession.payerUserId} <> ${req.user.userId}`,
+          )).returning()
+          if (!won) return null
+          if (!priced) return { won, c: null }
+
+          let fiatMinorFinal: number | undefined = fiatAmountMinor
+          let fiatCurrencyFinal: string | undefined = fiatCurrency
+          let saleRow: typeof sale.$inferSelect | null = null
+          let referenceOverride: string | null = null
+          if (saleId !== undefined) {
+            const [s] = await tx.select().from(sale).where(eq(sale.id, saleId)).for('update')
+            if (!s || s.sellerUserId !== req.user.userId)
+              throw new ClaimAbort({ code: 404, body: { error: { code: 'NOT_FOUND', message: 'sale not found' } } })
+            if (s.status !== 'awaiting' || s.chargeId !== null)
+              throw new ClaimAbort({ code: 409, body: { error: { code: 'INVALID_STATE', message: 'sale is not claimable' } } })
+            saleRow = s
+            fiatMinorFinal = s.totalMinor
+            fiatCurrencyFinal = s.fiatCurrency
+            const items = await tx.select().from(saleItem).where(eq(saleItem.saleId, s.id)).orderBy(asc(saleItem.sortOrder))
+            referenceOverride = composeSaleReference(items)
+          }
+
+          const amountAtomic = fiatMinorFinal !== undefined
+            ? priceInLuna(fiatMinorFinal, quote!)
+            : parseLunaString(amountLuna!)
+          const [receiver] = await tx.select().from(userProfile).where(eq(userProfile.id, req.user.userId))
+          // Every charge this route creates gets stamped, luna-priced too — a
+          // vendor's day must contain all their sales, not only the fiat ones.
+          const openShift = await openShiftFor(tx as unknown as Db, req.user.userId)
+          const c = await insertCharge(tx as unknown as Db, {
+            sessionId: won.id, amountAtomic,
+            shiftId: openShift?.id ?? null,
+            fiatAmountMinor: fiatMinorFinal ?? null,
+            fiatCurrency: fiatCurrencyFinal ?? null,
+            fxRate: quote ? String(quote.value) : null,
+            fxRateAt: quote ? new Date(quote.at) : null,
+            fxSource: quote?.source ?? null,
+            recipientAddress: receiver.walletAddress, reference: reference ?? referenceOverride,
+            saleId: saleRow?.id ?? null,
+          })
+          if (saleRow) await tx.update(sale).set({ chargeId: c.id }).where(eq(sale.id, saleRow.id))
+          return { won, c }
         })
-        return { won, c }
-      })
+      } catch (e) {
+        if (e instanceof ClaimAbort) return e.response
+        throw e
+      }
 
       if (!result) {
         await db.insert(claimAttempt).values([

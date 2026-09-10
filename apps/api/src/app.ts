@@ -15,6 +15,7 @@ import { sseRoutes } from './routes/sse'
 import { historyRoutes } from './routes/history'
 import { shiftRoutes } from './routes/shifts'
 import { productRoutes } from './routes/products'
+import { saleRoutes } from './routes/sales'
 
 import { nullRates, type RateProvider } from './services/rates'
 import type { ChainClient } from './services/monitor'
@@ -81,6 +82,7 @@ export function buildApp(deps: AppDeps) {
   app.register(historyRoutes)
   app.register(shiftRoutes)
   app.register(productRoutes)
+  app.register(saleRoutes)
   return app
 }
 declare module 'fastify' {

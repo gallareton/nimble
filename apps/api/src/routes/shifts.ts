@@ -1,11 +1,12 @@
 import { OpenShiftRequest } from '@nimble/shared'
-import type { ShiftEntry, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
+import type { ShiftCashEntry, ShiftEntry, ShiftListItem, ShiftProductTotal, ShiftReport, ShiftView } from '@nimble/shared'
 import { lunaToNim } from '@nimble/shared'
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
-import { chainTransaction, charge, paymentSession, receipt, refund, shift } from '../db/schema'
+import { chainTransaction, charge, paymentSession, receipt, refund, sale, saleItem, shift } from '../db/schema'
 import type { Db } from '../db/client'
 import { rejectIfCashierLocked } from '../services/cashierLock'
+import { composeSaleReference } from './sales'
 
 /** lunaToNim() rejects negatives (it never has to format one on the sale path); refunds and a shift that refunds more than it sold both need a signed rendering. */
 function signedLunaToNim(v: bigint): string {
@@ -36,6 +37,9 @@ const CSV_COLUMNS = [
   // Appended, not inserted: column order here is asserted by a test, and
   // someone may have a spreadsheet built on today's layout.
   'refund_of',
+  // Appended again for the POS sale/cash-method columns (task 2) — same
+  // append-only discipline, one more time.
+  'payment_method', 'sale_id',
 ] as const
 
 function toCsv(report: ShiftReport): string {
@@ -51,8 +55,28 @@ function toCsv(report: ShiftReport): string {
       // Never wrapped with csvFreeText: when this is the original sale's
       // local_number it must stay numeric so a spreadsheet can still sum it.
       e.refundOfLocalNumber ?? e.refundOfOccurredAt,
+      // Every entry here comes from a charge, and a charge only ever
+      // represents a NIM transfer — cash never produces one.
+      'nim',
+      e.saleId ?? '',
     ].join(','))
   }
+  // Cash rows never had a charge, so they carry no crypto/fx columns at all —
+  // rather than pad ShiftEntry with nulls for a payment method that never
+  // touches the chain, they're appended here from their own, smaller shape.
+  report.cashEntries.forEach((ce, i) => {
+    lines.push([
+      report.entries.length + i + 1, ce.occurredAt, 'PAID_CASH', ce.amountFiatMinor, report.totals.fiatCurrency,
+      '', '', '', '', '', '',
+      '',
+      csvFreeText(ce.reference),
+      csvFreeText(report.shift.operatorLabel),
+      report.shift.id,
+      '',
+      'cash',
+      ce.saleId,
+    ].join(','))
+  })
   // Excel reads UTF-8 as the local codepage without this, mangling every accent.
   return '﻿' + lines.join('\r\n') + '\r\n'
 }
@@ -134,6 +158,12 @@ export async function buildReport(db: Db, row: typeof shift.$inferSelect): Promi
   let grossFiatMinor = 0
   let fiatCurrency: string | null = null
   let fiatIncomplete = false
+  let nimSaleCount = 0
+  let nimSaleFiatMinor = 0
+  // Sale ids whose NIM charge is CONFIRMED — feeds byProduct below, joined
+  // with the cash side further down. A sale that isn't itself refunded stays
+  // 'paid' even though other charges in the same shift may be refunds.
+  const paidSaleIds = new Set<string>()
 
   const entries: ShiftEntry[] = rows.map((x, i) => {
     const local = localByChargeId.get(x.c.id)!
@@ -153,6 +183,11 @@ export async function buildReport(db: Db, row: typeof shift.$inferSelect): Promi
         } else {
           fiatIncomplete = true
         }
+        if (x.c.saleId) {
+          paidSaleIds.add(x.c.saleId)
+          nimSaleCount++
+          nimSaleFiatMinor += x.c.fiatAmountMinor ?? 0
+        }
       }
     } else if (status === 'FAILED' || status === 'REJECTED' || status === 'EXPIRED') {
       failed++
@@ -163,6 +198,7 @@ export async function buildReport(db: Db, row: typeof shift.$inferSelect): Promi
 
     return {
       chargeId: x.c.id,
+      saleId: x.c.saleId ?? null,
       localNumber: i + 1,
       occurredAt: local.occurredAt,
       status,
@@ -183,6 +219,48 @@ export async function buildReport(db: Db, row: typeof shift.$inferSelect): Promi
     }
   })
 
+  // Cash sales never produce a `charge` row (no chain, no session — see
+  // db/schema.ts on `sale`), so they can't be found by joining from `charge`
+  // above. A separate, small query picks them up by shift_id directly.
+  const cashSaleRows = await db.select().from(sale)
+    .where(and(eq(sale.shiftId, row.id), eq(sale.paymentMethod, 'cash')))
+    .orderBy(asc(sale.createdAt), asc(sale.id))
+  const paidCashSales = cashSaleRows.filter(s => s.status === 'paid')
+  for (const s of paidCashSales) paidSaleIds.add(s.id)
+
+  const cashFiatMinor = paidCashSales.reduce((sum, s) => sum + s.totalMinor, 0)
+  if (paidCashSales.length > 0) fiatCurrency ??= paidCashSales[0].fiatCurrency
+
+  const saleItemRows = paidSaleIds.size > 0
+    ? await db.select().from(saleItem).where(inArray(saleItem.saleId, [...paidSaleIds]))
+    : []
+  const itemsBySaleId = new Map<string, (typeof saleItemRows)>()
+  for (const it of saleItemRows) {
+    const list = itemsBySaleId.get(it.saleId) ?? []
+    list.push(it)
+    itemsBySaleId.set(it.saleId, list)
+  }
+
+  const byProductMap = new Map<string, ShiftProductTotal>()
+  for (const it of saleItemRows) {
+    const cur = byProductMap.get(it.nameSnapshot) ?? { name: it.nameSnapshot, quantity: 0, totalMinor: 0 }
+    cur.quantity += it.quantity
+    cur.totalMinor += it.lineTotalMinor
+    byProductMap.set(it.nameSnapshot, cur)
+  }
+  const byProduct = [...byProductMap.values()]
+    .sort((a, b) => b.totalMinor - a.totalMinor || a.name.localeCompare(b.name))
+
+  const cashEntries: ShiftCashEntry[] = paidCashSales.map(s => ({
+    saleId: s.id,
+    occurredAt: (s.paidAt ?? s.createdAt).toISOString(),
+    amountFiatMinor: s.totalMinor,
+    reference: composeSaleReference((itemsBySaleId.get(s.id) ?? []).slice()
+      .sort((a, b) => a.sortOrder - b.sortOrder)),
+  }))
+
+  const anyFiat = confirmed > 0 || paidCashSales.length > 0
+
   return {
     shift: view(row),
     totals: {
@@ -190,13 +268,21 @@ export async function buildReport(db: Db, row: typeof shift.$inferSelect): Promi
       confirmed,
       refunded,
       failed,
+      cashSales: paidCashSales.length,
+      byPaymentMethod: {
+        nim: { count: nimSaleCount, fiatMinor: nimSaleFiatMinor },
+        cash: { count: paidCashSales.length, fiatMinor: cashFiatMinor },
+      },
       grossNim: signedLunaToNim(salesLuna - refundsLuna),
-      grossFiatMinor: confirmed > 0 ? grossFiatMinor : null,
+      // Cash sales join the NIM fiat total here; grossNim above stays NIM-only.
+      grossFiatMinor: anyFiat ? grossFiatMinor + cashFiatMinor : null,
       fiatCurrency,
       // From sales only: a refund shouldn't skew the typical-transaction size.
       averageTicketNim: confirmed > 0 ? lunaToNim(salesLuna / BigInt(confirmed)) : null,
     },
     entries,
+    cashEntries,
+    byProduct,
     fiatIncomplete,
   }
 }

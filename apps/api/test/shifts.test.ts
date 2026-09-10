@@ -286,7 +286,8 @@ it('exports RFC 4180 CSV with a BOM, CRLF and the rate columns', async () => {
   expect(res.body.startsWith('﻿')).toBe(true)
   const [header] = res.body.slice(1).split('\r\n')
   expect(header).toBe('local_number,occurred_at_utc,status,amount_fiat_minor,fiat_currency,' +
-    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,reference,operator,shift_id,refund_of')
+    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,reference,operator,shift_id,refund_of,' +
+    'payment_method,sale_id')
 
   const json = await app.inject({ url: `/v1/shifts/${id}/export?format=json`, headers: auth(t) })
   expect(json.json().shift.operatorLabel).toBe('Ana, "the boss"')
@@ -452,6 +453,7 @@ it('the CSV export carries the refund reference in a new column appended at the 
     'local_number', 'occurred_at_utc', 'status', 'amount_fiat_minor', 'fiat_currency',
     'amount_crypto', 'asset', 'network', 'tx_hash', 'fx_rate', 'fx_rate_at',
     'fx_source', 'reference', 'operator', 'shift_id', 'refund_of',
+    'payment_method', 'sale_id',
   ])
   const cols = header.split(',')
   const idx = cols.indexOf('refund_of')
@@ -461,6 +463,65 @@ it('the CSV export carries the refund reference in a new column appended at the 
   expect(saleRow[idx]).toBe('')
   expect(refundRow[idx]).toBe('1') // the sale's local_number
   expect(refundRow[cols.indexOf('amount_crypto')]).toBe('-2.5')
+})
+
+const auth2 = auth
+const createSale = (t: string, payload: object) =>
+  app.inject({ method: 'POST', url: '/v1/sales', payload,
+    headers: { authorization: `Bearer ${t}`, 'idempotency-key': crypto.randomUUID() } })
+
+it('byProduct sums quantities across two sales of the same product; cash joins grossFiatMinor and cashSales, not confirmed', async () => {
+  const { t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth2(t) })).json()
+
+  const cash1 = await createSale(t, { items: [{ name: 'Coffee', unitPriceMinor: 350, quantity: 2 }], paymentMethod: 'cash' })
+  expect(cash1.statusCode).toBe(201)
+  const cash2 = await createSale(t, { items: [{ name: 'Coffee', unitPriceMinor: 350, quantity: 1 }], paymentMethod: 'cash' })
+  expect(cash2.statusCode).toBe(201)
+
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth2(t) })
+  const report = (await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth2(t) })).json()
+
+  expect(report.byProduct).toEqual([{ name: 'Coffee', quantity: 3, totalMinor: 1050 }])
+  expect(report.totals.cashSales).toBe(2)
+  expect(report.totals.confirmed).toBe(0) // confirmed stays NIM-charge-only
+  expect(report.totals.grossFiatMinor).toBe(1050)
+  expect(report.totals.byPaymentMethod.cash).toEqual({ count: 2, fiatMinor: 1050 })
+  expect(report.totals.byPaymentMethod.nim).toEqual({ count: 0, fiatMinor: 0 })
+  expect(report.cashEntries.length).toBe(2)
+  expect(report.cashEntries[0].amountFiatMinor).toBe(700)
+})
+
+it('the CSV export carries payment_method and sale_id as the last two columns, cash rows after nim rows', async () => {
+  const { t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth2(t) })).json()
+
+  await confirmFiatSale(id, t, 500)
+  const cashRes = await createSale(t, { items: [{ name: 'Tea', unitPriceMinor: 200, quantity: 1 }], paymentMethod: 'cash' })
+  const cashSaleId = cashRes.json().id
+
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth2(t) })
+  const res = await app.inject({ url: `/v1/shifts/${id}/export`, headers: auth2(t) })
+  expect(res.statusCode).toBe(200)
+
+  const lines = res.body.slice(1).split('\r\n')
+  const header = lines[0]
+  expect(header).toBe('local_number,occurred_at_utc,status,amount_fiat_minor,fiat_currency,' +
+    'amount_crypto,asset,network,tx_hash,fx_rate,fx_rate_at,fx_source,reference,operator,shift_id,' +
+    'refund_of,payment_method,sale_id')
+  const cols = header.split(',')
+
+  const nimRow = lines[1].split(',')
+  expect(nimRow[cols.indexOf('payment_method')]).toBe('nim')
+  expect(nimRow[cols.indexOf('sale_id')]).toBe('')
+
+  const cashRow = lines[2].split(',')
+  expect(cashRow[cols.indexOf('status')]).toBe('PAID_CASH')
+  expect(cashRow[cols.indexOf('payment_method')]).toBe('cash')
+  expect(cashRow[cols.indexOf('sale_id')]).toBe(cashSaleId)
+  expect(cashRow[cols.indexOf('amount_fiat_minor')]).toBe('200')
 })
 
 it('the past-shifts list subtracts refunds, agreeing with the report it summarises', async () => {

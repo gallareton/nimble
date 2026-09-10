@@ -15,6 +15,9 @@ export type InsertChargeParams = FrozenQuote & {
   reference?: string | null
   recipientAddress: string
   shiftId?: string | null
+  // Set only when this charge settles a POS sale (the NIM path) — lets a
+  // sale's report join straight to its charge. See db/schema.ts on `charge`.
+  saleId?: string | null
 }
 
 /**
@@ -37,6 +40,7 @@ export async function insertCharge(tx: Db, params: InsertChargeParams) {
     fxSource: params.fxSource ?? null,
     recipientAddress: params.recipientAddress,
     reference: params.reference ?? null,
+    saleId: params.saleId ?? null,
   }).returning()
   return c
 }

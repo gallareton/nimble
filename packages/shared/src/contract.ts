@@ -22,12 +22,18 @@ export const ClaimRequest = z.object({
   fiatAmountMinor: z.number().int().positive().optional(),
   fiatCurrency: FiatCurrency.optional(),
   reference: z.string().max(100).optional(),
+  // POS hand-off: claiming with a saleId prices the charge from the sale's
+  // own frozen total — the client must not also try to name an amount.
+  saleId: z.string().uuid().optional(),
 }).refine(
   b => b.amountLuna === undefined || b.fiatAmountMinor === undefined,
   'cannot set both amountLuna and fiatAmountMinor',
 ).refine(
   b => (b.fiatAmountMinor === undefined) === (b.fiatCurrency === undefined),
   'fiatCurrency is required with fiatAmountMinor',
+).refine(
+  b => b.saleId === undefined || (b.amountLuna === undefined && b.fiatAmountMinor === undefined && b.fiatCurrency === undefined),
+  'saleId cannot be combined with amountLuna or fiatAmountMinor',
 )
 /** A charge is priced either directly in luna, or in fiat minor units which the
  *  server converts with a quote it then stores. Exactly one of the two. */
@@ -156,6 +162,9 @@ export interface ShiftEntry {
    *  /v1/charges/:id/refunds against this entry. Added additively for
    *  Task 4 (refund-from-report): nothing else in the shape changed. */
   chargeId: string
+  /** Set only when this charge settles a POS sale (the NIM path). Null for a
+   *  plain charge or a refund. Feeds the CSV's sale_id column. */
+  saleId: string | null
   localNumber: number
   occurredAt: string
   status: SessionStatus
@@ -181,18 +190,38 @@ export interface ShiftListItem extends ShiftView {
   confirmed: number
 }
 
+/** One row of the POS "sold by product" breakdown — paid sales only (cash
+ *  paid, or NIM CONFIRMED). Snapshot name, not the live catalog name. */
+export interface ShiftProductTotal { name: string; quantity: number; totalMinor: number }
+
+/** A cash sale in this shift's report. Cash never produces a `charge` row
+ *  (no chain, no session), so it can't live in `entries` — those describe
+ *  charges. Kept as its own shape rather than padding ShiftEntry with nulls. */
+export interface ShiftCashEntry {
+  saleId: string; occurredAt: string; amountFiatMinor: number; reference: string | null
+}
+
 export interface ShiftReport {
   shift: ShiftView
   totals: {
     count: number; confirmed: number; refunded: number; failed: number
     /** Sales minus confirmed refunds — may go negative if a refund lands in a later shift than its sale. */
     grossNim: string
+    /** Confirmed NIM sales' fiat value plus paid cash sales' totals. */
     grossFiatMinor: number | null
     fiatCurrency: string | null
     /** From sales only, never from the net-of-refunds figure — a refund shouldn't skew the typical-transaction size. */
     averageTicketNim: string | null
+    /** Count of paid cash sales — never counted in `confirmed`, which stays NIM-charge-only. */
+    cashSales: number
+    byPaymentMethod: {
+      nim: { count: number; fiatMinor: number }
+      cash: { count: number; fiatMinor: number }
+    }
   }
   entries: ShiftEntry[]
+  cashEntries: ShiftCashEntry[]
+  byProduct: ShiftProductTotal[]
   /** True when a sale had no fiat price, so the fiat total covers only part of the day. */
   fiatIncomplete: boolean
 }
@@ -228,4 +257,49 @@ export interface ProductView {
   pinned: boolean
   active: boolean
   sortOrder: number
+}
+
+// A sale line: either a catalog item (productId set, name/price come from the
+// catalog at sale time — never from what the client sends) or a manual item
+// (no productId, name and unitPriceMinor required). quantity is required in
+// both cases.
+export const CreateSaleItemRequest = z.object({
+  productId: z.string().uuid().optional(),
+  name: z.string().max(60).optional(),
+  unitPriceMinor: z.number().int().min(0).optional(),
+  quantity: z.number().int().min(1),
+})
+export const CreateSaleRequest = z.object({
+  items: z.array(CreateSaleItemRequest).min(1).max(50),
+  paymentMethod: z.enum(['nim', 'cash']),
+})
+export type CreateSaleItemRequestT = z.infer<typeof CreateSaleItemRequest>
+export type CreateSaleRequestT = z.infer<typeof CreateSaleRequest>
+
+export interface SaleItemView {
+  productId: string | null
+  name: string
+  unitPriceMinor: number
+  quantity: number
+  lineTotalMinor: number
+}
+
+/**
+ * `status` is what's stored ('awaiting' | 'paid' | 'cancelled' — for a NIM
+ * sale this column stays 'awaiting' forever, see db/schema.ts on `sale`).
+ * `state` is what's true right now, derived from the linked charge's session
+ * for a NIM sale: 'paid' | 'awaiting' | 'failed' | 'cancelled'.
+ */
+export interface SaleView {
+  id: string
+  status: 'awaiting' | 'paid' | 'cancelled'
+  state: 'awaiting' | 'paid' | 'cancelled' | 'failed'
+  paymentMethod: 'nim' | 'cash'
+  totalMinor: number
+  fiatCurrency: string
+  shiftId: string | null
+  chargeId: string | null
+  items: SaleItemView[]
+  createdAt: string
+  paidAt: string | null
 }
