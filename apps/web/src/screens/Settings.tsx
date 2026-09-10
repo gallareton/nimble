@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import type { ApiKeyView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { resetIntro } from '../components/Intro'
+import { copyText } from '../lib/copy'
 import { t } from '../i18n'
 
 export function Settings({ api: apiProp }: { api?: Api } = {}) {
@@ -28,6 +30,74 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
   const [unlockPin, setUnlockPin] = useState('')
   const [unlockBusy, setUnlockBusy] = useState(false)
   const [unlockMsg, setUnlockMsg] = useState<string | null>(null)
+
+  // Merchant API keys (Task 6). The list never carries the plaintext key —
+  // only the create response does, and only once (see createdKey below).
+  const [keys, setKeys] = useState<ApiKeyView[] | null>(null)
+  const [keysErr, setKeysErr] = useState<string | null>(null)
+  const [newLabel, setNewLabel] = useState('')
+  const [keyBusy, setKeyBusy] = useState(false)
+  const [createErr, setCreateErr] = useState<string | null>(null)
+  const [createdKey, setCreatedKey] = useState<{ label: string; key: string } | null>(null)
+  const [keyCopied, setKeyCopied] = useState(false)
+  const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null)
+  const [revokeBusy, setRevokeBusy] = useState(false)
+
+  const lockedMessage = (e: unknown, fallback: string) => {
+    if (e instanceof ApiError && e.status === 423)
+      return t('Cashier lock is active. Unlock the till to manage API keys.')
+    return fallback
+  }
+
+  const loadKeys = () => {
+    setKeysErr(null)
+    void (api.getApiKeys?.() ?? Promise.resolve(null)).then(r => { if (r) setKeys(r) })
+      .catch(e => setKeysErr(lockedMessage(e, t('Could not load the API keys. Check your connection and try again.'))))
+  }
+  useEffect(loadKeys, [api])
+
+  const createKey = async () => {
+    setCreateErr(null)
+    setKeyBusy(true)
+    try {
+      const res = await api.createApiKey?.(newLabel.trim())
+      if (res) {
+        setCreatedKey({ label: res.label, key: res.key })
+        setKeyCopied(false)
+        setNewLabel('')
+        loadKeys()
+      }
+    } catch (e) {
+      setCreateErr(lockedMessage(e, t('Could not create the key. Check your connection and try again.')))
+    } finally {
+      setKeyBusy(false)
+    }
+  }
+
+  const copyKey = async () => {
+    if (!createdKey) return
+    const ok = await copyText(createdKey.key)
+    if (ok) setKeyCopied(true)
+    else setCreateErr(t('Could not copy the key. Select the text and copy it manually.'))
+  }
+
+  // Same one-tap-arms-it, second-tap-fires idiom as closing a shift with
+  // unpaid bills outstanding (Shift.tsx) — revoking is permanent (the key
+  // cannot be un-revoked, only replaced), so a stray tap must not do it.
+  const revokeKey = async (id: string) => {
+    if (revokeConfirmId !== id) { setRevokeConfirmId(id); return }
+    setRevokeBusy(true)
+    setKeysErr(null)
+    try {
+      await api.revokeApiKey?.(id)
+      setRevokeConfirmId(null)
+      loadKeys()
+    } catch (e) {
+      setKeysErr(lockedMessage(e, t('Could not revoke the key. Check your connection and try again.')))
+    } finally {
+      setRevokeBusy(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -173,6 +243,54 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
           <button onClick={() => void disableLock()} disabled={!unlockPin || unlockBusy}>{t('Unlock the till')}</button>
           {unlockMsg && <p role="alert">{unlockMsg}</p>}
         </>)}
+      </section>
+
+      <section className="form-card">
+        <h2>{t('API keys')}</h2>
+        {createdKey ? (
+          <div className="export-panel">
+            <p className="quiet">
+              {t('This key is shown only once — copy it now. If you lose it, issue a new one instead.')}
+            </p>
+            <textarea id="api-key-textarea" className="export-textarea" readOnly value={createdKey.key} />
+            <div className="actions">
+              <button onClick={() => void copyKey()}>{keyCopied ? t('Copied') : t('Copy')}</button>
+              <button onClick={() => setCreatedKey(null)}>{t('Close')}</button>
+            </div>
+            <p className="quiet">
+              {t('Send it as the X-Api-Key header to POST /v1/merchant/charge-requests.')}
+            </p>
+          </div>
+        ) : (!locked && (
+          <>
+            <label>
+              {t('Label')}
+              <input value={newLabel} maxLength={60} onChange={e => setNewLabel(e.target.value)} placeholder="POS terminal" />
+            </label>
+            <button onClick={() => void createKey()} disabled={!newLabel.trim() || keyBusy}>{t('Create')}</button>
+          </>
+        ))}
+        {createErr && <p role="alert">{createErr}</p>}
+
+        {keys && keys.length > 0 && (
+          <ul className="list">
+            {keys.map(k => (
+              <li key={k.id}>
+                <span>
+                  <span>{k.label}</span> · {new Date(k.createdAt).toLocaleDateString()}
+                  {k.revokedAt && <> · <em>{t('revoked')}</em></>}
+                </span>
+                {!k.revokedAt && !locked && (
+                  <button onClick={() => void revokeKey(k.id)} disabled={revokeBusy}>
+                    {revokeConfirmId === k.id ? t('Are you sure?') : t('Revoke')}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {keys && keys.length === 0 && !createdKey && <p className="quiet">{t('No API keys yet.')}</p>}
+        {keysErr && <p role="alert">{keysErr}</p>}
       </section>
 
       <p><Link to="/products">{t('Manage products')}</Link></p>

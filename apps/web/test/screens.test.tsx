@@ -539,3 +539,51 @@ it('shows distinct messages for a wrong PIN and a rate-limited unlock attempt', 
 
   expect(wrongMsg.textContent).not.toBe(rateLimitedMsg.textContent)
 })
+
+// --- Task 6: API keys panel — Settings screen ---------------------------
+
+it('creating an API key shows it once for copying, and it is gone from the list on reload', async () => {
+  const created = { id: 'k1', label: 'POS terminal', key: 'nmbl_secret123', createdAt: '2026-09-10T00:00:00.000Z' }
+  const getApiKeys = vi.fn(async () => [{ id: 'k1', label: 'POS terminal', createdAt: created.createdAt, revokedAt: null }])
+  const createApiKey = vi.fn(async () => created)
+  const api = { getMe: vi.fn(async () => meWith()), getApiKeys, createApiKey }
+  render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(getApiKeys).toHaveBeenCalledTimes(1))
+
+  fireEvent.change(screen.getByLabelText(/label/i), { target: { value: 'POS terminal' } })
+  fireEvent.click(screen.getByRole('button', { name: /^create$/i }))
+
+  await waitFor(() => expect(createApiKey).toHaveBeenCalledWith('POS terminal'))
+  await waitFor(() => expect(screen.getByDisplayValue('nmbl_secret123')).toBeTruthy())
+  expect(screen.getByText(/only.*once|shown only once/i)).toBeTruthy()
+
+  // The list itself, once reloaded, never carries the plaintext key.
+  await waitFor(() => expect(getApiKeys).toHaveBeenCalledTimes(2))
+  expect(screen.queryAllByDisplayValue('nmbl_secret123').length).toBe(1)
+})
+
+it('revoking a key calls DELETE only after a second confirming tap', async () => {
+  cleanup()
+  const getApiKeys = vi.fn(async () => [{ id: 'k1', label: 'Old key', createdAt: '2026-09-01T00:00:00.000Z', revokedAt: null }])
+  const revokeApiKey = vi.fn(async () => {})
+  const api = { getMe: vi.fn(async () => meWith()), getApiKeys, revokeApiKey }
+  render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await screen.findByText('Old key')
+
+  const revokeBtn = screen.getByRole('button', { name: /revoke/i })
+  fireEvent.click(revokeBtn)
+  expect(revokeApiKey).not.toHaveBeenCalled()
+
+  const confirmBtn = await screen.findByRole('button', { name: /sure|confirm/i })
+  fireEvent.click(confirmBtn)
+  await waitFor(() => expect(revokeApiKey).toHaveBeenCalledWith('k1'))
+})
+
+it('shows a cashier-lock message when the API keys list comes back 423', async () => {
+  cleanup()
+  const getApiKeys = vi.fn(async () => { throw new ApiError('CASHIER_LOCKED', 'locked', 423) })
+  const api = { getMe: vi.fn(async () => meWith()), getApiKeys }
+  render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(getApiKeys).toHaveBeenCalled())
+  await screen.findByText(/cashier lock is active/i)
+})

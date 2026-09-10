@@ -1,4 +1,4 @@
-import type { AcceptChargeRequestResponse, AffordabilityResponse, ChargeRequestPreview, ClaimResponse, OutstandingBillsResponse, CreateChargeRequestResponse, CreateRefundResponse, CreateSessionResponse, IntentResponse, ProductView, SaleView, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
+import type { AcceptChargeRequestResponse, AffordabilityResponse, ApiKeyCreatedView, ApiKeyView, ChargeRequestPreview, ClaimResponse, OutstandingBillsResponse, CreateChargeRequestResponse, CreateRefundResponse, CreateSessionResponse, IntentResponse, ProductView, SaleView, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
@@ -200,6 +200,14 @@ export class Api {
   }
   enableCashierLock() { return this.#post<{ ok: true }>('/v1/me/cashier-lock') }
   disableCashierLock(pin: string) { return this.#delete<{ ok: true }>('/v1/me/cashier-lock', { pin }) }
+
+  // Merchant API credentials (Task 6). The plaintext key lives only in the
+  // create response — never again afterward, not even here.
+  getApiKeys() { return this.#get<ApiKeyView[]>('/v1/me/api-keys') }
+  createApiKey(label: string, idemKey?: string) {
+    return this.#post<ApiKeyCreatedView>('/v1/me/api-keys', { label }, idemKey)
+  }
+  revokeApiKey(id: string) { return this.#delete<void>(`/v1/me/api-keys/${id}`) }
 
   // Tickets are single-use: EventSource's built-in auto-reconnect would replay
   // a consumed ticket and die on 401 — manage reconnection manually and
