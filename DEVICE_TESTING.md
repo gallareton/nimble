@@ -166,6 +166,38 @@ nothing below is worth diagnosing on top of a broken payment.
       shortfall appears **and Confirm stays enabled** (the wallet is the
       authority, not us).
 
+### 12. The till — catalogue, cart, cash (competition slice, 2026-09-10)
+
+- [ ] **Products**: from the shift screen, add two products (e.g. Coffee 2.50,
+      Tea 2.00), pin Coffee. Retire Tea: it greys out but does not vanish.
+- [ ] **Charge screen with a catalogue**: pinned products first, then
+      categories, then search. Tap Coffee twice: quantity 2, total 5.00.
+      The layout of pinned items must **not** reorder after sales.
+- [ ] **Cash**: with items in the cart tap Cash — a "recorded" confirmation,
+      cart cleared. The shift report shows it under cash, **not** among NIM
+      sales, and the fiat total includes it.
+- [ ] **Take NIM**: cart → Take NIM → the code field appears; B claims. The
+      approval on B shows the cart total and a reference built from the
+      first item. After Confirmed, the report's by-product section shows
+      Coffee ×2.
+- [ ] **Owner with no products**: on a fresh wallet the Charge screen looks
+      exactly as before — amount field, code, nothing else.
+- [ ] **A retired product** still shows in yesterday's report with
+      yesterday's name and price (snapshot, not lookup).
+
+### 13. Merchant API — needs a terminal, not a phone
+
+- [ ] Settings → API keys → create one. The key is shown **once**; the list
+      afterwards shows only the label.
+- [ ] `curl -X POST …/api/test/v1/merchant/charge-requests -H "X-Api-Key: nmbl_…" -H "Idempotency-Key: $(uuidgen)" -H "content-type: application/json" -d '{"fiatAmountMinor":150,"fiatCurrency":"USD","externalRef":"order-42"}'`
+      returns a `url`. Open it on B and pay.
+- [ ] `GET …/api/test/v1/merchant/charge-requests?externalRef=order-42`
+      shows `state: paid` and `payment.sessionStatus: CONFIRMED` after
+      finality — and **not** before: `paid` means accepted, `CONFIRMED` means
+      the money is final.
+- [ ] Revoke the key; the same curl now returns 401.
+- [ ] With the cashier lock on, creating a key returns 423.
+
 ### 11. Offline
 
 - [ ] Turn off data on the vendor's phone and try to take a payment: refused
