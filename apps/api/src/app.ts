@@ -18,6 +18,7 @@ import { shiftRoutes } from './routes/shifts'
 import { productRoutes } from './routes/products'
 import { saleRoutes } from './routes/sales'
 import { merchantRoutes } from './routes/merchant'
+import { dashboardRoutes } from './routes/dashboard'
 
 import { nullRates, type RateProvider } from './services/rates'
 import type { ChainClient } from './services/monitor'
@@ -87,6 +88,7 @@ export function buildApp(deps: AppDeps) {
   app.register(productRoutes)
   app.register(saleRoutes)
   app.register(merchantRoutes)
+  app.register(dashboardRoutes)
   return app
 }
 declare module 'fastify' {

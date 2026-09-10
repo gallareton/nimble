@@ -71,6 +71,18 @@ export async function createChargeRequestRow(
 const PREVIEW_SUBJECT_TYPE = 'preview-ip'
 const PREVIEW_MAX_ATTEMPTS = 30
 
+/** The rows behind GET /v1/charge-requests/outstanding — pulled out so the
+ *  dashboard (routes/dashboard.ts) can reuse the exact same query for its
+ *  `outstandingBills` count instead of running a second, possibly-diverging
+ *  copy of "what counts as an outstanding bill". */
+export async function outstandingChargeRequests(db: Db, userId: string) {
+  return db.select().from(chargeRequest)
+    .where(and(eq(chargeRequest.receiverUserId, userId),
+      isNull(chargeRequest.sessionId), gt(chargeRequest.expiresAt, new Date())))
+    .orderBy(desc(chargeRequest.createdAt), desc(chargeRequest.id))
+    .limit(50)
+}
+
 export async function chargeRequestRoutes(app: FastifyInstance) {
   const { db, events } = app.deps
 
@@ -114,11 +126,7 @@ export async function chargeRequestRoutes(app: FastifyInstance) {
   // report: an outstanding bill may have been raised with no shift open at
   // all, and a closed shift's report must never change after the fact.
   app.get('/v1/charge-requests/outstanding', { preHandler: app.authenticate }, async (req) => {
-    const rows = await db.select().from(chargeRequest)
-      .where(and(eq(chargeRequest.receiverUserId, req.user.userId),
-        isNull(chargeRequest.sessionId), gt(chargeRequest.expiresAt, new Date())))
-      .orderBy(desc(chargeRequest.createdAt), desc(chargeRequest.id))
-      .limit(50)
+    const rows = await outstandingChargeRequests(db, req.user.userId)
     return {
       bills: rows.map(r => ({
         id: r.id,

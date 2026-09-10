@@ -340,6 +340,40 @@ export interface MerchantCreateChargeRequestResponse {
  * payment lifecycle; only 'CONFIRMED' there is final settlement. Poll this
  * route rather than relying on `state` alone — see routes/merchant.ts.
  */
+/**
+ * GET /v1/dashboard — an owner's one-glance summary of a UTC calendar day
+ * ([day 00:00Z, day+1 00:00Z)). Scoped to the caller: sales they sold, plus
+ * NIM charges that settled with them as receiver but carry no `sale` (POS
+ * sales from before the catalog existed, and accepted remote bills) — the
+ * two never double-count, since a charge with a `saleId` belongs to its own
+ * sale. Every count and money figure is a whole number; luna stays a string.
+ */
+export interface DashboardView {
+  day: string
+  /** Paid cash sales' totalMinor plus CONFIRMED NIM sales'/charges' fiatAmountMinor, where a fiat price exists. */
+  grossFiatMinor: number
+  /** CONFIRMED NIM only, luna→NIM. Not netted against refunds — see refundedNim. */
+  grossNim: string
+  /** Paid cash sales plus CONFIRMED NIM sales/charges. */
+  salesCount: number
+  /** Confirmed refunds issued today (the vendor is a refund's payer, never its receiver — see routes/refunds.ts). */
+  refundsCount: number
+  refundedNim: string
+  byPaymentMethod: {
+    nim: { count: number; fiatMinor: number }
+    cash: { count: number; fiatMinor: number }
+  }
+  /** Grouped by `shift.operator_label`, not shift id — two shifts opened under the same label merge into one row. No shift → null, sorted last. */
+  byOperator: { operatorLabel: string | null; salesCount: number; grossFiatMinor: number; grossNim: string }[]
+  /** Top 10 by totalMinor, from every sale that ended up paid today (cash or NIM). */
+  topProducts: { name: string; quantity: number; totalMinor: number }[]
+  openShift: { id: string; operatorLabel: string; openedAt: string } | null
+  /** NIM sales still `awaiting` (via saleState — not a final state), newest first. */
+  awaiting: { saleId: string; totalMinor: number; createdAt: string; sessionId: string | null }[]
+  /** Unpaid, unexpired remote bills — same query as GET /v1/charge-requests/outstanding. */
+  outstandingBills: number
+}
+
 export interface MerchantChargeRequestView {
   id: string
   state: 'open' | 'expired' | 'paid'
