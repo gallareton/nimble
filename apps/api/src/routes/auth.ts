@@ -1,9 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { eq, gt, isNull, and } from 'drizzle-orm'
+import { eq, gt, isNull, and, desc } from 'drizzle-orm'
 import { SignJWT } from 'jose'
 import type { FastifyInstance } from 'fastify'
-import { AuthVerifyRequest, SetCashierPinRequest, CashierUnlockRequest } from '@nimble/shared'
-import { authNonce, authSession, userProfile } from '../db/schema'
+import { AuthVerifyRequest, SetCashierPinRequest, CashierUnlockRequest, CreateApiKeyRequest } from '@nimble/shared'
+import { authNonce, authSession, apiKey, userProfile } from '../db/schema'
 import { env } from '../env'
 import { hashCode } from '../services/codeService'
 import { pinRateLimited, recordFailedPinAttempt, sendPinRateLimited, rejectIfCashierLocked } from '../services/cashierLock'
@@ -178,5 +178,44 @@ export async function authRoutes(app: FastifyInstance) {
     }
     await db.update(userProfile).set({ cashierLocked: false }).where(eq(userProfile.id, req.user.userId))
     return { ok: true }
+  })
+
+  // Merchant API credentials — these are settings, same as the cashier PIN
+  // and lock above, so all three sit behind the cashier lock (spec §5/Task 3).
+  //
+  // The plaintext key exists on the server ONLY for the lifetime of this one
+  // response — generated, hashed, and handed back in the same request. It is
+  // never stored (only keyHash is) and never logged: do not add request/
+  // response body logging to this route.
+  app.post('/v1/me/api-keys', { preHandler: app.authenticate }, async (req, reply) => {
+    if (await rejectIfCashierLocked(db, req.user.userId, reply)) return
+    const body = CreateApiKeyRequest.parse(req.body)
+    const rawKey = `nmbl_${randomBytes(32).toString('hex')}`
+    const [row] = await db.insert(apiKey).values({
+      ownerUserId: req.user.userId,
+      keyHash: hashCode(rawKey, env.codePepper),
+      label: body.label,
+    }).returning()
+    return reply.code(201).send({ id: row.id, label: row.label, key: rawKey, createdAt: row.createdAt.toISOString() })
+  })
+
+  app.get('/v1/me/api-keys', { preHandler: app.authenticate }, async (req, reply) => {
+    if (await rejectIfCashierLocked(db, req.user.userId, reply)) return
+    const rows = await db.select({ id: apiKey.id, label: apiKey.label,
+      createdAt: apiKey.createdAt, revokedAt: apiKey.revokedAt })
+      .from(apiKey).where(eq(apiKey.ownerUserId, req.user.userId))
+      .orderBy(desc(apiKey.createdAt), desc(apiKey.id))
+    return rows.map(r => ({ id: r.id, label: r.label, createdAt: r.createdAt.toISOString(),
+      revokedAt: r.revokedAt ? r.revokedAt.toISOString() : null }))
+  })
+
+  app.delete('/v1/me/api-keys/:id', { preHandler: app.authenticate }, async (req, reply) => {
+    if (await rejectIfCashierLocked(db, req.user.userId, reply)) return
+    const id = (req.params as { id: string }).id
+    const [gone] = await db.update(apiKey).set({ revokedAt: new Date() })
+      .where(and(eq(apiKey.id, id), eq(apiKey.ownerUserId, req.user.userId), isNull(apiKey.revokedAt)))
+      .returning()
+    if (!gone) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'api key not found' } })
+    return reply.code(204).send()
   })
 }

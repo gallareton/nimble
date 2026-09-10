@@ -303,3 +303,52 @@ export interface SaleView {
   createdAt: string
   paidAt: string | null
 }
+
+// Merchant API: an API key credential (Task 3). The plaintext key is
+// returned exactly once, in ApiKeyCreatedView — never again afterward.
+export const CreateApiKeyRequest = z.object({ label: z.string().min(1).max(60) })
+export type CreateApiKeyRequestT = z.infer<typeof CreateApiKeyRequest>
+
+export interface ApiKeyCreatedView { id: string; label: string; key: string; createdAt: string }
+export interface ApiKeyView { id: string; label: string; createdAt: string; revokedAt: string | null }
+
+/** Same pricing shape as CreateChargeRequestRequest, plus a caller-supplied
+ *  externalRef so an integrator can look a bill up by its own id. */
+export const MerchantCreateChargeRequestRequest = z.object({
+  amountLuna: PositiveLunaString.optional(),
+  fiatAmountMinor: z.number().int().positive().optional(),
+  fiatCurrency: FiatCurrency.optional(),
+  reference: z.string().max(100).optional(),
+  externalRef: z.string().max(100).optional(),
+}).refine(
+  b => (b.amountLuna === undefined) !== (b.fiatAmountMinor === undefined),
+  'provide either amountLuna or fiatAmountMinor',
+).refine(
+  b => b.fiatAmountMinor === undefined || b.fiatCurrency !== undefined,
+  'fiatCurrency is required with fiatAmountMinor',
+)
+export type MerchantCreateChargeRequestRequestT = z.infer<typeof MerchantCreateChargeRequestRequest>
+
+export interface MerchantCreateChargeRequestResponse {
+  id: string; url: string; expiresAt: string; state: 'open'; externalRef: string | null
+}
+
+/**
+ * `state` is the bill's own lifecycle: 'open' | 'expired' | 'paid'. 'paid'
+ * means someone accepted the bill and a payment session exists for it — it
+ * does NOT mean the money has arrived. `payment.sessionStatus` is the actual
+ * payment lifecycle; only 'CONFIRMED' there is final settlement. Poll this
+ * route rather than relying on `state` alone — see routes/merchant.ts.
+ */
+export interface MerchantChargeRequestView {
+  id: string
+  state: 'open' | 'expired' | 'paid'
+  externalRef: string | null
+  amountLuna: string
+  fiatAmountMinor: number | null
+  fiatCurrency: string | null
+  reference: string | null
+  expiresAt: string
+  createdAt: string
+  payment?: { sessionStatus: string; txHash: string | null; confirmedAt: string | null }
+}

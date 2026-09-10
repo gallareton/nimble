@@ -8,10 +8,58 @@ import { env } from '../env'
 import { withIdempotency } from '../plugins/idempotency'
 import { priceInLuna } from '../services/pricing'
 import { insertCharge } from '../services/charges'
+import type { RateProvider } from '../services/rates'
 import { requireIdemKey, CLAIM_WINDOW_MS } from './sessions'
 import { openShiftFor } from './shifts'
 
 const CHARGE_REQUEST_TTL_MS = 24 * 60 * 60 * 1000
+
+type CreateChargeRequestBody = {
+  amountLuna?: string; fiatAmountMinor?: number; fiatCurrency?: string; reference?: string
+}
+export type CreateChargeRequestOutcome =
+  | { code: 503 | 400; body: { error: { code: string; message: string } } }
+  | { code: 201; body: { id: string; expiresAt: string }; row: typeof chargeRequest.$inferSelect }
+
+/**
+ * The one place a `charge_request` row gets created. Both POST
+ * /v1/charge-requests (JWT-authenticated, the till's remote-bill flow) and
+ * POST /v1/merchant/charge-requests (API-key-authenticated) call this —
+ * pricing a bill is the same work regardless of how the caller authenticated,
+ * and two copies of "resolve a quote and insert a row" would drift (lesson
+ * from this session). The quote is fetched here, inside whatever
+ * idempotency-guarded handler the caller wraps this in, so a replay of an
+ * already-successful request never depends on the rate provider being
+ * reachable again.
+ */
+export async function createChargeRequestRow(
+  db: Db, rates: RateProvider | undefined, receiverUserId: string,
+  body: CreateChargeRequestBody, externalRef: string | null = null,
+): Promise<CreateChargeRequestOutcome> {
+  let quote = null
+  let amountAtomic: bigint
+  if (body.fiatAmountMinor !== undefined) {
+    quote = (await rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
+    if (!quote) return { code: 503, body: { error: { code: 'NO_RATE', message: 'no exchange rate available' } } }
+    amountAtomic = priceInLuna(body.fiatAmountMinor, quote)
+  } else {
+    amountAtomic = parseLunaString(body.amountLuna!)
+  }
+  const expiresAt = new Date(Date.now() + CHARGE_REQUEST_TTL_MS)
+  const [row] = await db.insert(chargeRequest).values({
+    receiverUserId,
+    amountAtomic,
+    fiatAmountMinor: body.fiatAmountMinor ?? null,
+    fiatCurrency: body.fiatCurrency ?? null,
+    fxRate: quote ? String(quote.value) : null,
+    fxRateAt: quote ? new Date(quote.at) : null,
+    fxSource: quote?.source ?? null,
+    reference: body.reference ?? null,
+    expiresAt,
+    externalRef,
+  }).returning()
+  return { code: 201, body: { id: row.id, expiresAt: expiresAt.toISOString() }, row }
+}
 
 // Same window as the code-claim throttle, but its own subject_type: previews
 // hit an unauthenticated route (the payer may not have an account yet), so
@@ -39,34 +87,8 @@ export async function chargeRequestRoutes(app: FastifyInstance) {
 
     type ResponseBody = { error?: { code: string; message: string }; id?: string; expiresAt?: string }
     const { code, body: resBody } = await withIdempotency<ResponseBody>(
-      db, `charge-request:${req.user.userId}`, key, fingerprint, async () => {
-        // Quote fetched inside the idempotency-guarded handler, same reason
-        // as charges.ts: a replay of an already-successful request must
-        // never depend on the rate provider being reachable.
-        let quote = null
-        let amountAtomic: bigint
-        if (body.fiatAmountMinor !== undefined) {
-          quote = (await app.deps.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
-          if (!quote)
-            return { code: 503, body: { error: { code: 'NO_RATE', message: 'no exchange rate available' } } }
-          amountAtomic = priceInLuna(body.fiatAmountMinor, quote)
-        } else {
-          amountAtomic = parseLunaString(body.amountLuna!)
-        }
-        const expiresAt = new Date(Date.now() + CHARGE_REQUEST_TTL_MS)
-        const [row] = await db.insert(chargeRequest).values({
-          receiverUserId: req.user.userId,
-          amountAtomic,
-          fiatAmountMinor: body.fiatAmountMinor ?? null,
-          fiatCurrency: body.fiatCurrency ?? null,
-          fxRate: quote ? String(quote.value) : null,
-          fxRateAt: quote ? new Date(quote.at) : null,
-          fxSource: quote?.source ?? null,
-          reference: body.reference ?? null,
-          expiresAt,
-        }).returning()
-        return { code: 201, body: { id: row.id, expiresAt: expiresAt.toISOString() } }
-      }
+      db, `charge-request:${req.user.userId}`, key, fingerprint,
+      () => createChargeRequestRow(db, app.deps.rates, req.user.userId, body),
     )
     return reply.code(code).send(resBody)
   })

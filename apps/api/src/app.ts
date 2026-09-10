@@ -6,6 +6,7 @@ import { env } from './env'
 import type { Db } from './db/client'
 import { SessionEvents } from './services/events'
 import { authenticate } from './plugins/auth'
+import { authenticateApiKey } from './plugins/apiKey'
 import { authRoutes } from './routes/auth'
 import { sessionRoutes } from './routes/sessions'
 import { chargeRoutes } from './routes/charges'
@@ -16,6 +17,7 @@ import { historyRoutes } from './routes/history'
 import { shiftRoutes } from './routes/shifts'
 import { productRoutes } from './routes/products'
 import { saleRoutes } from './routes/sales'
+import { merchantRoutes } from './routes/merchant'
 
 import { nullRates, type RateProvider } from './services/rates'
 import type { ChainClient } from './services/monitor'
@@ -33,10 +35,11 @@ export function buildApp(deps: AppDeps) {
   app.register(cors, {
     origin: env.corsOrigin,
     methods: ['GET', 'POST', 'PATCH'],
-    allowedHeaders: ['authorization', 'content-type', 'idempotency-key'],
+    allowedHeaders: ['authorization', 'content-type', 'idempotency-key', 'x-api-key'],
   })
   app.decorate('deps', deps)
   app.decorate('authenticate', authenticate)
+  app.decorate('authenticateApiKey', authenticateApiKey)
 
   app.setErrorHandler((err, _req, reply) => {
     if (err instanceof ZodError)
@@ -83,8 +86,9 @@ export function buildApp(deps: AppDeps) {
   app.register(shiftRoutes)
   app.register(productRoutes)
   app.register(saleRoutes)
+  app.register(merchantRoutes)
   return app
 }
 declare module 'fastify' {
-  interface FastifyInstance { deps: AppDeps; authenticate: typeof authenticate }
+  interface FastifyInstance { deps: AppDeps; authenticate: typeof authenticate; authenticateApiKey: typeof authenticateApiKey }
 }
