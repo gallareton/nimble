@@ -1,4 +1,4 @@
-import { bigint, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { bigint, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
 export const userProfile = pgTable('user_profile', {
@@ -79,6 +79,9 @@ export const charge = pgTable('charge', {
   fxRate: text('fx_rate'),
   fxRateAt: timestamp('fx_rate_at', { withTimezone: true }),
   fxSource: text('fx_source'),
+  // Set when this charge settles a POS sale (NIM path): lets a sale's
+  // report join straight to its charge without going through session claim.
+  saleId: uuid('sale_id').references((): AnyPgColumn => sale.id),
 })
 
 // A remote charge: the receiver bills a payer who isn't at the counter and
@@ -102,6 +105,9 @@ export const chargeRequest = pgTable('charge_request', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   sessionId: uuid('session_id').references(() => paymentSession.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  // Task 3 (Merchant API): a caller's own id for this bill, so they can look
+  // it up without storing our uuid. Added now to avoid a second migration.
+  externalRef: text('external_ref'),
 }, t => [
   // A request materializes at most one session: enforced by the database,
   // not application code, same pattern as one_open_shift_per_user.
@@ -195,3 +201,65 @@ export const claimAttempt = pgTable('claim_attempt', {
   subjectHash: text('subject_hash').notNull(),
   occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
 }, t => [index('claim_attempt_subject_idx').on(t.subjectType, t.subjectHash, t.occurredAt)])
+
+// A vendor's catalog item. No DELETE route: sale_item.product_id points at
+// this row so it must keep existing for a historical sale to still name what
+// was sold — withdrawing an item happens via active=false instead.
+export const product = pgTable('product', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  ownerUserId: uuid('owner_user_id').notNull().references(() => userProfile.id),
+  name: text('name').notNull(),
+  // Price in USD cents, like every other *_minor column here — never a float.
+  priceMinor: integer('price_minor').notNull(),
+  category: text('category'),
+  pinned: boolean('pinned').notNull().default(false),
+  active: boolean('active').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => [index('product_owner_active_idx').on(t.ownerUserId, t.active)])
+
+// A sale is the "what was sold" document, independent of how it was paid.
+// For NIM, `status` stays 'awaiting' forever in this column — the real
+// paid/failed state is derived from the linked charge's session at read
+// time (see routes/sales.ts), the same way a shift report already derives
+// its numbers from charge/payment_session rather than caching them. The
+// monitor is not touched: it knows nothing about sale or sale_item.
+export const sale = pgTable('sale', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sellerUserId: uuid('seller_user_id').notNull().references(() => userProfile.id),
+  shiftId: uuid('shift_id').references(() => shift.id),
+  status: text('status').notNull().default('awaiting'), // 'awaiting' | 'paid' | 'cancelled'
+  paymentMethod: text('payment_method').notNull(), // 'nim' | 'cash'
+  totalMinor: integer('total_minor').notNull(),
+  fiatCurrency: text('fiat_currency').notNull().default('USD'),
+  chargeId: uuid('charge_id').references(() => charge.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+}, t => [index('sale_seller_created_idx').on(t.sellerUserId, t.createdAt)])
+
+// One line of a sale. name/price are snapshotted at sale time — a later
+// catalog price change must never rewrite yesterday's report, the same
+// reasoning as the frozen fx rate on `charge`. productId is nullable for a
+// line rung up outside the catalog (manual amount, like today's charge flow).
+export const saleItem = pgTable('sale_item', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  saleId: uuid('sale_id').notNull().references(() => sale.id),
+  productId: uuid('product_id').references(() => product.id),
+  nameSnapshot: text('name_snapshot').notNull(),
+  unitPriceMinor: integer('unit_price_minor').notNull(),
+  quantity: integer('quantity').notNull(),
+  lineTotalMinor: integer('line_total_minor').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
+// A vendor's Merchant API credential. The plaintext key is returned exactly
+// once at creation and never stored — only its HMAC, same construction
+// (env.codePepper) as hashCode() for six-digit codes.
+export const apiKey = pgTable('api_key', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  ownerUserId: uuid('owner_user_id').notNull().references(() => userProfile.id),
+  keyHash: text('key_hash').notNull().unique(),
+  label: text('label').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+})

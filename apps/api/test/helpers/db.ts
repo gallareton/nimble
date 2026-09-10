@@ -16,6 +16,7 @@ export async function freshDb() {
     migrated = true
   }
   await db.execute(dsql`TRUNCATE user_profile, payment_session, charge, chain_transaction,
-    receipt, session_event, idempotency_record, auth_nonce, auth_session, claim_attempt, shift CASCADE`)
+    receipt, session_event, idempotency_record, auth_nonce, auth_session, claim_attempt, shift,
+    product, sale, sale_item, api_key CASCADE`)
   return { db, close: () => sql.end() }
 }

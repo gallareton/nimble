@@ -198,3 +198,34 @@ export interface ShiftReport {
 }
 
 export type OpenShiftRequestT = z.infer<typeof OpenShiftRequest>
+
+// A vendor's catalog item. priceMinor is USD cents like every other *_minor
+// column — no float, and the server (not the client) owns it once a sale
+// references a product by id.
+export const CreateProductRequest = z.object({
+  name: z.string().min(1).max(60),
+  priceMinor: z.number().int().min(0),
+  category: z.string().max(30).optional(),
+  pinned: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+})
+export const UpdateProductRequest = z.object({
+  name: z.string().min(1).max(60).optional(),
+  priceMinor: z.number().int().min(0).optional(),
+  category: z.string().max(30).nullable().optional(),
+  pinned: z.boolean().optional(),
+  active: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+})
+export type CreateProductRequestT = z.infer<typeof CreateProductRequest>
+export type UpdateProductRequestT = z.infer<typeof UpdateProductRequest>
+
+export interface ProductView {
+  id: string
+  name: string
+  priceMinor: number
+  category: string | null
+  pinned: boolean
+  active: boolean
+  sortOrder: number
+}

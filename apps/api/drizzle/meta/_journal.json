@@ -64,6 +64,13 @@
       "when": 1788895496442,
       "tag": "0008_thin_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789038496184,
+      "tag": "0009_curvy_nick_fury",
+      "breakpoints": true
     }
   ]
 }
