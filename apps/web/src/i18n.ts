@@ -12,6 +12,10 @@ function detect(): Locale {
 export const locale: Locale = detect()
 
 const pl: Record<string, string> = {
+  'Shifts, daily report, CSV export, remote bills, refunds, a cashier PIN lock.': "Zmiany, raport dobowy, eksport CSV, rachunki zdalne, zwroty, blokada kasjera PIN-em.",
+  'Point of sale': "Kasa sprzedaży",
+  'A catalogue, a cart, cash or NIM per sale, reports by product — a till for a small shop in which NIM is one way to pay.': "Katalog, koszyk, gotówka lub NIM przy każdej sprzedaży, raporty wg produktu — kasa dla małego punktu, w której NIM jest sposobem zapłaty.",
+  'API keys, create a bill with your own reference, poll until paid. Webhooks later.': "Klucze API, rachunek z własnym odniesieniem, odpytywanie do zapłaty. Webhooki później.",
   'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Ten rachunek jest na sieci testowej. Przełącz Nimiq Pay na Testnet, aby go opłacić.",
   'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Ten rachunek jest na sieci głównej. Przełącz Nimiq Pay na Mainnet, aby go opłacić.",
   'Bills waiting to be paid': "Rachunki czekające na zapłatę",
@@ -21,7 +25,6 @@ const pl: Record<string, string> = {
   'Close it anyway': "Zamknij mimo to",
   'Bill from': 'Rachunek od',
   'Pay in Nimiq Pay': 'Zapłać w Nimiq Pay',
-  'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Zmiany, sumy dobowe, eksport CSV i rachunki zdalne już działają; zwroty, napiwki i zweryfikowany profil firmy w przygotowaniu.",
   'Copy the link': 'Skopiuj link',
   'Price': 'Cena',
   'Close': 'Zamknij',
@@ -45,7 +48,6 @@ const pl: Record<string, string> = {
   'Phone-number transfers': 'Przelewy na numer telefonu',
   'Pay a contact by number; SMS invites for newcomers.': 'Płać znajomym po numerze; SMS-owe zaproszenia dla nowych.',
   'Merchant API': 'API dla sprzedawców',
-  'Webshops and cash registers create charges via API and webhooks.': 'Sklepy internetowe i kasy tworzą żądania przez API i webhooki.',
   'USDT on Polygon': 'USDT na Polygonie',
   'Same flow, stable value — the session model is asset-agnostic.': 'Ten sam przebieg, stabilna wartość — model sesji nie zależy od aktywa.',
   'Not enough NIM in your wallet for this amount.': 'Za mało NIM w portfelu na tę kwotę.',
@@ -226,6 +228,10 @@ const pl: Record<string, string> = {
 }
 
 const de: Record<string, string> = {
+  'Shifts, daily report, CSV export, remote bills, refunds, a cashier PIN lock.': "Schichten, Tagesbericht, CSV-Export, Fernrechnungen, Erstattungen, Kassierer-PIN-Sperre.",
+  'Point of sale': "Kassensystem",
+  'A catalogue, a cart, cash or NIM per sale, reports by product — a till for a small shop in which NIM is one way to pay.': "Katalog, Warenkorb, bar oder NIM pro Verkauf, Berichte nach Produkt — eine Kasse für kleine Läden, in der NIM eine Zahlungsart ist.",
+  'API keys, create a bill with your own reference, poll until paid. Webhooks later.': "API-Schlüssel, Rechnung mit eigener Referenz, Abfrage bis zur Zahlung. Webhooks später.",
   'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Diese Rechnung liegt im Testnetz. Wechsle Nimiq Pay auf Testnet, um sie zu bezahlen.",
   'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Diese Rechnung liegt im Hauptnetz. Wechsle Nimiq Pay auf Mainnet, um sie zu bezahlen.",
   'Bills waiting to be paid': "Offene Rechnungen",
@@ -235,7 +241,6 @@ const de: Record<string, string> = {
   'Close it anyway': "Trotzdem schließen",
   'Bill from': 'Rechnung von',
   'Pay in Nimiq Pay': 'In Nimiq Pay bezahlen',
-  'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Schichten, Tagessummen, CSV-Export und Fernrechnungen sind live; Erstattungen, Trinkgeld und ein verifiziertes Firmenprofil folgen.",
   'Copy the link': 'Link kopieren',
   'Price': 'Preis',
   'Close': 'Schließen',
@@ -259,7 +264,6 @@ const de: Record<string, string> = {
   'Phone-number transfers': 'Überweisung per Handynummer',
   'Pay a contact by number; SMS invites for newcomers.': 'Zahle Kontakte per Nummer; SMS-Einladungen für Neue.',
   'Merchant API': 'Händler-API',
-  'Webshops and cash registers create charges via API and webhooks.': 'Webshops und Kassen erstellen Anforderungen per API und Webhooks.',
   'USDT on Polygon': 'USDT auf Polygon',
   'Same flow, stable value — the session model is asset-agnostic.': 'Gleicher Ablauf, stabiler Wert — das Sitzungsmodell ist asset-agnostisch.',
   'Not enough NIM in your wallet for this amount.': 'Nicht genug NIM in der Wallet für diesen Betrag.',
@@ -440,6 +444,10 @@ const de: Record<string, string> = {
 }
 
 const es: Record<string, string> = {
+  'Shifts, daily report, CSV export, remote bills, refunds, a cashier PIN lock.': "Turnos, informe diario, exportación CSV, facturas remotas, devoluciones, bloqueo de cajero con PIN.",
+  'Point of sale': "Punto de venta",
+  'A catalogue, a cart, cash or NIM per sale, reports by product — a till for a small shop in which NIM is one way to pay.': "Catálogo, carrito, efectivo o NIM por venta, informes por producto: una caja para tiendas pequeñas donde NIM es una forma de pagar.",
+  'API keys, create a bill with your own reference, poll until paid. Webhooks later.': "Claves API, crea una factura con tu propia referencia, consulta hasta el pago. Webhooks más adelante.",
   'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Esta factura está en la red de pruebas. Cambia Nimiq Pay a Testnet para pagarla.",
   'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Esta factura está en la red principal. Cambia Nimiq Pay a Mainnet para pagarla.",
   'Bills waiting to be paid': "Facturas pendientes de pago",
@@ -449,7 +457,6 @@ const es: Record<string, string> = {
   'Close it anyway': "Cerrar de todos modos",
   'Bill from': 'Factura de',
   'Pay in Nimiq Pay': 'Pagar en Nimiq Pay',
-  'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Turnos, totales diarios, exportación CSV y facturas remotas ya funcionan; devoluciones, propinas y perfil de empresa verificado están en camino.",
   'Copy the link': 'Copiar el enlace',
   'Price': 'Precio',
   'Close': 'Cerrar',
@@ -473,7 +480,6 @@ const es: Record<string, string> = {
   'Phone-number transfers': 'Transferencias por número de teléfono',
   'Pay a contact by number; SMS invites for newcomers.': 'Paga a un contacto por su número; invitaciones por SMS.',
   'Merchant API': 'API para comercios',
-  'Webshops and cash registers create charges via API and webhooks.': 'Tiendas online y cajas crean cobros vía API y webhooks.',
   'USDT on Polygon': 'USDT en Polygon',
   'Same flow, stable value — the session model is asset-agnostic.': 'Mismo flujo, valor estable — el modelo de sesión es agnóstico al activo.',
   'Not enough NIM in your wallet for this amount.': 'No hay suficiente NIM en tu wallet para este importe.',
@@ -654,6 +660,10 @@ const es: Record<string, string> = {
 }
 
 const fr: Record<string, string> = {
+  'Shifts, daily report, CSV export, remote bills, refunds, a cashier PIN lock.': "Postes, rapport du jour, export CSV, notes à distance, remboursements, verrou caissier par PIN.",
+  'Point of sale': "Point de vente",
+  'A catalogue, a cart, cash or NIM per sale, reports by product — a till for a small shop in which NIM is one way to pay.': "Catalogue, panier, espèces ou NIM par vente, rapports par produit : une caisse pour petit commerce où NIM est un moyen de payer.",
+  'API keys, create a bill with your own reference, poll until paid. Webhooks later.': "Clés API, note avec votre propre référence, interrogation jusqu'au paiement. Webhooks plus tard.",
   'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Cette note est sur le réseau de test. Basculez Nimiq Pay sur Testnet pour la payer.",
   'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Cette note est sur le réseau principal. Basculez Nimiq Pay sur Mainnet pour la payer.",
   'Bills waiting to be paid': "Notes en attente de paiement",
@@ -663,7 +673,6 @@ const fr: Record<string, string> = {
   'Close it anyway': "Fermer quand même",
   'Bill from': 'Note de',
   'Pay in Nimiq Pay': 'Payer dans Nimiq Pay',
-  'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Postes, totaux du jour, export CSV et notes à distance sont en ligne ; remboursements, pourboires et profil professionnel vérifié à suivre.",
   'Copy the link': 'Copier le lien',
   'Price': 'Prix',
   'Close': 'Fermer',
@@ -687,7 +696,6 @@ const fr: Record<string, string> = {
   'Phone-number transfers': 'Virement par numéro de téléphone',
   'Pay a contact by number; SMS invites for newcomers.': 'Payez un contact par numéro ; invitations SMS pour les nouveaux.',
   'Merchant API': 'API commerçants',
-  'Webshops and cash registers create charges via API and webhooks.': 'Boutiques en ligne et caisses créent des demandes via API et webhooks.',
   'USDT on Polygon': 'USDT sur Polygon',
   'Same flow, stable value — the session model is asset-agnostic.': 'Même flux, valeur stable — le modèle de session est agnostique.',
   'Not enough NIM in your wallet for this amount.': 'Pas assez de NIM dans votre wallet pour ce montant.',
@@ -868,6 +876,10 @@ const fr: Record<string, string> = {
 }
 
 const pt: Record<string, string> = {
+  'Shifts, daily report, CSV export, remote bills, refunds, a cashier PIN lock.': "Turnos, relatório diário, exportação CSV, faturas remotas, reembolsos, bloqueio de caixa por PIN.",
+  'Point of sale': "Ponto de venda",
+  'A catalogue, a cart, cash or NIM per sale, reports by product — a till for a small shop in which NIM is one way to pay.': "Catálogo, carrinho, dinheiro ou NIM por venda, relatórios por produto — uma caixa para lojas pequenas em que NIM é uma forma de pagar.",
+  'API keys, create a bill with your own reference, poll until paid. Webhooks later.': "Chaves API, fatura com a sua referência, consulta até ao pagamento. Webhooks mais tarde.",
   'This bill is on the test network. Switch Nimiq Pay to Testnet to pay it.': "Esta fatura está na rede de teste. Mude o Nimiq Pay para Testnet para a pagar.",
   'This bill is on the main network. Switch Nimiq Pay to Mainnet to pay it.': "Esta fatura está na rede principal. Mude o Nimiq Pay para Mainnet para a pagar.",
   'Bills waiting to be paid': "Faturas à espera de pagamento",
@@ -877,7 +889,6 @@ const pt: Record<string, string> = {
   'Close it anyway': "Fechar mesmo assim",
   'Bill from': 'Fatura de',
   'Pay in Nimiq Pay': 'Pagar no Nimiq Pay',
-  'Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.': "Turnos, totais diários, exportação CSV e faturas remotas já funcionam; reembolsos, gorjetas e perfil de empresa verificado a seguir.",
   'Copy the link': 'Copiar a ligação',
   'Price': 'Preço',
   'Close': 'Fechar',
@@ -901,7 +912,6 @@ const pt: Record<string, string> = {
   'Phone-number transfers': 'Transferências por número de telefone',
   'Pay a contact by number; SMS invites for newcomers.': 'Pague um contato pelo número; convites por SMS.',
   'Merchant API': 'API para lojistas',
-  'Webshops and cash registers create charges via API and webhooks.': 'Lojas online e caixas criam cobranças via API e webhooks.',
   'USDT on Polygon': 'USDT na Polygon',
   'Same flow, stable value — the session model is asset-agnostic.': 'Mesmo fluxo, valor estável — o modelo de sessão é agnóstico de ativo.',
   'Not enough NIM in your wallet for this amount.': 'NIM insuficiente na carteira para este valor.',

@@ -64,9 +64,17 @@ export function Landing({ chargeId, bill }: { chargeId?: string; bill?: ChargeRe
             <strong>{t('Live today')}</strong>
             <span>{t('Pay by 6-digit code — instant on mainnet and testnet, receipts, six languages.')}</span>
           </li>
-          <li className="rm-next">
+          <li className="rm-done">
             <strong>{t('Vendor mode')}</strong>
-            <span>{t('Shifts, daily totals, CSV export and remote bills are live; refunds, tips and a verified business profile are next.')}</span>
+            <span>{t('Shifts, daily report, CSV export, remote bills, refunds, a cashier PIN lock.')}</span>
+          </li>
+          <li className="rm-next">
+            <strong>{t('Point of sale')}</strong>
+            <span>{t('A catalogue, a cart, cash or NIM per sale, reports by product — a till for a small shop in which NIM is one way to pay.')}</span>
+          </li>
+          <li className="rm-next">
+            <strong>{t('Merchant API')}</strong>
+            <span>{t('API keys, create a bill with your own reference, poll until paid. Webhooks later.')}</span>
           </li>
           <li className="rm-next">
             <strong>{t('Bill splitting')}</strong>
@@ -75,10 +83,6 @@ export function Landing({ chargeId, bill }: { chargeId?: string; bill?: ChargeRe
           <li className="rm-later">
             <strong>{t('Phone-number transfers')}</strong>
             <span>{t('Pay a contact by number; SMS invites for newcomers.')}</span>
-          </li>
-          <li className="rm-later">
-            <strong>{t('Merchant API')}</strong>
-            <span>{t('Webshops and cash registers create charges via API and webhooks.')}</span>
           </li>
           <li className="rm-later">
             <strong>{t('USDT on Polygon')}</strong>

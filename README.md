@@ -30,6 +30,26 @@ with play money, long-press the settings button in Nimiq Pay (~10 s),
 switch to **Testnet**, tap **Get free NIM** (faucet) — the app follows
 your wallet automatically, with a separate testnet history.
 
+## The till
+
+The payment loop above is the foundation. What NIMble is becoming is **a
+till for a small shop, in which NIM is one way to pay**: an owner keeps a
+product catalogue, a cashier rings up a cart, each sale is recorded with
+its line items — cash or NIM — and the day's report says what sold, by
+whom, and how it was paid. Money paid in NIM lands in the owner's own
+wallet with no terminal in between.
+
+What is in the app today: shifts with an operator label, a product
+catalogue with pinned items and categories, a cart on the till, cash or
+NIM per sale, a daily report by product and by operator, CSV export,
+remote bills shared as a link, refunds run as a payment backward, a cashier
+PIN lock, and a basic Merchant API (API keys, create a bill with your own
+reference, poll until paid). The target model — a business separate from
+any cashier's wallet, staff membership and roles, tills, corrections with
+an audit trail — is laid out in [ROADMAP.md](ROADMAP.md), together with
+two limits stated plainly: it is not a fiscal cash register, and it cannot
+prevent theft.
+
 ## Repo layout
 
 ```
@@ -103,8 +123,9 @@ In Nimiq Pay: **Mini Apps → Custom URL** → your deployment URL.
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) — request-by-link, bill splitting, merchant
-POS mode, Cashlink cheques, phone-number transfers, USDT on Polygon.
+See [ROADMAP.md](ROADMAP.md) — the point-of-sale model NIMble is growing
+into, bill splitting, phone-number transfers, USDT on Polygon, and the
+things deliberately rejected with their reasons.
 
 ## License
 

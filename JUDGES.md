@@ -108,11 +108,15 @@ recurs by nature.
 users?**
 It gives Nimiq Pay the payment UX that made BLIK a national standard in
 Poland — and NIM's near-instant finality is precisely the ingredient that
-makes it work on a blockchain. For vendors it grows into a professional
-POS: the Charge screen already is a terminal, and the session/charge API
-is designed for future integration with external systems (webshops, cash
-registers) — the roadmap adds request-by-link, bill splitting and
-Cashlink-style cheques on top.
+makes it work on a blockchain. For vendors it is a till: a product
+catalogue, a cart, each sale recorded with its line items whether paid in
+cash or NIM, shifts with an operator label, a report by product and by
+operator, refunds, a cashier PIN lock, remote bills shared as a link — and
+a basic Merchant API so a webshop can create a bill by its own reference
+and poll until it is paid. Payment in NIM lands in the owner's wallet with
+no terminal in between; the roadmap says plainly where this is going and
+what it will not claim (it is not a fiscal register, it cannot prevent
+theft).
 
 ## Marketing & distribution
 
