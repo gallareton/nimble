@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import type { ProductView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
@@ -103,20 +102,13 @@ export function Products(props: { api?: Api }) {
   if (loadError) {
     return (
       <main>
-        <h1>{t('Products')}</h1>
         <p role="alert">{t('Could not load the products. Check your connection and try again.')}</p>
-        <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
       </main>
     )
   }
 
   return (
     <main>
-      <header className="top-bar">
-        <Link to="/" className="back" aria-label={t('Back to home')}>‹ {t('Home')}</Link>
-        <h1>{t('Products')}</h1>
-      </header>
-
       <section className="form-card">
         <h2>{t('Add a product')}</h2>
         <label>
@@ -184,7 +176,6 @@ export function Products(props: { api?: Api }) {
           </ul>
         </section>
       )}
-      <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
     </main>
   )
 }

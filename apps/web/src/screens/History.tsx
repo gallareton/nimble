@@ -101,11 +101,6 @@ export function History({ api: apiProp }: { api?: Api } = {}) {
 
   return (
     <main>
-      <header className="top-bar">
-        <Link to="/" className="back" aria-label={t('Back to home')}>‹ {t('Home')}</Link>
-        <h1>{t('History')}</h1>
-      </header>
-
       <div className="filters">
         <input
           type="search"

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { TERMINAL_STATES, lunaToNim, type SessionView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import { Countdown } from '../components/Countdown'
@@ -190,11 +190,6 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
         <p className="quiet"><small>tx …{view.transaction.hash.slice(-8)}</small></p>
       )}
       {notice && <p role="alert">{notice}</p>}
-      {settled && (
-        <nav aria-label="after payment">
-          <p className="footer-nav"><Link to="/">{t('Back to home')}</Link> · <Link to="/history">{t('History')}</Link></p>
-        </nav>
-      )}
     </main>
   )
 }

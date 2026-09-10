@@ -4,6 +4,7 @@ import type { ShiftEntry, ShiftListItem, ShiftReport, ShiftView } from '@nimble/
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
+import { CashierLockBadge } from '../components/CashierLockBadge'
 import { StatusBadge } from '../components/StatusBadge'
 import { t } from '../i18n'
 import { usePoll } from '../lib/usePoll'
@@ -339,18 +340,17 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       <main>
         <h1>{t('Shift')}</h1>
         <p role="alert">{t('Could not load the shift. Check your connection and try again.')}</p>
-        <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
       </main>
     )
   }
 
   // Shown on every view this screen renders — a cashier at the till must
   // never wonder whether the app is broken versus deliberately locked.
-  const lockBadge = locked && (
-    <p role="status" className="cashier-lock-badge">
-      🔒 {t('Cashier lock is on — the till isn\'t broken.')}
-    </p>
-  )
+  // AppShell's header shows the same badge (shared CashierLockBadge
+  // component, not a second copy of the markup) so it's visible even while
+  // this screen's own content hasn't loaded yet; kept here too because these
+  // tests render Shift standalone, without AppShell around it.
+  const lockBadge = <CashierLockBadge locked={locked} />
 
   const exportPanelSection = exportPanel && (
     <section className="form-card export-panel">
@@ -394,7 +394,6 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
         {exportPanelSection}
         <PastShiftsList items={pastShifts} onSelect={id => void selectPastShift(id)} />
         <p className="quiet">{t('NIMble tracks one station. Takings from another phone are not in this report.')}</p>
-        <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
       </main>
     )
   }
@@ -416,7 +415,6 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
         {actionError && <p role="alert">{actionError}</p>}
         <PastShiftsList items={pastShifts} onSelect={id => void selectPastShift(id)} />
         <p className="quiet">{t('NIMble tracks one station. Takings from another phone are not in this report.')}</p>
-        <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
       </main>
     )
   }
@@ -472,7 +470,6 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       {exportPanelSection}
       {!shift && <PastShiftsList items={pastShifts} onSelect={id => void selectPastShift(id)} />}
       <p className="quiet">{t('NIMble tracks one station. Takings from another phone are not in this report.')}</p>
-      <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
     </main>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useApp } from '../AppContext'
 import type { HistoryItem } from '../api/client'
 import { copyText } from '../lib/copy'
@@ -52,7 +52,6 @@ export function Receipt() {
           </button>
         </dd>
       </dl>
-      <p className="footer-nav"><Link to="/">{t('Back to home')}</Link> · <Link to="/history">{t('History')}</Link></p>
     </main>
   )
 }

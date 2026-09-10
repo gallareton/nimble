@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAppOptional } from '../AppContext'
 import { CodeDisplay } from '../components/CodeDisplay'
 import { Spinner } from '../components/Spinner'
@@ -106,10 +106,6 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
 
   return (
     <main>
-      <header className="top-bar">
-        <Link to="/" className="back" aria-label={t('Back to home')}>‹ {t('Home')}</Link>
-        <h1>{t('Pay')}</h1>
-      </header>
       <div
         className="code-ring"
         ref={ringRef}
@@ -155,7 +151,6 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
         </>
       )}
       {error && <p role="alert">{error}</p>}
-      <Link to="/" className="back-bottom"><button>‹ {t('Back to home')}</button></Link>
     </main>
   )
 }

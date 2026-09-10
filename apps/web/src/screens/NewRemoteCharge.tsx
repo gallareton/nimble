@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { lunaToNim, nimToLuna, SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
 import type { OutstandingBill } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
@@ -137,10 +136,6 @@ export function NewRemoteCharge(props: { api?: Api }) {
     const url = remoteChargeUrl(created.id)
     return (
       <main>
-        <header className="top-bar">
-          <Link to="/shift" className="back" aria-label={t('Back to home')}>‹ {t('Shift')}</Link>
-          <h1>{t('Remote bill')}</h1>
-        </header>
         <section className="form-card export-panel">
           <p className="quiet">{t('Share this link with the payer.')}</p>
           <textarea id="remote-charge-link" className="export-textarea" readOnly value={url} />
@@ -151,17 +146,12 @@ export function NewRemoteCharge(props: { api?: Api }) {
           </div>
 
         </section>
-        <p className="footer-nav"><Link to="/shift">‹ {t('Shift')}</Link></p>
       </main>
     )
   }
 
   return (
     <main>
-      <header className="top-bar">
-        <Link to="/shift" className="back" aria-label={t('Back to home')}>‹ {t('Shift')}</Link>
-        <h1>{t('Remote bill')}</h1>
-      </header>
       <div className="form-card">
         <div className="chips" role="group" aria-label={t('Pricing unit')}>
           <button type="button" className={`chip ${unit === 'USD' ? 'chip--on' : ''}`}
@@ -205,7 +195,6 @@ export function NewRemoteCharge(props: { api?: Api }) {
           </section>
         )}
       {error && <p role="alert">{error}</p>}
-      <Link to="/shift" className="back-bottom"><button>‹ {t('Shift')}</button></Link>
     </main>
   )
 }

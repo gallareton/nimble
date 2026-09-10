@@ -4,6 +4,7 @@ import type { ApiKeyView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
+import { CashierLockBadge } from '../components/CashierLockBadge'
 import { resetIntro } from '../components/Intro'
 import { copyText } from '../lib/copy'
 import { t } from '../i18n'
@@ -178,11 +179,10 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
   return (
     <main>
       <h1>{t('Settings')}</h1>
-      {locked && (
-        <p role="status" className="cashier-lock-badge">
-          🔒 {t('Cashier lock is on — the till isn\'t broken.')}
-        </p>
-      )}
+      {/* AppShell's header shows the same badge for a cashier who hasn't
+          opened Settings yet; kept here too since these tests render
+          Settings standalone, without AppShell around it. */}
+      <CashierLockBadge locked={locked} />
       {/* Renaming is one of the four operations the server rejects while
           locked (spec §5, PATCH /v1/me → 423 CASHIER_LOCKED). Hiding the
           field here is convenience for the cashier, not the guard — the
@@ -297,7 +297,6 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
       <button onClick={() => { resetIntro(); setReplay(true) }}>{t('Show the guide again')}</button>
       {replay && <p role="status">{t('The guide will show next time you open the home screen.')}</p>}
       {ctx && <button onClick={ctx.logout}>{t('Disconnect')}</button>}
-      <p className="footer-nav"><Link to="/">{t('Home')}</Link></p>
     </main>
   )
 }

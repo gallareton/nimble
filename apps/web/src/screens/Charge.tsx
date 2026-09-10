@@ -263,10 +263,6 @@ export function Charge(props: { api?: Api }) {
   if (pendingSale) {
     return (
       <main>
-        <header className="top-bar">
-          <Link to="/" className="back" aria-label={t('Back to home')}>‹ {t('Home')}</Link>
-          <h1>{t('Charge')}</h1>
-        </header>
         <div className="form-card">
           <label>
             {t('Code from the payer')}
@@ -294,7 +290,6 @@ export function Charge(props: { api?: Api }) {
           </button>
         </div>
         {error && <p role="alert">{error}</p>}
-        <Link to="/" className="back-bottom"><button>‹ {t('Back to home')}</button></Link>
       </main>
     )
   }
@@ -302,10 +297,6 @@ export function Charge(props: { api?: Api }) {
   if (!showCatalog) {
     return (
       <main>
-        <header className="top-bar">
-          <Link to="/" className="back" aria-label={t('Back to home')}>‹ {t('Home')}</Link>
-          <h1>{t('Charge')}</h1>
-        </header>
         <div className="form-card">
         <div className="chips" role="group" aria-label={t('Pricing unit')}>
           <button type="button" className={`chip ${unit === 'USD' ? 'chip--on' : ''}`}
@@ -349,7 +340,6 @@ export function Charge(props: { api?: Api }) {
         </button>
         </div>
         {error && <p role="alert">{error}</p>}
-        <Link to="/" className="back-bottom"><button>‹ {t('Back to home')}</button></Link>
       </main>
     )
   }
@@ -366,10 +356,6 @@ export function Charge(props: { api?: Api }) {
 
   return (
     <main>
-      <header className="top-bar">
-        <Link to="/" className="back" aria-label={t('Back to home')}>‹ {t('Home')}</Link>
-        <h1>{t('Charge')}</h1>
-      </header>
       <div className="form-card">
         <label>
           {t('Search products')}
@@ -489,7 +475,6 @@ export function Charge(props: { api?: Api }) {
         {cartError && <p role="alert">{cartError}</p>}
       </div>
       <p><Link to="/products">{t('Manage products')}</Link></p>
-      <Link to="/" className="back-bottom"><button>‹ {t('Back to home')}</button></Link>
     </main>
   )
 }

@@ -78,17 +78,91 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   border: 0;
 }
 
-/* ── top bar ── */
-.top-bar { display: flex; align-items: center; gap: 12px; }
-.top-bar h1 { flex: 1; }
-.back {
-  font-size: 15px;
+/* ── app shell: one header + bottom tab bar for the whole app (AppShell.tsx) ── */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 20px 0;
+}
+.app-header__back {
+  font-size: 24px;
+  line-height: 1;
   color: var(--muted);
   text-decoration: none;
-  padding: 6px 10px 6px 0;
-  font-weight: 600;
+  font-weight: 700;
+  padding: 4px 8px 4px 0;
+  min-height: 44px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
 }
-.back:hover { color: var(--ink); text-decoration: none; }
+.app-header__back:hover { color: var(--ink); text-decoration: none; }
+.app-header__title { flex: 1; font-size: 20px; }
+.app-header .cashier-lock-badge { font-size: 12px; }
+
+.app-shell__content--with-bar { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+
+.app-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  background: var(--card);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+  padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+}
+.app-tabbar__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  padding: 6px 2px;
+  font: 600 11px/1.2 var(--body);
+  color: var(--muted);
+  text-decoration: none;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+.app-tabbar__item:hover:not(:disabled) { box-shadow: none; }
+.app-tabbar__item[aria-current='page'] { color: var(--action); }
+.app-tabbar__icon { font-size: 18px; line-height: 1; }
+.app-tabbar__item--button { font: inherit; }
+
+.app-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 35, 72, 0.35);
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+}
+.app-sheet {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--card);
+  border-radius: 16px 16px 0 0;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow-lift);
+}
+.app-sheet__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.app-sheet__list button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  box-shadow: none;
+  min-height: 48px;
+}
+.app-sheet__list button:hover { box-shadow: none; background: var(--nimiq-gray); }
 
 /* small inline action, must not break line/list layouts */
 button.chip {
@@ -305,17 +379,6 @@ dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; f
 dt { color: var(--muted); }
 dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 
-/* thumb-zone back: a full-width quiet pill at the bottom of the screen */
-.back-bottom { text-decoration: none; display: block; margin-top: 6px; }
-.back-bottom button {
-  width: 100%;
-  background: transparent;
-  box-shadow: none;
-  color: var(--muted);
-  font-weight: 600;
-}
-.back-bottom button:hover { box-shadow: none; color: var(--ink); }
-
 /* Nimiq hexagon spinner for waiting states */
 .spinner {
   display: inline-block;
@@ -396,9 +459,6 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   background: rgba(217, 68, 50, 0.06);
 }
 .entries__refund-tag { margin: 2px 0 0; }
-
-.footer-nav { color: var(--muted); font-size: 14px; text-align: center; }
-.footer-nav a { color: var(--muted); font-weight: 600; }
 
 [role='alert'] { color: var(--nimiq-red); font-size: 14px; font-weight: 600; }
 .banner {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { nimToLuna } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
@@ -78,10 +78,6 @@ export function Refund(props: { api?: Api }) {
 
   return (
     <main>
-      <header className="top-bar">
-        <Link to="/shift" className="back" aria-label={t('Back to home')}>‹ {t('Shift')}</Link>
-        <h1>{t('Refund')}</h1>
-      </header>
       <div className="form-card">
         {originalAmountNim !== null && (
           <p className="amt">{originalAmountNim} NIM</p>
@@ -101,7 +97,6 @@ export function Refund(props: { api?: Api }) {
           {t('Send refund')}
         </button>
       </div>
-      <Link to="/shift" className="back-bottom"><button>‹ {t('Shift')}</button></Link>
     </main>
   )
 }

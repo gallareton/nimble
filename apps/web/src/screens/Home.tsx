@@ -111,11 +111,6 @@ export function Home() {
           </ul>
         </section>
       )}
-      <p className="footer-nav">
-        <Link to="/history">{t('History')}</Link> · <Link to="/shift">{t('Shift')}</Link>
-        {' · '}<Link to="/charge/remote">{t('Bill someone who isn\'t here')}</Link>
-        {' · '}<Link to="/settings">{t('Settings')}</Link>
-      </p>
       {!intro && (
         <section className="howto" aria-label={t('How it works')}>
           <h2>{t('How it works')}</h2>
