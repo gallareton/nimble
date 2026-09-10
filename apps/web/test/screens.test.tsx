@@ -505,13 +505,15 @@ it('a correct PIN removes the cashier lock', async () => {
   const disableCashierLock = vi.fn(async (pin: string) => { expect(pin).toBe('1234'); return { ok: true as const } })
   const api = { getMe: vi.fn(async () => meWith({ cashierLocked: true, cashierPinSet: true })), disableCashierLock }
   render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText(/isn't broken/i)).toBeTruthy())
+  await screen.findByRole('button', { name: /unlock the till/i })
 
   fireEvent.change(screen.getByLabelText(/PIN to unlock/i), { target: { value: '1234' } })
   fireEvent.click(screen.getByRole('button', { name: /unlock the till/i }))
 
   await waitFor(() => expect(disableCashierLock).toHaveBeenCalledWith('1234'))
-  await waitFor(() => expect(screen.queryByText(/isn't broken/i)).toBeNull())
+  // The lock badge now lives in AppShell's header (covered by nav.test); here we
+  // assert the screen's own behaviour: the unlock control is gone once unlocked.
+  await waitFor(() => expect(screen.queryByRole('button', { name: /unlock the till/i })).toBeNull())
 })
 
 it('shows distinct messages for a wrong PIN and a rate-limited unlock attempt', async () => {
@@ -520,7 +522,7 @@ it('shows distinct messages for a wrong PIN and a rate-limited unlock attempt', 
     disableCashierLock: vi.fn(async () => { throw new ApiError('AUTH_FAILED', 'incorrect PIN', 401) }),
   }
   render(<MemoryRouter><Settings api={wrongPinApi as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText(/isn't broken/i)).toBeTruthy())
+  await screen.findByRole('button', { name: /unlock the till/i })
   fireEvent.change(screen.getByLabelText(/PIN to unlock/i), { target: { value: '0000' } })
   fireEvent.click(screen.getByRole('button', { name: /unlock the till/i }))
   const wrongMsg = await screen.findByText(/incorrect pin/i)
@@ -532,7 +534,7 @@ it('shows distinct messages for a wrong PIN and a rate-limited unlock attempt', 
     disableCashierLock: vi.fn(async () => { throw new ApiError('RATE_LIMITED', 'too many attempts', 429) }),
   }
   render(<MemoryRouter><Settings api={rateLimitedApi as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText(/isn't broken/i)).toBeTruthy())
+  await screen.findByRole('button', { name: /unlock the till/i })
   fireEvent.change(screen.getByLabelText(/PIN to unlock/i), { target: { value: '1234' } })
   fireEvent.click(screen.getByRole('button', { name: /unlock the till/i }))
   const rateLimitedMsg = await screen.findByText(/wait a moment/i)

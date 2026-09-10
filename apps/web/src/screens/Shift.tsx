@@ -4,7 +4,6 @@ import type { ShiftEntry, ShiftListItem, ShiftReport, ShiftView } from '@nimble/
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
-import { CashierLockBadge } from '../components/CashierLockBadge'
 import { StatusBadge } from '../components/StatusBadge'
 import { t } from '../i18n'
 import { usePoll } from '../lib/usePoll'
@@ -344,13 +343,6 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     )
   }
 
-  // Shown on every view this screen renders — a cashier at the till must
-  // never wonder whether the app is broken versus deliberately locked.
-  // AppShell's header shows the same badge (shared CashierLockBadge
-  // component, not a second copy of the markup) so it's visible even while
-  // this screen's own content hasn't loaded yet; kept here too because these
-  // tests render Shift standalone, without AppShell around it.
-  const lockBadge = <CashierLockBadge locked={locked} />
 
   const exportPanelSection = exportPanel && (
     <section className="form-card export-panel">
@@ -370,7 +362,6 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     return (
       <main>
         <h1>{t('Shift')}</h1>
-        {lockBadge}
         <p>
           <a href="#" onClick={e => { e.preventDefault(); backFromPastShift() }}>‹ {t('Back')}</a>
         </p>
@@ -402,7 +393,6 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
     return (
       <main>
         <h1>{t('Shift')}</h1>
-        {lockBadge}
         <div className="form-card">
           <label>
             {t('Who is on the till?')}
@@ -422,7 +412,6 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   return (
     <main>
       <h1>{t('Shift')}</h1>
-      {lockBadge}
       {report && !shift && (
         <p>
           <a href="#" onClick={e => { e.preventDefault(); backFromClosedShift() }}>‹ {t('Back')}</a>

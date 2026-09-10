@@ -569,7 +569,8 @@ it('hides refund and close-shift while the cashier lock is on, but leaves the re
   // this is the assertion guarding against the lock spilling into sales.
   await waitFor(() => expect(screen.getByText('10 NIM')).toBeTruthy())
   expect(screen.getByText('Coffee')).toBeTruthy()
-  await waitFor(() => expect(screen.getByText(/isn't broken/i)).toBeTruthy())
+  // The lock badge lives in AppShell's header now (nav.test); the screen's own
+  // evidence of the lock is what it hides below.
 
   expect(screen.queryByRole('link', { name: 'Refund' })).toBeNull()
   expect(screen.queryByText('Close the shift')).toBeNull()
@@ -588,7 +589,6 @@ it('shows refund and close-shift normally when the cashier lock is off', async (
   await waitFor(() => expect(screen.getByText('10 NIM')).toBeTruthy())
   expect(screen.getAllByRole('link', { name: 'Refund' }).length).toBe(1)
   expect(screen.getByText('Close the shift')).toBeTruthy()
-  expect(screen.queryByText(/isn't broken/i)).toBeNull()
 })
 
 // --- Task 4: sold-by-product and NIM/cash split -------------------------
