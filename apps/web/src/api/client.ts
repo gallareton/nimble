@@ -1,4 +1,4 @@
-import type { AcceptChargeRequestResponse, AffordabilityResponse, ApiKeyCreatedView, ApiKeyView, ChargeRequestPreview, ClaimResponse, OutstandingBillsResponse, CreateChargeRequestResponse, CreateRefundResponse, CreateSessionResponse, IntentResponse, ProductView, SaleView, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
+import type { AcceptChargeRequestResponse, AffordabilityResponse, ApiKeyCreatedView, ApiKeyView, ChargeRequestPreview, ClaimResponse, DashboardView, OutstandingBillsResponse, CreateChargeRequestResponse, CreateRefundResponse, CreateSessionResponse, IntentResponse, ProductView, SaleView, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
@@ -197,6 +197,11 @@ export class Api {
     idemKey?: string,
   ) {
     return this.#post<SaleView>('/v1/sales', body, idemKey)
+  }
+  // Owner dashboard (2026-09-10 plan, Task B). `?day` is a UTC calendar
+  // date (YYYY-MM-DD); omitted means today, same default the API applies.
+  getDashboard(day?: string) {
+    return this.#get<DashboardView>(`/v1/dashboard${day ? `?day=${day}` : ''}`)
   }
   getNetwork() { return this.#get<{ network: string; height: number | null }>('/v1/network') }
   getRate() { return this.#get<{ usdPerNim: number | null; asOf: string }>('/v1/rate') }

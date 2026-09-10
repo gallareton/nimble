@@ -30,6 +30,7 @@ function renderShell(initialEntries: string[]) {
             <Route path="/shift" element={<main><p>Shift screen</p></main>} />
             <Route path="/history" element={<main><p>History screen</p></main>} />
             <Route path="/products" element={<main><p>Products screen</p></main>} />
+            <Route path="/dashboard" element={<main><p>Dashboard screen</p></main>} />
             <Route path="/settings" element={<main><p>Settings screen</p></main>} />
             <Route path="/session/:id" element={<main><p>Session screen</p></main>} />
             <Route path="/r/:id" element={<main><p>Remote screen</p></main>} />
@@ -85,16 +86,25 @@ describe('AppShell', () => {
     expect(back.getAttribute('href')).toBe('/shift')
   })
 
-  it('"More" opens a sheet with Products and Settings, and Escape closes it', () => {
+  it('"More" opens a sheet with Dashboard, Products and Settings, and Escape closes it', () => {
     enterNimiqPay()
     renderShell(['/'])
     fireEvent.click(screen.getByRole('button', { name: 'More' }))
     expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Dashboard' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Products' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Settings' })).toBeTruthy()
 
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('"‹" from /dashboard leads to /, its parent in the map', () => {
+    enterNimiqPay()
+    renderShell(['/dashboard'])
+    const back = screen.getByRole('link', { name: 'Back' })
+    expect(back.getAttribute('href')).toBe('/')
+    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeTruthy()
   })
 
   it('renders no bar or header outside Nimiq Pay', () => {

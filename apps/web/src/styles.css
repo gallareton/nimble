@@ -443,6 +443,10 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .list .amt .fiat { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
 .list li.pending a { opacity: 0.55; }
 
+.dash-day-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dash-day-nav button { background: none; border: none; color: var(--action); font: inherit; padding: 4px 6px; }
+.dash-day-nav button:disabled { color: var(--faint); }
+
 .entries { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .entries__row {
   background: var(--card);

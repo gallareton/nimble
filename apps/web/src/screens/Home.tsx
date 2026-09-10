@@ -87,6 +87,7 @@ export function Home() {
           <button aria-label="Charge" disabled={wrongNetwork !== null}>
           {t('Charge')}<span className="sub" aria-hidden>{t('type their code')}</span></button></Link>
       </nav>
+      <p><Link to="/dashboard">{t("Today's numbers")}</Link></p>
       {recent.length === 0 && !intro && (
         <section className="empty-recent">
           <h2>{t('Recent')}</h2>

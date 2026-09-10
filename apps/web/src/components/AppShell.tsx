@@ -14,6 +14,7 @@ import { t } from '../i18n'
 // entry — the header shows no "‹" there. Kept as one object, in one place,
 // per the plan (never scattered back into individual screens again).
 const PARENTS: Array<[RegExp, string]> = [
+  [/^\/dashboard/, '/'],
   [/^\/charge\/remote/, '/shift'],
   [/^\/products/, '/shift'],
   [/^\/refund\//, '/shift'],
@@ -38,6 +39,7 @@ function parentOf(pathname: string): string | null {
 // their own in the content (Home's brand mark, Shift/Settings' plain <h1>,
 // Approval's role-dependent one) and this would only double it up.
 const TITLES: Array<[RegExp, string]> = [
+  [/^\/dashboard/, 'Dashboard'],
   [/^\/pay/, 'Pay'],
   [/^\/charge\/remote/, 'Remote bill'],
   [/^\/charge/, 'Charge'],
@@ -71,10 +73,9 @@ const TABS: Tab[] = [
   { to: '/history', label: 'History', icon: '⟲' },
 ]
 
-// Extension point for "More": Task B's Dashboard entry lands here next,
-// alongside these three — one array, not a new sheet.
 interface MoreItem { to: string; label: string }
 const MORE_ITEMS: MoreItem[] = [
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/products', label: 'Products' },
   { to: '/charge/remote', label: 'Remote bill' },
   { to: '/settings', label: 'Settings' },
