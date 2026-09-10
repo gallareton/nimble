@@ -2,7 +2,7 @@ import { CreateRefundRequest, parseLunaString } from '@nimble/shared'
 import { and, eq, sql as dsql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { randomBytes } from 'node:crypto'
-import { charge, chainTransaction, paymentSession, refund } from '../db/schema'
+import { charge, chainTransaction, paymentSession, refund, userProfile } from '../db/schema'
 import type { Db } from '../db/client'
 import { withIdempotency } from '../plugins/idempotency'
 import { insertCharge } from '../services/charges'
@@ -103,6 +103,12 @@ export async function refundRoutes(app: FastifyInstance) {
             // stamp comes from the payer, not the receiver.
             const vendorShift = await openShiftFor(tx as unknown as Db, req.user.userId)
 
+            // The refund's receiver is the original payer (the customer) —
+            // loaded here only for their (usually unset) business-profile
+            // snapshot; see db/schema.ts on charge.receiverBusinessName.
+            const [refundReceiver] = await tx.select().from(userProfile)
+              .where(eq(userProfile.id, origSession.payerUserId))
+
             const c = await insertCharge(tx as unknown as Db, {
               sessionId: session.id,
               amountAtomic,
@@ -111,6 +117,8 @@ export async function refundRoutes(app: FastifyInstance) {
               // not today's fiat-equivalent of it.
               recipientAddress: origTx.sender, // the only address we know the customer holds
               reference: body.reason ?? null,
+              receiverBusinessName: refundReceiver?.businessName ?? null,
+              receiverTaxId: refundReceiver?.taxId ?? null,
             })
 
             const [r] = await tx.insert(refund).values({

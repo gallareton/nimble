@@ -73,7 +73,8 @@ export const AuthVerifyRequest = z.object({
 export interface SessionView {
   sessionId: string; status: SessionStatus; role: 'payer' | 'receiver'
   expiresAt: string; chargeDeadlineAt?: string
-  counterpart?: { displayName: string; verificationStatus: 'unverified'; addressTail: string }
+  counterpart?: { displayName: string; verificationStatus: 'unverified'; addressTail: string
+                  businessName: string | null }
   charge?: { chargeId: string; version: number; amountLuna: string; asset: 'NIM'
              network: 'nimiq'; reference: string | null; recipientAddress: string }
   transaction?: { hash: string; status: SessionStatus; confirmations: number }
@@ -109,6 +110,9 @@ export interface ChargeRequestPreview {
   reference: string | null
   receiverDisplayName: string
   receiverAddressTail: string
+  // The point of sale's name, if set — never taxId here (BR-P15: unverified,
+  // receipt-only).
+  businessName: string | null
   expiresAt: string
   state: 'open' | 'expired' | 'paid'
 }
@@ -147,6 +151,17 @@ export const SetCashierPinRequest = z.object({ pin: CashierPin, currentPin: Cash
 export const CashierUnlockRequest = z.object({ pin: CashierPin })
 export type SetCashierPinRequestT = z.infer<typeof SetCashierPinRequest>
 export type CashierUnlockRequestT = z.infer<typeof CashierUnlockRequest>
+
+// Point-of-sale profile (BR-P15). Entirely unverified — taxId is printed on
+// receipts and nowhere else, never next to a claim of verification. Empty
+// string means "clear the field" (route normalizes to null); undefined
+// means "leave it as is".
+export const UpdateProfileRequest = z.object({
+  businessName: z.string().max(100).nullable().optional(),
+  businessAddress: z.string().max(100).nullable().optional(),
+  taxId: z.string().max(20).nullable().optional(),
+})
+export type UpdateProfileRequestT = z.infer<typeof UpdateProfileRequest>
 
 export interface ShiftView {
   id: string; operatorLabel: string; openedAt: string; closedAt: string | null

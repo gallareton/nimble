@@ -16,6 +16,13 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
   const [saved, setSaved] = useState(false)
   const [replay, setReplay] = useState(false)
 
+  // Point-of-sale profile (BR-P15). businessName/businessAddress appear to
+  // a payer before they confirm; taxId is printed on receipts only and
+  // never verified — see the disclaimer rendered below.
+  const [businessName, setBusinessName] = useState('')
+  const [businessAddress, setBusinessAddress] = useState('')
+  const [taxId, setTaxId] = useState('')
+
   // Cashier lock (spec §6). pinSet/locked come from GET /v1/me — the server
   // is the source of truth, never something inferred or cached locally.
   const [pinSet, setPinSet] = useState(false)
@@ -104,6 +111,9 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
     void api.getMe().then((me) => {
       if (cancelled) return
       if (me.displayName) setName(me.displayName)
+      setBusinessName(me.businessName ?? '')
+      setBusinessAddress(me.businessAddress ?? '')
+      setTaxId(me.taxId ?? '')
       setPinSet(me.cashierPinSet)
       setLocked(me.cashierLocked)
     }).catch(() => {})
@@ -112,7 +122,10 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
   }, [])
 
   const save = async () => {
-    await api.updateMe({ displayName: name })
+    await api.updateMe({ displayName: name,
+      businessName: businessName.trim() === '' ? null : businessName,
+      businessAddress: businessAddress.trim() === '' ? null : businessAddress,
+      taxId: taxId.trim() === '' ? null : taxId })
     setSaved(true)
   }
 
@@ -189,6 +202,22 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
             {t('Display name')}
             <input value={name} maxLength={50} onChange={e => { setName(e.target.value); setSaved(false) }} />
           </label>
+          <label>
+            {t('Business name')}
+            <input value={businessName} maxLength={100}
+              onChange={e => { setBusinessName(e.target.value); setSaved(false) }} />
+          </label>
+          <label>
+            {t('Business address')}
+            <input value={businessAddress} maxLength={100}
+              onChange={e => { setBusinessAddress(e.target.value); setSaved(false) }} />
+          </label>
+          <label>
+            {t('Tax ID')}
+            <input value={taxId} maxLength={20}
+              onChange={e => { setTaxId(e.target.value); setSaved(false) }} />
+          </label>
+          <p className="quiet">{t('Printed on receipts. Not verified.')}</p>
           <button onClick={save} disabled={!name}>{t('Save')}</button>
           {saved && <p role="status">{t('Saved.')}</p>}
         </div>

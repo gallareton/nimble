@@ -2,6 +2,18 @@ import type { AcceptChargeRequestResponse, AffordabilityResponse, ApiKeyCreatedV
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
+// GET /v1/me. businessName/businessAddress/taxId are the point-of-sale
+// profile (BR-P15) — unverified, taxId print-only. See routes/auth.ts.
+export interface Me {
+  walletAddress: string
+  displayName: string | null
+  cashierLocked: boolean
+  cashierPinSet: boolean
+  businessName: string | null
+  businessAddress: string | null
+  taxId: string | null
+}
+
 export interface HistoryItem {
   receiptId?: string
   pending?: boolean
@@ -189,10 +201,12 @@ export class Api {
   getNetwork() { return this.#get<{ network: string; height: number | null }>('/v1/network') }
   getRate() { return this.#get<{ usdPerNim: number | null; asOf: string }>('/v1/rate') }
   getMe() {
-    return this.#get<{ walletAddress: string; displayName: string | null
-      cashierLocked: boolean; cashierPinSet: boolean }>('/v1/me')
+    return this.#get<Me>('/v1/me')
   }
-  updateMe(body: { displayName: string }) { return this.#request<{ ok: true }>('PATCH', '/v1/me', body) }
+  updateMe(body: { displayName: string; businessName?: string | null
+    businessAddress?: string | null; taxId?: string | null }) {
+    return this.#request<{ ok: true }>('PATCH', '/v1/me', body)
+  }
   // Cashier lock (spec §4). setCashierPin also changes an existing PIN when
   // currentPin is supplied; the server requires it once a PIN already exists.
   setCashierPin(body: { pin: string; currentPin?: string }) {

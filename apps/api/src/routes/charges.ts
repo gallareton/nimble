@@ -77,6 +77,8 @@ export async function chargeRoutes(app: FastifyInstance) {
             fxRateAt: quote ? new Date(quote.at) : null,
             fxSource: quote?.source ?? null,
             recipientAddress: receiver.walletAddress, reference: body.reference ?? null,
+            receiverBusinessName: receiver.businessName ?? null,
+            receiverTaxId: receiver.taxId ?? null,
           })
           return c
         })

@@ -147,6 +147,11 @@ export async function monitorTick(db: Db, events: SessionEvents, chain: ChainCli
           amountLuna: tx.amountAtomic.toString(), amountNim: lunaToNim(tx.amountAtomic),
           asset: 'NIM', network: 'nimiq', hash: tx.hash, sender: tx.sender, recipient: tx.recipient,
           reference: c.reference, confirmedAt: new Date().toISOString(),
+          // Frozen at sale time on `charge`, not read live from
+          // user_profile — a later profile rename must not rewrite this
+          // receipt. See db/schema.ts on charge.receiverBusinessName.
+          receiverBusinessName: c.receiverBusinessName ?? null,
+          receiverTaxId: c.receiverTaxId ?? null,
           // The price the vendor typed, copied verbatim — never re-derived.
           // Deriving it from the NIM amount is what once showed 2.51 for a
           // sale entered as 2.50, and it disagreed with the shift report,

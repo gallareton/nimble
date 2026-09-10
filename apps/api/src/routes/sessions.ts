@@ -170,6 +170,8 @@ export async function sessionRoutes(app: FastifyInstance) {
             fxSource: quote?.source ?? null,
             recipientAddress: receiver.walletAddress, reference: reference ?? referenceOverride,
             saleId: saleRow?.id ?? null,
+            receiverBusinessName: receiver.businessName ?? null,
+            receiverTaxId: receiver.taxId ?? null,
           })
           if (saleRow) await tx.update(sale).set({ chargeId: c.id }).where(eq(sale.id, saleRow.id))
           return { won, c }
@@ -209,12 +211,19 @@ export async function sessionRoutes(app: FastifyInstance) {
     let counterpart
     if (role === 'payer' && s.receiverUserId) {
       const [r] = await db.select().from(userProfile).where(eq(userProfile.id, s.receiverUserId))
+      // businessName here is live (not the charge's frozen snapshot) — this
+      // is the pre-payment approval screen, not a receipt, so it shows the
+      // point of sale's name as it stands right now. taxId never appears
+      // here; it is not verified against anything and only belongs on a
+      // receipt. See db/schema.ts on charge.receiverBusinessName for the
+      // snapshot used once a charge exists.
       counterpart = { displayName: r.displayName ?? `…${r.walletAddress.slice(-4)}`,
-        verificationStatus: 'unverified' as const, addressTail: r.walletAddress.slice(-4) }
+        verificationStatus: 'unverified' as const, addressTail: r.walletAddress.slice(-4),
+        businessName: r.businessName ?? null }
     } else if (role === 'receiver') {
       const [p] = await db.select().from(userProfile).where(eq(userProfile.id, s.payerUserId))
       counterpart = { displayName: 'Payer connected', verificationStatus: 'unverified' as const,
-        addressTail: p.walletAddress.slice(-4) }
+        addressTail: p.walletAddress.slice(-4), businessName: null }
     }
     return {
       sessionId: s.id, status: s.status, role, expiresAt: s.expiresAt.toISOString(),

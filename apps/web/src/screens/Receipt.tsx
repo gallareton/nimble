@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useApp } from '../AppContext'
-import type { HistoryItem } from '../api/client'
+import { useAppOptional } from '../AppContext'
+import type { Api, HistoryItem } from '../api/client'
 import { copyText } from '../lib/copy'
 import { t } from '../i18n'
 import { receiptFiat } from '../lib/fiat'
 
-export function Receipt() {
-  const { api } = useApp()
+export function Receipt({ api: apiProp }: { api?: Api } = {}) {
+  const ctx = useAppOptional()
+  const api = apiProp ?? ctx!.api
   const { id } = useParams<{ id: string }>()
   const [item, setItem] = useState<HistoryItem | null>(null)
   const [copied, setCopied] = useState(false)
@@ -24,7 +25,9 @@ export function Receipt() {
   return (
     <main>
       <h1>{t('Receipt')}</h1>
+      {Boolean(s.receiverBusinessName) && <p className="business-name">{String(s.receiverBusinessName)}</p>}
       <dl>
+        {Boolean(s.receiverTaxId) && (<><dt>{t('Tax ID')}</dt><dd>{String(s.receiverTaxId)}</dd></>)}
         <dt>{t('Direction')}</dt><dd>{item.role === 'payer' ? t('Sent') : t('Received')}</dd>
         <dt>{t('Amount')}</dt><dd>{String(s.amountNim)} NIM <small>({String(s.amountLuna)} luna)</small></dd>
         {fiat && (<>

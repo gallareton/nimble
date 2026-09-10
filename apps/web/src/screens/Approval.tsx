@@ -133,6 +133,9 @@ export function Approval(props: { api?: Api; wallet?: WalletProvider }) {
       {isPayer && view.status === 'AWAITING_PAYER_APPROVAL' && view.charge && view.counterpart && (
         <section aria-label="approval" className="sheet">
           <div>
+            {view.counterpart.businessName && (
+              <p className="quiet business-name">{view.counterpart.businessName}</p>
+            )}
             <p className="quiet"><strong>{view.counterpart.displayName}</strong> <em>{t('(Unverified profile)')}</em> asks for</p>
             <p className="amount">{lunaToNim(BigInt(view.charge.amountLuna))} NIM
               <small>{view.charge.amountLuna} luna</small>

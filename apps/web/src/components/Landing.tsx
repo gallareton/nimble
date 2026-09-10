@@ -28,6 +28,9 @@ export function Landing({ chargeId, bill }: { chargeId?: string; bill?: ChargeRe
           // before sending them through a blue button and the wallet's own
           // "unknown link" warning — three steps of not knowing otherwise.
           <div className="bill-preview">
+            {bill.businessName && (
+              <p className="quiet business-name">{bill.businessName}</p>
+            )}
             <p className="amt">{lunaToNim(BigInt(bill.amountLuna))} NIM</p>
             {bill.fiatAmountMinor !== null && bill.fiatCurrency && (
               <p className="quiet">{(bill.fiatAmountMinor / 100).toFixed(2)} {bill.fiatCurrency}</p>

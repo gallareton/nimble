@@ -7,6 +7,7 @@ import { Approval } from '../src/screens/Approval'
 import { Charge, toMinorUnits } from '../src/screens/Charge'
 import { Products } from '../src/screens/Products'
 import { RemoteCharge } from '../src/screens/RemoteCharge'
+import { Receipt } from '../src/screens/Receipt'
 import { ApiError } from '../src/api/client'
 import { Settings } from '../src/screens/Settings'
 
@@ -491,7 +492,8 @@ it('RemoteCharge opened outside Nimiq Pay shows the landing page with a link to 
 
 function meWith(overrides: { cashierLocked?: boolean; cashierPinSet?: boolean } = {}) {
   return { walletAddress: 'NQ1', displayName: null,
-    cashierLocked: overrides.cashierLocked ?? false, cashierPinSet: overrides.cashierPinSet ?? false }
+    cashierLocked: overrides.cashierLocked ?? false, cashierPinSet: overrides.cashierPinSet ?? false,
+    businessName: null, businessAddress: null, taxId: null }
 }
 
 it('Settings states plainly that the PIN does not protect the wallet\'s funds', async () => {
@@ -588,4 +590,86 @@ it('shows a cashier-lock message when the API keys list comes back 423', async (
   render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
   await waitFor(() => expect(getApiKeys).toHaveBeenCalled())
   await screen.findByText(/cashier lock is active/i)
+})
+
+// --- Task C: point-of-sale profile (BR-P15) ------------------------------
+
+it('Settings saves business name, address and Tax ID together with the display name', async () => {
+  cleanup()
+  const updateMe = vi.fn(async () => ({ ok: true as const }))
+  const api = { getMe: vi.fn(async () => meWith()), updateMe }
+  render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(api.getMe).toHaveBeenCalled())
+
+  fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: 'Gall' } })
+  fireEvent.change(screen.getByLabelText(/business name/i), { target: { value: 'Corner Kiosk' } })
+  fireEvent.change(screen.getByLabelText(/business address/i), { target: { value: '1 Market St' } })
+  fireEvent.change(screen.getByLabelText(/tax id/i), { target: { value: 'PL1234567890' } })
+  fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+  await waitFor(() => expect(updateMe).toHaveBeenCalledWith({
+    displayName: 'Gall', businessName: 'Corner Kiosk', businessAddress: '1 Market St', taxId: 'PL1234567890',
+  }))
+  // The disclaimer that matters most on this screen: no claim of verification.
+  expect(screen.getByText(/not verified/i)).toBeTruthy()
+})
+
+it('the cashier lock hides the point-of-sale profile fields, same as display name', async () => {
+  cleanup()
+  const api = { getMe: vi.fn(async () => meWith({ cashierLocked: true, cashierPinSet: true })) }
+  render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(api.getMe).toHaveBeenCalled())
+  expect(screen.queryByLabelText(/business name/i)).toBeNull()
+  expect(screen.queryByLabelText(/business address/i)).toBeNull()
+  expect(screen.queryByLabelText(/tax id/i)).toBeNull()
+})
+
+it('Approval shows the point-of-sale business name above the display name, but never a claim of verification', async () => {
+  cleanup()
+  const api = {
+    getSession: vi.fn(async () => ({ sessionId: 's1', status: 'AWAITING_PAYER_APPROVAL', role: 'payer',
+      expiresAt: new Date().toISOString(),
+      counterpart: { displayName: 'Kiosk', verificationStatus: 'unverified', addressTail: 'XY12',
+        businessName: 'Corner Kiosk' },
+      charge: { chargeId: 'c1', version: 1, amountLuna: '250000', asset: 'NIM', network: 'nimiq',
+        reference: 'Soda', recipientAddress: 'NQ99 RECV' } })),
+    openEvents: vi.fn(async () => () => {}),
+    getAffordability: vi.fn(async () => ({ sufficient: null, shortfallLuna: null })),
+  }
+  const wallet = { sendTransaction: vi.fn(async () => ({ hash: 'deadbeef' })) }
+  render(
+    <MemoryRouter initialEntries={['/session/s1']}>
+      <Routes>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <Route path="/session/:id" element={<Approval api={api as any} wallet={wallet as any} />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+  await screen.findByText('Corner Kiosk')
+  expect(screen.getByText(/unverified profile/i)).toBeTruthy()
+  // The badge stays as-is; the business name never carries a "verified" claim itself.
+  expect(screen.queryByText(/corner kiosk.*verified/i)).toBeNull()
+})
+
+it('Receipt shows the receiving point-of-sale name and Tax ID frozen on the charge snapshot', async () => {
+  cleanup()
+  const history = vi.fn(async () => ({
+    items: [{ receiptId: 'r1', role: 'payer', snapshot: {
+      amountNim: '2.5', amountLuna: '250000', asset: 'NIM', network: 'nimiq',
+      sender: 'NQ00 SENDER', recipient: 'NQ99 RECV', hash: 'deadbeef'.repeat(4),
+      confirmedAt: new Date().toISOString(),
+      receiverBusinessName: 'Corner Kiosk', receiverTaxId: 'PL1234567890',
+    } }],
+  }))
+  const api = { history }
+  render(
+    <MemoryRouter initialEntries={['/receipt/r1']}>
+      <Routes>
+        <Route path="/receipt/:id" element={<Receipt api={api as never} />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+  await screen.findByText('Corner Kiosk')
+  expect(screen.getByText('PL1234567890')).toBeTruthy()
+  expect(screen.getByText('Tax ID')).toBeTruthy()
 })

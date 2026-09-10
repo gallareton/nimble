@@ -186,6 +186,9 @@ export async function chargeRequestRoutes(app: FastifyInstance) {
       reference: r.reference,
       receiverDisplayName: receiver.displayName ?? `…${receiver.walletAddress.slice(-4)}`,
       receiverAddressTail: receiver.walletAddress.slice(-4),
+      // Live, like the session counterpart above — this is a pre-payment
+      // preview, not a receipt. Never taxId here: unverified, receipt-only.
+      businessName: receiver.businessName ?? null,
       expiresAt: r.expiresAt.toISOString(),
       state,
     }
@@ -249,6 +252,8 @@ export async function chargeRequestRoutes(app: FastifyInstance) {
               fxSource: reqRow.fxSource,
               recipientAddress: receiver.walletAddress,
               reference: reqRow.reference,
+              receiverBusinessName: receiver.businessName ?? null,
+              receiverTaxId: receiver.taxId ?? null,
             })
             return { kind: 'ok', sessionId: session.id, chargeId: c.id }
           }) as Outcome

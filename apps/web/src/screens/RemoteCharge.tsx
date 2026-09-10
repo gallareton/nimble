@@ -153,6 +153,9 @@ export function RemoteCharge(props: { api?: Api; token?: string | null; login?: 
       <h1>{t('Remote bill')}</h1>
       <section aria-label="remote charge" className="sheet">
         <div>
+          {preview.businessName && (
+            <p className="quiet business-name">{preview.businessName}</p>
+          )}
           <p className="quiet"><strong>{preview.receiverDisplayName}</strong> {t('asks for')}</p>
           <p className="amount">{nim} NIM
             <small>{preview.amountLuna} luna</small>

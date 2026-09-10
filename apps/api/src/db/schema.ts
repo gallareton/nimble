@@ -16,6 +16,15 @@ export const userProfile = pgTable('user_profile', {
   // Lives on the profile, not the session: re-authenticating with the wallet
   // signature must not lift the lock, only the PIN does.
   cashierLocked: boolean('cashier_locked').notNull().default(false),
+  // Profile fields (BR-P15). None of these are verified against any
+  // registry — taxId in particular is whatever the owner typed and must
+  // never be shown next to a word like "verified". They print on receipts
+  // and, minus taxId, appear to a payer before they confirm; see
+  // charge.receiver_business_name/receiver_tax_id for why a sale snapshots
+  // them instead of reading this row live.
+  businessName: text('business_name'),
+  businessAddress: text('business_address'),
+  taxId: text('tax_id'),
 })
 
 export const authSession = pgTable('auth_session', {
@@ -82,6 +91,13 @@ export const charge = pgTable('charge', {
   // Set when this charge settles a POS sale (NIM path): lets a sale's
   // report join straight to its charge without going through session claim.
   saleId: uuid('sale_id').references((): AnyPgColumn => sale.id),
+  // Snapshot of the receiver's user_profile business fields at the moment
+  // insertCharge ran — the same reasoning as the frozen fx rate above: a
+  // receiver renaming their point of sale after the fact must not rewrite
+  // what an old receipt says. Never read live from user_profile once a
+  // charge exists; see services/charges.ts.
+  receiverBusinessName: text('receiver_business_name'),
+  receiverTaxId: text('receiver_tax_id'),
 })
 
 // A remote charge: the receiver bills a payer who isn't at the counter and

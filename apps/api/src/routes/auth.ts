@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { eq, gt, isNull, and, desc } from 'drizzle-orm'
 import { SignJWT } from 'jose'
 import type { FastifyInstance } from 'fastify'
-import { AuthVerifyRequest, SetCashierPinRequest, CashierUnlockRequest, CreateApiKeyRequest } from '@nimble/shared'
+import { AuthVerifyRequest, SetCashierPinRequest, CashierUnlockRequest, CreateApiKeyRequest, UpdateProfileRequest } from '@nimble/shared'
 import { authNonce, authSession, apiKey, userProfile } from '../db/schema'
 import { env } from '../env'
 import { hashCode } from '../services/codeService'
@@ -112,20 +112,36 @@ export async function authRoutes(app: FastifyInstance) {
   app.get('/v1/me', { preHandler: app.authenticate }, async (req) => {
     const [u] = await db.select({ walletAddress: userProfile.walletAddress,
       displayName: userProfile.displayName, cashierLocked: userProfile.cashierLocked,
-      cashierPinHash: userProfile.cashierPinHash })
+      cashierPinHash: userProfile.cashierPinHash, businessName: userProfile.businessName,
+      businessAddress: userProfile.businessAddress, taxId: userProfile.taxId })
       .from(userProfile).where(eq(userProfile.id, req.user.userId))
     if (!u) return u
     return { walletAddress: u.walletAddress, displayName: u.displayName,
-      cashierLocked: u.cashierLocked, cashierPinSet: u.cashierPinHash !== null }
+      cashierLocked: u.cashierLocked, cashierPinSet: u.cashierPinHash !== null,
+      businessName: u.businessName, businessAddress: u.businessAddress, taxId: u.taxId }
   })
 
+  // businessName/businessAddress/taxId (BR-P15) ride the same route and the
+  // same cashier-lock gate as displayName — all four are "who a payer sees
+  // before they confirm" settings. taxId is never verified against
+  // anything: it is stored exactly as typed, printed on receipts only (see
+  // charge.receiverTaxId), and must never reach a payer's approval screen.
+  // An empty string clears a field back to null; omitting a key leaves it
+  // untouched.
   app.patch('/v1/me', { preHandler: app.authenticate }, async (req, reply) => {
     if (await rejectIfCashierLocked(db, req.user.userId, reply)) return
     const body = req.body as { displayName?: unknown }
     const displayName = typeof body?.displayName === 'string' ? body.displayName.trim().slice(0, 50) : ''
     if (!displayName)
       return reply.code(400).send({ error: { code: 'VALIDATION', message: 'displayName required' } })
-    await db.update(userProfile).set({ displayName }).where(eq(userProfile.id, req.user.userId))
+    const profile = UpdateProfileRequest.parse(req.body)
+    const norm = (v: string | null | undefined) =>
+      v == null ? null : (v.trim() === '' ? null : v.trim())
+    await db.update(userProfile).set({ displayName,
+      ...(profile.businessName !== undefined ? { businessName: norm(profile.businessName) } : {}),
+      ...(profile.businessAddress !== undefined ? { businessAddress: norm(profile.businessAddress) } : {}),
+      ...(profile.taxId !== undefined ? { taxId: norm(profile.taxId) } : {}),
+    }).where(eq(userProfile.id, req.user.userId))
     return { ok: true }
   })
 
