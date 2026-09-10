@@ -5,6 +5,7 @@ import { CodeDisplay } from '../src/components/CodeDisplay'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { Approval } from '../src/screens/Approval'
 import { Charge, toMinorUnits } from '../src/screens/Charge'
+import { Products } from '../src/screens/Products'
 import { RemoteCharge } from '../src/screens/RemoteCharge'
 import { ApiError } from '../src/api/client'
 import { Settings } from '../src/screens/Settings'
@@ -273,6 +274,93 @@ it('toMinorUnits parses fiat text to integer minor units, rejecting garbage and 
   expect(toMinorUnits('abc')).toBeNull()
   expect(toMinorUnits('')).toBeNull()
   expect(toMinorUnits('1'.repeat(20))).toBeNull() // a till will never see a 20-digit price
+})
+
+// --- Task 4: catalog and cart on the Charge screen ----------------------
+
+const coffee = { id: 'p1', name: 'Coffee', priceMinor: 250, category: null, pinned: true, active: true, sortOrder: 0 }
+
+it('Charge with no products renders exactly the pre-catalog screen (no cart, no catalog section)', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = { claim: vi.fn(), getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  expect(screen.queryByText('Cart')).toBeNull()
+  expect(screen.queryByText('Take NIM')).toBeNull()
+  expect(screen.getByText(/request payment/i)).toBeTruthy()
+})
+
+it('tapping a 2.50 product twice sums the cart to 5.00, counted in integer cents', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = { getProducts: vi.fn(async () => [coffee]),
+    getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  const tap = () => fireEvent.click(screen.getByRole('button', { name: /Coffee/ }))
+  await waitFor(() => expect(screen.getByRole('button', { name: /Coffee/ })).toBeTruthy())
+  tap()
+  tap()
+  await waitFor(() => expect(screen.getAllByText(/5\.00/).length).toBeGreaterThan(0))
+})
+
+it('Cash calls createSale with paymentMethod cash and catalog items priced by the server', async () => {
+  cleanup()
+  localStorage.clear()
+  const createSale = vi.fn(async (_body: { items: unknown[]; paymentMethod: string }) => ({ id: 'sale1', status: 'paid', state: 'paid',
+    paymentMethod: 'cash', totalMinor: 250, fiatCurrency: 'USD', shiftId: null, chargeId: null,
+    items: [], createdAt: 'x', paidAt: 'x' }))
+  const api = { getProducts: vi.fn(async () => [coffee]), createSale,
+    getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('Coffee'))
+  fireEvent.click(screen.getByRole('button', { name: /^Cash$/i }))
+  await waitFor(() => expect(createSale).toHaveBeenCalledTimes(1))
+  const [body] = createSale.mock.calls[0]
+  expect(body.paymentMethod).toBe('cash')
+  expect(body.items).toEqual([{ productId: 'p1', quantity: 1 }])
+  await waitFor(() => expect(screen.getByText(/Recorded/i)).toBeTruthy())
+})
+
+it('Take NIM creates a nim sale, then claims the code by saleId with no fiatAmountMinor', async () => {
+  cleanup()
+  localStorage.clear()
+  const createSale = vi.fn(async (_body: { items: unknown[]; paymentMethod: string }) => ({ id: 'sale2', status: 'awaiting', state: 'awaiting',
+    paymentMethod: 'nim', totalMinor: 250, fiatCurrency: 'USD', shiftId: null, chargeId: null,
+    items: [], createdAt: 'x', paidAt: null }))
+  const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
+  const api = { getProducts: vi.fn(async () => [coffee]), createSale, claim,
+    getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('Coffee'))
+  fireEvent.click(screen.getByRole('button', { name: /Take NIM/i }))
+  await waitFor(() => expect(createSale).toHaveBeenCalledTimes(1))
+  expect(createSale.mock.calls[0][0].paymentMethod).toBe('nim')
+
+  fireEvent.change(await screen.findByLabelText(/code/i), { target: { value: '123456' } })
+  fireEvent.click(screen.getByText(/request payment/i))
+  await waitFor(() => expect(claim).toHaveBeenCalledTimes(1))
+  const [, opts] = claim.mock.calls[0]
+  expect(opts).toEqual({ saleId: 'sale2' })
+  expect(opts).not.toHaveProperty('fiatAmountMinor')
+})
+
+it('Products: adding a product priced "2,50" sends priceMinor as an integer 250', async () => {
+  cleanup()
+  const createProduct = vi.fn(async (_body: { name: string; priceMinor: number; category?: string }) => ({ id: 'p1', name: 'Coffee', priceMinor: 250,
+    category: null, pinned: false, active: true, sortOrder: 0 }))
+  const api = { getProducts: vi.fn(async () => []), createProduct } as any
+  render(<MemoryRouter><Products api={api} /></MemoryRouter>)
+  fireEvent.change(await screen.findByLabelText(/^Name$/i), { target: { value: 'Coffee' } })
+  fireEvent.change(screen.getByLabelText(/Price/i), { target: { value: '2,50' } })
+  fireEvent.click(screen.getByText(/Add product/i))
+  await waitFor(() => expect(createProduct).toHaveBeenCalledTimes(1))
+  const [body] = createProduct.mock.calls[0]
+  expect(body.priceMinor).toBe(250)
+  expect(Number.isInteger(body.priceMinor)).toBe(true)
 })
 
 // RemoteCharge only shows its "in Nimiq Pay" preview once the host is

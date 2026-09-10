@@ -107,6 +107,50 @@ function EntryList({ entries, locked }: { entries: ShiftEntry[]; locked: boolean
   )
 }
 
+// Sold-by-product and NIM/cash split (Task 4). Both are additive fields on
+// ShiftReport — a report from before this feature (or a test double that
+// doesn't bother stubbing them) simply renders neither section, never a
+// crash, so the six pre-existing report fixtures in shift.test.tsx keep
+// passing unchanged.
+function ProductBreakdown({ report }: { report: ShiftReport }) {
+  if (!report.byProduct || report.byProduct.length === 0) return null
+  return (
+    <section className="form-card">
+      <h2>{t('Sold by product')}</h2>
+      <ul className="list">
+        {report.byProduct.map(p => (
+          <li key={p.name}>
+            <span>{p.name} × {p.quantity}</span>
+            <span className="amt">{(p.totalMinor / 100).toFixed(2)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function PaymentSplit({ report }: { report: ShiftReport }) {
+  if (!report.totals.byPaymentMethod) return null
+  const { nim, cash } = report.totals.byPaymentMethod
+  return (
+    <section className="form-card">
+      <h2>{t('By payment method')}</h2>
+      <p>{t('NIM')}: {nim.count} · {(nim.fiatMinor / 100).toFixed(2)}</p>
+      <p>{t('Cash')}: {cash.count} · {(cash.fiatMinor / 100).toFixed(2)}</p>
+      {report.cashEntries && report.cashEntries.length > 0 && (
+        <ul className="list">
+          {report.cashEntries.map(e => (
+            <li key={e.saleId}>
+              <span className="quiet">🪙 {t('Cash')} · {new Date(e.occurredAt).toLocaleTimeString()}</span>
+              <span>{(e.amountFiatMinor / 100).toFixed(2)}{e.reference ? ` · ${e.reference}` : ''}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
 // Reading stays available offline (BR-P10 blocks accepting a payment, not
 // looking at what already happened): this screen deliberately never checks
 // connectivity, so a vendor reviewing yesterday's takings on a bad
@@ -333,6 +377,8 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
         <p className="quiet">{pastReport.shift.operatorLabel}</p>
         <ReportSummary report={pastReport} />
         <EntryList entries={pastReport.entries} locked={locked} />
+        <ProductBreakdown report={pastReport} />
+        <PaymentSplit report={pastReport} />
         {actionError && <p role="alert">{actionError}</p>}
         {/* Export is one of the four gated operations (spec §5, GET
             .../export → 423 CASHIER_LOCKED). Hiding these links while
@@ -387,6 +433,8 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       {shift && <p className="quiet">{shift.operatorLabel}</p>}
       {report && <ReportSummary report={report} />}
       {report && <EntryList entries={report.entries} locked={locked} />}
+      {report && <ProductBreakdown report={report} />}
+      {report && <PaymentSplit report={report} />}
       {actionError && <p role="alert">{actionError}</p>}
       {/* Not gated on an open shift: a remote bill produces receipts, on-chain
           reconciliation and live status whether or not one is running — only
@@ -395,6 +443,9 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
           operations (spec §5) and stay available while locked. */}
       <p>
         <Link to="/charge/remote">{t('Bill someone who isn\'t here')}</Link>
+      </p>
+      <p>
+        <Link to="/products">{t('Manage products')}</Link>
       </p>
       {/* Shift close is gated (spec §5, POST .../close → 423). Hiding the
           button while locked is convenience, not the guard. */}

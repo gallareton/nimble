@@ -175,6 +175,7 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
         </>)}
       </section>
 
+      <p><Link to="/products">{t('Manage products')}</Link></p>
       <button onClick={() => { resetIntro(); setReplay(true) }}>{t('Show the guide again')}</button>
       {replay && <p role="status">{t('The guide will show next time you open the home screen.')}</p>}
       {ctx && <button onClick={ctx.logout}>{t('Disconnect')}</button>}

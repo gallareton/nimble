@@ -1,4 +1,4 @@
-import type { AcceptChargeRequestResponse, AffordabilityResponse, ChargeRequestPreview, ClaimResponse, OutstandingBillsResponse, CreateChargeRequestResponse, CreateRefundResponse, CreateSessionResponse, IntentResponse, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
+import type { AcceptChargeRequestResponse, AffordabilityResponse, ChargeRequestPreview, ClaimResponse, OutstandingBillsResponse, CreateChargeRequestResponse, CreateRefundResponse, CreateSessionResponse, IntentResponse, ProductView, SaleView, SessionView, ShiftListItem, ShiftReport, ShiftView } from '@nimble/shared'
 import type { WalletProvider } from '../wallet/types'
 import { uuid } from '../lib/uuid'
 
@@ -73,7 +73,7 @@ export class Api {
   createSession(idemKey?: string) { return this.#post<CreateSessionResponse>('/v1/sessions', undefined, idemKey) }
   claim(
     code: string,
-    opts?: { amountLuna?: string; fiatAmountMinor?: number; fiatCurrency?: string; reference?: string },
+    opts?: { amountLuna?: string; fiatAmountMinor?: number; fiatCurrency?: string; reference?: string; saleId?: string },
     idemKey?: string,
   ) {
     return this.#post<ClaimResponse>('/v1/sessions/claim', { code, ...opts }, idemKey)
@@ -159,6 +159,32 @@ export class Api {
     const text = await res.text()
     const mime = format === 'csv' ? 'text/csv' : 'application/json'
     return { text, filename: `shift-${id}.${format}`, mime }
+  }
+  // POS catalog (Task 4). getProducts is called with `?.()` by screens that
+  // must keep working unchanged against a test double that doesn't define
+  // it — that optionality is deliberate, not a hole to fill in.
+  getProducts() { return this.#get<ProductView[]>('/v1/products') }
+  createProduct(
+    body: { name: string; priceMinor: number; category?: string; pinned?: boolean; sortOrder?: number },
+    idemKey?: string,
+  ) {
+    return this.#post<ProductView>('/v1/products', body, idemKey)
+  }
+  updateProduct(
+    id: string,
+    body: { name?: string; priceMinor?: number; category?: string | null; pinned?: boolean; active?: boolean; sortOrder?: number },
+  ) {
+    return this.#request<ProductView>('PATCH', `/v1/products/${id}`, body)
+  }
+  // A sale is the cart's receipt: the server prices catalog lines itself
+  // (see sales.ts), so a non-catalog line is the only one that must carry
+  // its own name and unitPriceMinor here.
+  createSale(
+    body: { items: { productId?: string; name?: string; unitPriceMinor?: number; quantity: number }[]
+      paymentMethod: 'nim' | 'cash' },
+    idemKey?: string,
+  ) {
+    return this.#post<SaleView>('/v1/sales', body, idemKey)
   }
   getNetwork() { return this.#get<{ network: string; height: number | null }>('/v1/network') }
   getRate() { return this.#get<{ usdPerNim: number | null; asOf: string }>('/v1/rate') }

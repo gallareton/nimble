@@ -591,6 +591,47 @@ it('shows refund and close-shift normally when the cashier lock is off', async (
   expect(screen.queryByText(/isn't broken/i)).toBeNull()
 })
 
+// --- Task 4: sold-by-product and NIM/cash split -------------------------
+
+it('shows the sold-by-product and NIM/cash split sections when the report carries them', async () => {
+  const report = {
+    shift: { id: 's1', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null },
+    totals: { count: 2, confirmed: 1, refunded: 0, failed: 0, grossNim: '10', grossFiatMinor: 500,
+      fiatCurrency: 'USD', averageTicketNim: '10', cashSales: 1,
+      byPaymentMethod: { nim: { count: 1, fiatMinor: 250 }, cash: { count: 1, fiatMinor: 250 } } },
+    entries: [],
+    cashEntries: [{ saleId: 'c1', occurredAt: '2026-09-08T09:00:00.000Z', amountFiatMinor: 250, reference: 'Soda' }],
+    byProduct: [{ name: 'Coffee', quantity: 2, totalMinor: 500 }],
+    fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Ana', openedAt: '2026-09-08T08:00:00.000Z', closedAt: null })),
+    getShiftReport: vi.fn(async () => report),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Sold by product')).toBeTruthy())
+  expect(screen.getByText(/Coffee × 2/)).toBeTruthy()
+  expect(screen.getByText('By payment method')).toBeTruthy()
+  expect(screen.getByText(/Soda/)).toBeTruthy()
+})
+
+it('renders the shift report with neither new section when byProduct/byPaymentMethod are absent (older report shape)', async () => {
+  const report = {
+    shift: { id: 's1', operatorLabel: 'Ana', openedAt: '2026-08-27T08:00:00.000Z', closedAt: null },
+    totals: { count: 2, confirmed: 2, failed: 0, grossNim: '500', grossFiatMinor: 1234,
+      fiatCurrency: 'USD', averageTicketNim: '250' },
+    entries: [], fiatIncomplete: false,
+  }
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Ana', openedAt: '2026-08-27T08:00:00.000Z', closedAt: null })),
+    getShiftReport: vi.fn(async () => report),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('500 NIM')).toBeTruthy())
+  expect(screen.queryByText('Sold by product')).toBeNull()
+  expect(screen.queryByText('By payment method')).toBeNull()
+})
+
 it('hides the export links on a past shift\'s report while the cashier lock is on', async () => {
   const past = [{ id: 'past-1', operatorLabel: 'Ana', openedAt: '2026-08-25T08:00:00.000Z',
     closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1 }]
