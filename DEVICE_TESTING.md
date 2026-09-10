@@ -198,6 +198,31 @@ nothing below is worth diagnosing on top of a broken payment.
 - [ ] Revoke the key; the same curl now returns 401.
 - [ ] With the cashier lock on, creating a key returns 423.
 
+### 14. Navigation, profile, dashboard (2026-09-10, after the competition slice)
+
+- [ ] **Bottom bar** on Home, Till, Shift, History; the active tab is
+      highlighted. **More** opens a sheet with Dashboard, Products, Remote
+      bill, Settings; Escape or tapping outside closes it.
+- [ ] **One back arrow**: from Products it goes to Shift, from Settings and
+      History to Home, from a receipt to History — never "wherever you came
+      from". The old per-screen "‹ Home / ‹ Shift" buttons are gone.
+- [ ] **No bar during a payment**: on the approval screen, a remote bill,
+      a receipt and a refund the bottom bar is hidden; only the header
+      remains.
+- [ ] **Cashier lock badge** appears once, in the header — not again inside
+      the Shift or Settings screens.
+- [ ] **Profile**: set a business name, address and tax ID in Settings. B's
+      approval screen shows the business name **above** the display name and
+      does **not** show the tax ID; "Unverified profile" is still there.
+      The receipt shows both. Change the business name afterwards: the old
+      receipt keeps the old name.
+- [ ] **Dashboard** (More → Dashboard): today's fiat and NIM totals, sales
+      count, cash vs NIM, who is working, top products, and a section
+      labelled "by shift operator" — not "by employee". A NIM sale waiting
+      for payment appears under "awaiting" with a link into the session and
+      disappears once confirmed. "‹ day" shows yesterday; "day ›" is disabled
+      on today. An empty day shows one sentence, not a grid of zeros.
+
 ### 11. Offline
 
 - [ ] Turn off data on the vendor's phone and try to take a payment: refused
