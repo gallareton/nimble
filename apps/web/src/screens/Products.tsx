@@ -119,11 +119,13 @@ export function Products(props: { api?: Api }) {
         <h2>{t('Add a product')}</h2>
         <label>
           {t('Name')}
-          <input value={name} maxLength={60} onChange={e => setName(e.target.value)} />
+          <input value={name} maxLength={60} onChange={e => setName(e.target.value)}
+            placeholder={t('e.g. Soda')} />
         </label>
         <label>
           {t('Price (USD)')}
-          <input inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)} placeholder="2.50" />
+          <input inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)}
+            placeholder={t('e.g. 2.50')} />
         </label>
         <label>
           {t('Category (optional)')}
@@ -132,6 +134,7 @@ export function Products(props: { api?: Api }) {
         <button className="primary" onClick={() => void addProduct()} disabled={busy || !name || !price}>
           {t('Add product')}
         </button>
+        {(!name || !price) && <p className="cta-hint">{t('Enter a name and a price')}</p>}
       </section>
 
       {error && <p role="alert">{error}</p>}
@@ -139,8 +142,8 @@ export function Products(props: { api?: Api }) {
       {products.length === 0 ? (
         <p className="quiet">{t('No products yet.')}</p>
       ) : (
-        <section className="list-card">
-          <ul className="list">
+        <section>
+          <ul className="rows">
             {products.map(p => (
               <li key={p.id} className={p.active ? '' : 'product--withdrawn'}>
                 {editingId === p.id ? (
@@ -164,17 +167,23 @@ export function Products(props: { api?: Api }) {
                   </div>
                 ) : (
                   <>
-                    <span className="dir">
-                      {p.name} — {(p.priceMinor / 100).toFixed(2)} USD
-                      {nimApprox(p.priceMinor) ? ` (${nimApprox(p.priceMinor)})` : ''}
-                      {p.category ? ` · ${p.category}` : ''}
-                      {p.pinned ? ` · 📌` : ''}
-                      {!p.active && ` · ${t('Withdrawn')}`}
-                    </span>
-                    <div className="actions">
-                      <button onClick={() => startEdit(p)}>{t('Edit')}</button>
-                      <button onClick={() => void togglePinned(p)}>{p.pinned ? t('Unpin') : t('Pin')}</button>
-                      <button onClick={() => void toggleActive(p)}>{p.active ? t('Retire') : t('Reactivate')}</button>
+                    <div className="row">
+                      <span className="row__main">
+                        <span className="row__title">{p.name}{p.pinned ? ' 📌' : ''}</span>
+                        <span className="row__sub">
+                          {[p.category, p.active ? null : t('Withdrawn')].filter(Boolean).join(' · ') || '\u00a0'}
+                        </span>
+                      </span>
+                      <span className="row__amt amt-stack">
+                        <span>{(p.priceMinor / 100).toFixed(2)} USD</span>
+                        {nimApprox(p.priceMinor) && <span className="price-nim">{nimApprox(p.priceMinor)}</span>}
+                      </span>
+                    </div>
+                    <div className="row-actions">
+                      <button className="btn-sm" onClick={() => startEdit(p)}>{t('Edit')}</button>
+                      <button className="btn-sm" onClick={() => void togglePinned(p)}>{p.pinned ? t('Unpin') : t('Pin')}</button>
+                      <button className={p.active ? 'btn-sm danger' : 'btn-sm'}
+                        onClick={() => void toggleActive(p)}>{p.active ? t('Retire') : t('Reactivate')}</button>
                     </div>
                   </>
                 )}

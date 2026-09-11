@@ -139,7 +139,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
           <p className="center">
             <button className="chip" onClick={() => {
               void copyText(session.code).then(ok => { if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) } })
-            }}>{copied ? t('Copied') : t('Copy code')}</button>
+            }}>{copied ? t('✓ Copied') : t('Copy code')}</button>
           </p>
           <p className="center">{t('Tell this code to the receiver. Waiting for them to claim…')}</p>
           <p className="center help-secondary">{t('Nobody to pay yet? NIMble takes two — the other person enters your code.')}</p>

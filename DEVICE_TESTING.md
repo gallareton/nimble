@@ -237,6 +237,9 @@ nothing below is worth diagnosing on top of a broken payment.
       phone. The timer reads 22 px; the ring turns **amber under 30 s** and
       **red under 10 s**. The invite is now secondary text: "Receiver doesn't
       have NIMble yet? Send them a link".
+      Note (audit round 2): the grey **"Copied."** toast that shows up after
+      tapping Copy code comes from the **host app**, not from NIMble — our
+      own feedback is the button itself turning into "✓ Copied".
 - [ ] **Charge is two steps**: step 1 "How much?", step 2 "Payment". The
       USD/NIM segment sits **inside** the amount field, with the conversion
       right under it.
@@ -275,6 +278,61 @@ nothing below is worth diagnosing on top of a broken payment.
       captions; "Today's numbers" sits next to RECENT; a single row reads
       "How does NIMble work?" instead of the old list, and opens the guide at
       **/guide** (also reachable from More).
+
+### 16. Audit round 2 (2026-09-11)
+
+Covers the rulings Q1–Q11 from `NIMBle_v2.xlsx`. Needs a shift with at least
+one **cash** sale — the round's critical finding was cash missing from the
+takings.
+
+- [ ] **Q1 — takings include cash.** Ring up two cash sales of 17.50 and no
+      NIM at all. The shift summary headline reads **35.00 USD**, with
+      `0 NIM · 35.00 USD cash · 2 sales` under it, and it must **not** say
+      "No sales yet". Same figures in the close-the-shift dialog, which also
+      shows **Cash to settle: 35.00 USD**; its close button stays disabled
+      until the report has loaded. History → Shifts shows the same 35.00 USD
+      on the shift's row.
+- [ ] **Q2 — pieces vs money.** SOLD BY PRODUCT reads `Soda × 7` on one side
+      and `35.00 USD` on the other — the amount always names its currency.
+      BY PAYMENT METHOD says `{n} transactions`, not a bare count. The
+      Dashboard's Cash and NIM figures carry the currency too.
+- [ ] **Q3 — one "Copied" is ours.** Tap **Copy code** on Pay. Our button
+      turns into **✓ Copied** for two seconds, in place, and stays tappable.
+      A second grey **"Copied."** toast may appear near the bottom: that one
+      is the **host app's** (Nimiq Pay / Android) clipboard overlay, not
+      NIMble's, and we cannot suppress it. Note whether your device shows it.
+- [ ] **Q4 — the ring is a circle.** Pay's code ring must be round, not an
+      oval, on every phone: 280 px, dropping to 250 px under a 360 px screen.
+      Check both a small and a large handset.
+- [ ] **Q5 — one USD/NIM switch.** Charge (step 1) and Remote bill wear the
+      *same* control: a pill segment whose active side is a **blue fill with
+      white text**. The amount field's label says what you are typing in —
+      **Amount (USD)** or **Amount (NIM)**.
+- [ ] **Q6 — placeholders and honest disabled buttons.** Empty amount fields
+      show **e.g. 2.50** / **e.g. 2.5**, and name fields **e.g. Soda**, in a
+      visibly fainter grey than a real value. Under each greyed-out CTA a
+      13 px hint says what is missing — Continue: "Add a product or enter an
+      amount to continue"; Create bill: "Enter an amount to create the bill";
+      Add product: "Enter a name and a price" — and it disappears the moment
+      the button goes blue.
+- [ ] **Q7 — the path is not cut.** On Charge step 1 the **Continue** bar sits
+      directly under the card; **"Bill someone who isn't here"** is below it.
+      Scroll to the bottom: the last field is not hidden behind the CTA.
+- [ ] **Q8 — the cashier-lock warning is readable.** Settings → Cashier lock
+      leads with one sentence in a gold-edged warning box: "This PIN locks
+      this app. It does not protect your NIM in Nimiq Pay." The longer
+      explanation is behind **Learn more**, which opens and closes.
+- [ ] **Q9 — six tabs, six equal slots.** On a 360 px screen the tab labels
+      sit in slots of the same width and none wraps or is clipped.
+- [ ] **Q10 — the bar clears the system bar.** The tab bar must not sit under
+      the Android gesture/navigation bar: check with gesture navigation and
+      with three-button navigation. Its top shadow should read clearly
+      against a white screen.
+- [ ] **Q11 — Products.** Each product is a card row: name (with 📌 when
+      pinned) over its category, price with the NIM line on the right. Under
+      it sit small chips — **Edit**, **Pin/Unpin** and **Retire**, the last
+      one in red outline. Retiring a product shows "Withdrawn" on its row and
+      turns the chip into **Reactivate**.
 
 ### 11. Offline
 

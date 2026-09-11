@@ -252,13 +252,22 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
 
       <section className="form-card cashier-lock-section">
         <h2>{t('Cashier lock')}</h2>
-        {/* This sentence matters more than anything else on this screen. */}
-        <p className="cashier-lock-disclaimer">
-          {t('This PIN does not protect your NIM. Whoever is holding this phone also has Nimiq Pay on it and can send funds straight from the wallet — nothing in this app can stop that. An owner who believes this PIN protects their NIM is worse off than one who knows it does not.')}
+        {/* Q8: one sentence, framed as a warning. The three paragraphs that
+            used to sit here unbroken were read as a wall and skipped — which
+            is the worst possible outcome for the one warning on this screen
+            that actually matters. The detail is a tap away, not gone. */}
+        <p className="notice--warn">
+          {t('This PIN locks this app. It does not protect your NIM in Nimiq Pay.')}
         </p>
-        <p className="quiet">
-          {t('What it does stop: a refund to a chosen person in one tap, taking the day\'s export off the phone, closing the shift to hide a gap, and changing the name a payer sees before they confirm.')}
-        </p>
+        <details className="learn-more">
+          <summary>{t('Learn more')}</summary>
+          <p>
+            {t('This PIN does not protect your NIM. Whoever is holding this phone also has Nimiq Pay on it and can send funds straight from the wallet — nothing in this app can stop that. An owner who believes this PIN protects their NIM is worse off than one who knows it does not.')}
+          </p>
+          <p>
+            {t('What it does stop: a refund to a chosen person in one tap, taking the day\'s export off the phone, closing the shift to hide a gap, and changing the name a payer sees before they confirm.')}
+          </p>
+        </details>
 
         {!locked && (<>
           <label>

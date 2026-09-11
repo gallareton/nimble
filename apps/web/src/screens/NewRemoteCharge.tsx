@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { lunaToNim, nimToLuna, SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
 import type { OutstandingBill } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
+import { UnitSwitch, type Unit } from '../components/UnitSwitch'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
@@ -10,7 +11,6 @@ import { copyText } from '../lib/copy'
 import { remoteChargeUrl } from '../lib/host'
 import { toMinorUnits } from './Charge'
 
-type Unit = 'USD' | 'NIM'
 const UNIT_KEY = 'nimble.charge.unit'
 
 function loadUnit(): Unit {
@@ -153,25 +153,22 @@ export function NewRemoteCharge(props: { api?: Api }) {
   return (
     <main>
       <div className="form-card">
-        <div className="chips" role="group" aria-label={t('Pricing unit')}>
-          <button type="button" className={`chip ${unit === 'USD' ? 'chip--on' : ''}`}
-            aria-pressed={unit === 'USD'} onClick={() => chooseUnit('USD')}>{t('USD')}</button>
-          <button type="button" className={`chip ${unit === 'NIM' ? 'chip--on' : ''}`}
-            aria-pressed={unit === 'NIM'} onClick={() => chooseUnit('NIM')}>{t('NIM')}</button>
-        </div>
+        <UnitSwitch unit={unit} onChange={chooseUnit} />
         <label>
           {unit === 'USD' ? t('Amount (USD)') : t('Amount (NIM)')}
           <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)}
-            placeholder={unit === 'USD' ? '2.50' : '2.5'} />
+            placeholder={unit === 'USD' ? t('e.g. 2.50') : t('e.g. 2.5')} />
           {approx !== null && <span className="quiet">{approx}</span>}
         </label>
         <label>
           {t('Reference')}
-          <input value={reference} maxLength={100} onChange={e => setReference(e.target.value)} placeholder="Soda" />
+          <input value={reference} maxLength={100} onChange={e => setReference(e.target.value)}
+            placeholder={t('e.g. Soda')} />
         </label>
         <button className="primary" onClick={() => void submit()} disabled={busy || !amount}>
           {t('Create bill')}
         </button>
+        {!amount && <p className="cta-hint">{t('Enter an amount to create the bill')}</p>}
       </div>
       {bills && bills.length > 0 && (
           <section className="list-card">

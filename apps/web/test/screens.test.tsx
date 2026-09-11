@@ -10,6 +10,8 @@ import { RemoteCharge } from '../src/screens/RemoteCharge'
 import { Receipt } from '../src/screens/Receipt'
 import { ApiError } from '../src/api/client'
 import { Settings } from '../src/screens/Settings'
+import { NewRemoteCharge } from '../src/screens/NewRemoteCharge'
+import { UnitSwitch } from '../src/components/UnitSwitch'
 
 it('CodeDisplay groups digits and is screen-reader friendly', () => {
   render(<CodeDisplay code="482731" />)
@@ -655,7 +657,7 @@ it('Settings states plainly that the PIN does not protect the wallet\'s funds', 
   const api = { getMe: vi.fn(async () => meWith()) }
   render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
   await waitFor(() => expect(api.getMe).toHaveBeenCalled())
-  expect(screen.getByText(/does not protect your NIM/i)).toBeTruthy()
+  expect(screen.getAllByText(/does not protect your NIM/i).length).toBeGreaterThan(0)
 })
 
 it('a correct PIN removes the cashier lock', async () => {
@@ -903,4 +905,95 @@ it('Settings files Products under Point of sale and the guide under Help', async
   // The guide is a screen now, not a localStorage flag to un-set (R4).
   expect(screen.queryByText(/Show the guide again/i)).toBeNull()
   expect(screen.queryByRole('link', { name: 'Manage products' })).toBeNull()
+})
+
+// --- Audit round 2 (Q5–Q11): one switch, honest hints, ordered CTAs ------
+
+it('UnitSwitch names its two sides and marks the active one with aria-pressed', () => {
+  cleanup()
+  const onChange = vi.fn()
+  render(<UnitSwitch unit="NIM" onChange={onChange} />)
+  const usd = screen.getByRole('button', { name: /^USD$/ })
+  const nim = screen.getByRole('button', { name: /^NIM$/ })
+  expect(usd.getAttribute('aria-pressed')).toBe('false')
+  expect(nim.getAttribute('aria-pressed')).toBe('true')
+  fireEvent.click(usd)
+  expect(onChange).toHaveBeenCalledWith('USD')
+})
+
+it('Charge and Remote bill wear the same unit switch (Q5)', async () => {
+  cleanup()
+  localStorage.clear()
+  render(<MemoryRouter><Charge api={fiatApi({ claim: vi.fn() })} /></MemoryRouter>)
+  const inCharge = screen.getByRole('button', { name: /^USD$/ }).parentElement!
+  expect(inCharge.className).toBe('seg')
+  cleanup()
+
+  const remoteApi = fiatApi({ createChargeRequest: vi.fn(), getOutstandingBills: vi.fn(async () => ({ bills: [] })) })
+  render(<MemoryRouter><NewRemoteCharge api={remoteApi} /></MemoryRouter>)
+  const inRemote = screen.getByRole('button', { name: /^USD$/ }).parentElement!
+  expect(inRemote.className).toBe('seg')
+  expect(inRemote.getAttribute('role')).toBe('group')
+})
+
+it('the hint under a disabled Continue says what is missing, and goes once it is not (Q6)', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]), claim: vi.fn() })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  await screen.findByText('Coffee')
+  expect(screen.getByRole('button', { name: 'Continue' }).hasAttribute('disabled')).toBe(true)
+  expect(screen.getByText('Add a product or enter an amount to continue')).toBeTruthy()
+
+  fireEvent.click(screen.getByText('Coffee'))
+  expect(screen.getByRole('button', { name: 'Continue' }).hasAttribute('disabled')).toBe(false)
+  expect(screen.queryByText('Add a product or enter an amount to continue')).toBeNull()
+})
+
+it('Remote bill hints under its disabled Create bill (Q6)', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ createChargeRequest: vi.fn(), getOutstandingBills: vi.fn(async () => ({ bills: [] })) })
+  render(<MemoryRouter><NewRemoteCharge api={api} /></MemoryRouter>)
+  expect(screen.getByText('Enter an amount to create the bill')).toBeTruthy()
+  fireEvent.change(screen.getByLabelText(/Amount \(USD\)/i), { target: { value: '5.00' } })
+  expect(screen.queryByText('Enter an amount to create the bill')).toBeNull()
+})
+
+it('"Bill someone who isn\'t here" sits after the CTA bar, not across the path (Q7)', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]), claim: vi.fn() })
+  const { container } = render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  await screen.findByText('Coffee')
+  const bar = container.querySelector('.cta-bar')!
+  const side = screen.getByText(/Bill someone who isn't here/)
+  // DOCUMENT_POSITION_FOLLOWING === 4: the side door comes after the bar.
+  expect(bar.compareDocumentPosition(side) & 4).toBe(4)
+})
+
+it('Products: a row carries name, category and price, and Retire is dressed as destructive (Q11)', async () => {
+  cleanup()
+  const p = { id: 'p1', name: 'Soda', priceMinor: 500, category: 'Drinks', pinned: false, active: true, sortOrder: 0 }
+  const api = { getProducts: vi.fn(async () => [p]), updateProduct: vi.fn() } as never
+  const { container } = render(<MemoryRouter><Products api={api} /></MemoryRouter>)
+  await screen.findByText('Soda')
+  const row = container.querySelector('.row')!
+  expect(row.querySelector('.row__sub')!.textContent).toBe('Drinks')
+  expect(row.querySelector('.row__amt')!.textContent).toContain('5.00 USD')
+  expect(screen.getByRole('button', { name: 'Retire' }).className).toContain('danger')
+  expect(screen.getByRole('button', { name: 'Edit' }).className).toContain('btn-sm')
+})
+
+it('Settings leads with the one-line warning and folds the detail into Learn more (Q8)', async () => {
+  cleanup()
+  const api = { getMe: vi.fn(async () => meWith()) }
+  const { container } = render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(api.getMe).toHaveBeenCalled())
+
+  const lead = container.querySelector('.notice--warn')!
+  expect(lead.textContent).toBe('This PIN locks this app. It does not protect your NIM in Nimiq Pay.')
+  const details = container.querySelector('details.learn-more')!
+  expect(details.querySelector('summary')!.textContent).toBe('Learn more')
+  expect(details.textContent).toContain('nothing in this app can stop that')
 })

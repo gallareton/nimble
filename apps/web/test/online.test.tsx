@@ -14,7 +14,7 @@ afterEach(() => {
 // The till is two steps now (R7): the amount on step 1, the payer's code —
 // and the offline notice that guards the money — on step 2.
 function fillChargeForm() {
-  fireEvent.change(screen.getByPlaceholderText('2.50'), { target: { value: '2.50' } })
+  fireEvent.change(screen.getByPlaceholderText('e.g. 2.50'), { target: { value: '2.50' } })
   fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
   fireEvent.change(screen.getByPlaceholderText('123 456'), { target: { value: '123456' } })
 }

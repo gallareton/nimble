@@ -3,13 +3,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { nimToLuna, SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
 import type { ProductView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
+import { UnitSwitch, type Unit } from '../components/UnitSwitch'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
 import { formatNimApprox, formatUsd, useUsdRate } from '../lib/fiat'
 import { useOnline } from '../lib/online'
 
-type Unit = 'USD' | 'NIM'
 type Step = 'amount' | 'pay'
 type Method = 'nim' | 'cash'
 const UNIT_KEY = 'nimble.charge.unit'
@@ -367,7 +367,7 @@ export function Charge(props: { api?: Api }) {
             <div className="field">
               <label htmlFor="charge-reference">{t('Reference')}</label>
               <input id="charge-reference" value={reference} maxLength={100}
-                onChange={e => setReference(e.target.value)} placeholder="Soda" />
+                onChange={e => setReference(e.target.value)} placeholder={t('e.g. Soda')} />
             </div>
             {codeField}
             {offlineNotice}
@@ -473,17 +473,14 @@ export function Charge(props: { api?: Api }) {
         )}
 
         <div className="field">
-          <label htmlFor="charge-amount">{cartActive ? t('Add a custom amount (USD)') : t('Amount')}</label>
+          <label htmlFor="charge-amount">{cartActive
+            ? t('Add a custom amount (USD)')
+            : effectiveUnit === 'USD' ? t('Amount (USD)') : t('Amount (NIM)')}</label>
           <div className="field-suffix">
             <input id="charge-amount" inputMode="decimal" value={amount}
               onChange={e => setAmount(e.target.value)}
-              placeholder={effectiveUnit === 'USD' ? '2.50' : '2.5'} />
-            {!cartActive && (
-              <div className="seg" role="group" aria-label={t('Pricing unit')}>
-                <button type="button" aria-pressed={unit === 'USD'} onClick={() => chooseUnit('USD')}>{t('USD')}</button>
-                <button type="button" aria-pressed={unit === 'NIM'} onClick={() => chooseUnit('NIM')}>{t('NIM')}</button>
-              </div>
-            )}
+              placeholder={effectiveUnit === 'USD' ? t('e.g. 2.50') : t('e.g. 2.5')} />
+            {!cartActive && <UnitSwitch unit={unit} onChange={chooseUnit} />}
           </div>
           {approx !== null && <span className="approx">{approx}</span>}
         </div>
@@ -498,6 +495,10 @@ export function Charge(props: { api?: Api }) {
         {cartError && <p role="alert">{cartError}</p>}
       </div>
       {error && <p role="alert">{error}</p>}
+      <div className="cta-bar">
+        <button className="primary" onClick={goToPay} disabled={!canContinue}>{t('Continue')}</button>
+        {!canContinue && <p className="cta-hint">{t('Add a product or enter an amount to continue')}</p>}
+      </div>
       <ul className="rows">
         <li>
           <Link className="row row--link" to="/charge/remote">
@@ -505,9 +506,6 @@ export function Charge(props: { api?: Api }) {
           </Link>
         </li>
       </ul>
-      <div className="cta-bar">
-        <button className="primary" onClick={goToPay} disabled={!canContinue}>{t('Continue')}</button>
-      </div>
     </main>
   )
 }

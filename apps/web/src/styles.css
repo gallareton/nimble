@@ -15,6 +15,9 @@
   --ink: var(--nimiq-blue);
   --muted: rgba(31, 35, 72, 0.72);
   --faint: rgba(31, 35, 72, 0.5);
+  /* Q6: a placeholder must read fainter than any real value — the audit
+     read `2.50` in an empty field as an amount already entered. */
+  --placeholder: rgba(31, 35, 72, 0.38);
   --line: rgba(31, 35, 72, 0.12);
   --card: #ffffff;
   --action: var(--nimiq-light-blue);
@@ -38,8 +41,7 @@
   --sp-3: 16px;
   --sp-4: 24px;
   --sp-5: 32px;
-  --tabbar-h: 64px;
-  --ring-size: min(78vw, 280px);
+  --tabbar-h: 68px;
   --body: 'Mulish Variable', Muli, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-family: var(--body);
   color-scheme: light;
@@ -132,7 +134,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   position: sticky;
   bottom: calc(var(--bar-offset) + env(safe-area-inset-bottom));
   z-index: 10;
-  padding: 12px 0;
+  padding: 16px 0 12px;
   margin-top: 8px;
   background: linear-gradient(to top, var(--nimiq-gray) 70%, transparent);
 }
@@ -147,19 +149,25 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   z-index: 20;
   display: flex;
   background: var(--card);
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
-  padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.12);
+  padding: 4px 4px calc(8px + env(safe-area-inset-bottom));
 }
 .app-tabbar__item {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
+  /* Q9: six slots of equal width, each free to shrink — without min-width:0
+     a long label ("History") widens its own slot and steals from its
+     neighbours, which is what made the bar look mis-aligned. */
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
   min-height: 48px;
-  padding: 6px 2px;
+  padding: 6px 0;
   font: 600 11px/1.2 var(--body);
+  letter-spacing: 0;
   color: var(--muted);
   text-decoration: none;
   background: none;
@@ -321,7 +329,7 @@ input {
   padding: 13px 14px;
   width: 100%;
 }
-input::placeholder { color: var(--faint); }
+input::placeholder { color: var(--placeholder); }
 input:focus { border-color: var(--action); outline: none; }
 
 .form-card {
@@ -377,15 +385,19 @@ input.code-input {
 /* ── the signature: payment code inside a depleting ring ── */
 .code-ring {
   --frac: 1;
-  width: var(--ring-size);
-  height: var(--ring-size);
+  /* Q4: plain pixels. min() and aspect-ratio both left the ring an oval in
+     the Nimiq Pay webview; two fixed sizes cannot be got wrong. */
+  width: 280px;
+  height: 280px;
   flex-shrink: 0;
-  aspect-ratio: auto;
   margin: 10px auto 0;
   border-radius: 50%;
   padding: 6px;
   background: conic-gradient(var(--ring-color, var(--action)) calc(var(--frac) * 100%), var(--line) 0);
   transition: background 1s linear;
+}
+@media (max-width: 360px) {
+  .code-ring { width: 250px; height: 250px; }
 }
 .code-ring--warn { --ring-color: var(--nimiq-orange); }
 .code-ring--urgent { --ring-color: var(--nimiq-red); }
@@ -881,7 +893,12 @@ a.row--link:hover, button.row--link:hover:not(:disabled) { box-shadow: var(--sha
 }
 .seg button:hover:not(:disabled) { box-shadow: none; }
 .seg button[aria-selected='true'],
-.seg button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+.seg button[aria-pressed='true'] {
+  background: var(--nimiq-light-blue);
+  background-image: var(--action-bg);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
 .seg--wide { display: flex; }
 .seg--wide button { flex: 1; min-height: 48px; font-size: 16px; }
 
@@ -934,3 +951,48 @@ a.row--link:hover, button.row--link:hover:not(:disabled) { box-shadow: var(--sha
   padding: 1px 8px;
   margin-right: 2px;
 }
+
+/* ── Q6: what an inert CTA is waiting for ──────────────────────────────
+   A greyed-out button with no explanation is the "false-disabled" note from
+   both audit rounds. Rendered only while the button is disabled. */
+.cta-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ── Q8: a warning worth reading, not a wall of text ────────────────── */
+.notice--warn {
+  background: rgba(233, 178, 19, 0.14);
+  border-left: 3px solid var(--nimiq-gold);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+details.learn-more summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--action);
+  list-style: none;
+}
+details.learn-more summary::-webkit-details-marker { display: none; }
+details.learn-more summary::before { content: '▸ '; }
+details.learn-more[open] summary::before { content: '▾ '; }
+details.learn-more p { color: var(--muted); font-size: 14px; }
+
+/* ── Q11: row actions as small chips, never full-width pills ────────── */
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.row-actions .btn-sm {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 999px;
+}
+.row-actions .btn-sm.danger { border-width: 1px; }
