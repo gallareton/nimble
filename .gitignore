@@ -28,3 +28,5 @@ e2e/playwright-report/
 
 # owner review sheets (kept out of the public repo)
 NIMBle_uwagi_*.xlsx
+NIMBle_v2*.xlsx
+e2e/shots/
