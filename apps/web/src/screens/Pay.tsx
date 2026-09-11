@@ -111,7 +111,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
           : '0' }}
       >
         <div className="code-ring__inner">
-          <span className="brand-chip">NIMble</span>
+          <span className="brand-chip">NIMBLE</span>
           {expired ? (
             <>
               <p className="quiet">{t('Code expired')}</p>

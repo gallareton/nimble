@@ -45,7 +45,7 @@ function Boot() {
 
   return (
     <main className="boot-screen">
-      <h1 className="brand">NIM<em>ble</em></h1>
+      <h1 className="brand">NIM<em>BLE</em></h1>
       <Spinner />
       {slow && <p className="quiet">{t('Waiting for your wallet to sync…')}</p>}
     </main>

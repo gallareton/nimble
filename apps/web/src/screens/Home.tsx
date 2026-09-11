@@ -55,7 +55,7 @@ export function Home() {
     return (
       <main>
         <div className="hero">
-          <h1 className="brand">NIM<em>ble</em></h1>
+          <h1 className="brand">NIM<em>BLE</em></h1>
           <p>{t('Pay or get paid with a 6-digit code.')}</p>
           <button className="primary" onClick={() => { setError(null); login().catch(e => setError(describeError(e))) }}>
             Connect wallet
@@ -68,7 +68,7 @@ export function Home() {
 
   return (
     <main>
-      <h1 className="brand">NIM<em>ble</em></h1>
+      <h1 className="brand">NIM<em>BLE</em></h1>
       {wrongNetwork && (
         <p role="alert" className="banner">
           {wrongNetwork === 'lagging'

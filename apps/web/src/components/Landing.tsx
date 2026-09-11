@@ -22,7 +22,7 @@ export function Landing({ chargeId, bill }: { chargeId?: string; bill?: ChargeRe
   return (
     <main>
       <div className="hero">
-        <h1 className="brand">NIM<em>ble</em></h1>
+        <h1 className="brand">NIM<em>BLE</em></h1>
         {bill && bill.state === 'open' ? (
           // Someone followed a bill link. Say what they are about to approve
           // before sending them through a blue button and the wallet's own
