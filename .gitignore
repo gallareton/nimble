@@ -25,3 +25,6 @@ Thumbs.db
 # Test artifacts
 e2e/test-results/
 e2e/playwright-report/
+
+# owner review sheets (kept out of the public repo)
+NIMBle_uwagi_*.xlsx
