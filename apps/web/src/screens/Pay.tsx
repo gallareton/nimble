@@ -6,7 +6,7 @@ import { Spinner } from '../components/Spinner'
 import { Countdown } from '../components/Countdown'
 import type { Api } from '../api/client'
 import { copyText } from '../lib/copy'
-import { APP_URL } from '../lib/host'
+import { shareApp } from '../lib/share'
 import { t } from '../i18n'
 import { describeError } from '../lib/errors'
 
@@ -36,6 +36,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [invited, setInvited] = useState(false)
+  const [secsLeft, setSecsLeft] = useState<number | null>(null)
   const closeRef = useRef<(() => void) | null>(null)
   const ringRef = useRef<HTMLDivElement>(null)
 
@@ -75,13 +76,7 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
   // A code is useless alone: data shows solo visitors generate one and
   // leave. Hand them a way to pull in the other person.
   const invite = async () => {
-    const text = t('Pay or get paid with a 6-digit code in Nimiq Pay.')
-    if (navigator.share) {
-      // cancelling the sheet is not a failure — never fall through to copy
-      await navigator.share({ title: 'NIMble', text, url: APP_URL }).catch(() => {})
-      return
-    }
-    if (await copyText(`${text} ${APP_URL}`)) {
+    if (await shareApp() === 'copied') {
       setInvited(true)
       setTimeout(() => setInvited(false), 2000)
     }
@@ -107,7 +102,9 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
   return (
     <main>
       <div
-        className="code-ring"
+        className={'code-ring'
+          + (secsLeft !== null && secsLeft < 10 ? ' code-ring--urgent'
+            : secsLeft !== null && secsLeft < 30 ? ' code-ring--warn' : '')}
         ref={ringRef}
         style={{ ['--frac' as string]: session && !expired
           ? String(Math.max(0, Math.min(1, (new Date(session.expiresAt).getTime() - Date.now()) / 120_000)))
@@ -126,7 +123,10 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
               <Countdown
                 until={session.expiresAt}
                 onExpired={() => { clearStored(); setExpired(true) }}
-                onTick={secs => ringRef.current?.style.setProperty('--frac', String(secs / 120))}
+                onTick={secs => {
+                  ringRef.current?.style.setProperty('--frac', String(secs / 120))
+                  setSecsLeft(secs)
+                }}
               />
             </>
           ) : (
@@ -141,11 +141,11 @@ export function Pay({ api: apiProp }: { api?: Api } = {}) {
               void copyText(session.code).then(ok => { if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) } })
             }}>{copied ? t('Copied') : t('Copy code')}</button>
           </p>
-          <p className="center quiet">{t('Tell this code to the receiver. Waiting for them to claim…')}</p>
-          <p className="center quiet">{t('Nobody to pay yet? NIMble takes two — the other person enters your code.')}</p>
+          <p className="center">{t('Tell this code to the receiver. Waiting for them to claim…')}</p>
+          <p className="center help-secondary">{t('Nobody to pay yet? NIMble takes two — the other person enters your code.')}</p>
           <p className="center">
-            <button className="chip" onClick={invite}>
-              {invited ? t('Link copied') : t('Invite someone')}
+            <button className="link-btn" onClick={invite}>
+              {invited ? t('Link copied') : t("Receiver doesn't have NIMble yet? Send them a link")}
             </button>
           </p>
         </>

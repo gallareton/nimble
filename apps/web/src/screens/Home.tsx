@@ -82,45 +82,44 @@ export function Home() {
       <nav className="home-actions" aria-disabled={wrongNetwork !== null}>
         <Link to="/pay" style={wrongNetwork ? { pointerEvents: 'none' } : undefined}>
           <button className="primary" aria-label="Pay" disabled={wrongNetwork !== null}>
-            {t('Pay')}<span className="sub" aria-hidden>{t('show your code')}</span></button></Link>
+            {t('Pay')}<span className="sub" aria-hidden>{t('Pay someone')}</span></button></Link>
         <Link to="/charge" style={wrongNetwork ? { pointerEvents: 'none' } : undefined}>
-          <button aria-label="Charge" disabled={wrongNetwork !== null}>
-          {t('Charge')}<span className="sub" aria-hidden>{t('type their code')}</span></button></Link>
+          <button className="home-actions__charge" aria-label="Charge" disabled={wrongNetwork !== null}>
+          {t('Charge')}<span className="sub" aria-hidden>{t('Take a payment')}</span></button></Link>
       </nav>
-      <p><Link to="/dashboard">{t("Today's numbers")}</Link></p>
-      {recent.length === 0 && !intro && (
-        <section className="empty-recent">
-          <h2>{t('Recent')}</h2>
-          <p className="quiet">{t('Nothing yet — your last payments will appear here.')}</p>
-        </section>
-      )}
-      {recent.length > 0 && (
-        <section>
-          <h2>{t('Recent')}</h2>
-          <ul className="list">
-            {recent.map(r => (
-              <li key={r.receiptId ?? r.sessionId} className={r.pending ? 'pending' : undefined}>
-                <Link to={r.pending ? `/session/${r.sessionId}` : `/receipt/${r.receiptId}`}>
-                  <span className="dir">{r.role === 'payer' ? t('Sent') : t('Received')}
-                    {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}
-                    {r.pending ? <><br />{t('Paid — finalizing…')}</> : null}</span>
-                  <span className="amt">{String(r.snapshot.amountNim)} NIM
-                    <FiatBadge snapshot={r.snapshot} /></span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+      {(recent.length > 0 || !intro) && (
+        <section className={recent.length === 0 ? 'empty-recent' : undefined}>
+          <div className="section-head">
+            <h2>{t('Recent')}</h2>
+            <Link to="/dashboard">{t("Today's numbers")} ›</Link>
+          </div>
+          {recent.length === 0 ? (
+            <p className="quiet">{t('Nothing yet — your last payments will appear here.')}</p>
+          ) : (
+            <ul className="list">
+              {recent.map(r => (
+                <li key={r.receiptId ?? r.sessionId} className={r.pending ? 'pending' : undefined}>
+                  <Link to={r.pending ? `/session/${r.sessionId}` : `/receipt/${r.receiptId}`}>
+                    <span className="dir">{r.role === 'payer' ? t('Sent') : t('Received')}
+                      {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}
+                      {r.pending ? <><br />{t('Paid — finalizing…')}</> : null}</span>
+                    <span className="amt">{String(r.snapshot.amountNim)} NIM
+                      <FiatBadge snapshot={r.snapshot} /></span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
       {!intro && (
-        <section className="howto" aria-label={t('How it works')}>
-          <h2>{t('How it works')}</h2>
-          <ol>
-            <li>{t('Paying? Tap Pay and tell the receiver your 6-digit code.')}</li>
-            <li>{t('Charging? Tap Charge, enter the amount and their code.')}</li>
-            <li>{t('The payer approves in the wallet — both screens turn green in seconds.')}</li>
-          </ol>
-        </section>
+        <ul className="rows">
+          <li>
+            <Link to="/guide" className="row row--link">
+              <span className="row__title">{t('How does NIMble work?')}</span>
+            </Link>
+          </li>
+        </ul>
       )}
     </main>
   )

@@ -19,7 +19,7 @@ export function resetIntro() {
  * a code the seller shows — the opposite of how this works — so the guide
  * leads with who does what, and says why the direction is that way round.
  */
-export function Intro({ onDismiss }: { onDismiss: () => void }) {
+export function Intro({ onDismiss }: { onDismiss?: () => void } = {}) {
   return (
     <section className="intro" aria-label={t('How it works')}>
       <h2>{t('Two people, one code')}</h2>
@@ -43,7 +43,7 @@ export function Intro({ onDismiss }: { onDismiss: () => void }) {
         {t('Why this way round? The one paying only shows a code and taps approve — no amount to type, nothing to scan. The one charging already knows the price, so they do the typing.')}
       </p>
 
-      <button className="primary" onClick={onDismiss}>{t('Got it')}</button>
+      {onDismiss && <button className="primary" onClick={onDismiss}>{t('Got it')}</button>}
     </section>
   )
 }

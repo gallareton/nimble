@@ -103,13 +103,13 @@ it('History reads filters from the URL and swaps a finalized row on poll', async
   vi.useRealTimers()
 })
 
-it('Pay offers an invite once a code is on screen, without touching existing controls', async () => {
+it('Pay offers a send-a-link line once a code is on screen, without touching existing controls', async () => {
   const api = {
     createSession: vi.fn(async () => ({ sessionId: 's5', code: '777888', expiresAt: future() })),
     openEvents: vi.fn(async () => () => {}),
   }
   const { container } = render(<MemoryRouter><Pay api={api as never} /></MemoryRouter>)
   await waitFor(() => expect(within(container).getByText('777 888')).toBeTruthy())
-  expect(within(container).getByRole('button', { name: /invite someone/i })).toBeTruthy()
+  expect(within(container).getByRole('button', { name: /send them a link/i })).toBeTruthy()
   expect(within(container).getByRole('button', { name: /copy code/i })).toBeTruthy()
 })

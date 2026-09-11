@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell'
 import { Approval } from './screens/Approval'
 import { Charge } from './screens/Charge'
 import { Dashboard } from './screens/Dashboard'
+import { Guide } from './screens/Guide'
 import { History } from './screens/History'
 import { Home } from './screens/Home'
 import { NewRemoteCharge } from './screens/NewRemoteCharge'
@@ -33,6 +34,9 @@ export function App() {
           <Route path="/charge/remote" element={<RequireAuth><NewRemoteCharge /></RequireAuth>} />
           <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
           <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+          {/* The guide explains what the app is — gating it behind a wallet
+              would hide it from exactly the person who needs it. */}
+          <Route path="/guide" element={<Guide />} />
           {/* Unauthenticated: the payer following a shared link may have no
               account yet — same reasoning as the API route it calls. Login
               happens inline, on accept, not as a route gate. */}
