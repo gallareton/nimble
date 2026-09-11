@@ -1,10 +1,11 @@
-import { CreateSaleRequest } from '@nimble/shared'
+import { CreateSaleRequest, lunaToNim } from '@nimble/shared'
 import type { SaleView } from '@nimble/shared'
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { chainTransaction, charge, paymentSession, product, sale, saleItem } from '../db/schema'
 import type { Db } from '../db/client'
 import { withIdempotency } from '../plugins/idempotency'
+import { priceInLuna } from '../services/pricing'
 import { requireIdemKey } from './sessions'
 import { openShiftFor } from './shifts'
 
@@ -63,6 +64,25 @@ export async function saleState(db: Db, row: SaleRow) {
   return resolveSaleState(row, s, confirmedAt)
 }
 
+/**
+ * What a sale was worth in NIM at the moment it happened, as a NIM string —
+ * never from today's rate (ruling P5). Null when the sale carries no frozen
+ * quote: either the rate provider was unreachable when it was rung up, or the
+ * row predates the fx columns. Presentation only; the money itself stays in
+ * integer minor units.
+ */
+export function saleAmountNim(row: Pick<SaleRow, 'totalMinor' | 'fxRate' | 'fxRateAt' | 'fxSource'>): string | null {
+  if (!row.fxRate) return null
+  const value = Number(row.fxRate)
+  if (!Number.isFinite(value) || value <= 0) return null
+  if (!Number.isInteger(row.totalMinor) || row.totalMinor <= 0) return null
+  return lunaToNim(priceInLuna(row.totalMinor, {
+    value,
+    at: row.fxRateAt?.toISOString() ?? '',
+    source: row.fxSource ?? '',
+  }))
+}
+
 export async function saleItemsFor(db: Db, saleId: string): Promise<SaleItemRow[]> {
   return db.select().from(saleItem).where(eq(saleItem.saleId, saleId)).orderBy(asc(saleItem.sortOrder))
 }
@@ -104,6 +124,12 @@ export async function saleRoutes(app: FastifyInstance) {
       db, `sales:${req.user.userId}`, key, JSON.stringify(body), async () => {
         let outcome: { code: number; body: ResponseBody } | null = null
 
+        // Freeze the rate onto the sale, the same idiom the claim path uses
+        // for a charge (routes/sessions.ts). Unlike a claim this never fails
+        // the request: a cash sale is real money already in the till, so a
+        // missing quote costs it its "≈ NIM" line and nothing more.
+        const quote = (await app.deps.rates?.quoteUsdPerNim?.().catch(() => null)) ?? null
+
         const created = await db.transaction(async tx => {
           const resolved: { productId: string | null; nameSnapshot: string
             unitPriceMinor: number; quantity: number; lineTotalMinor: number }[] = []
@@ -140,6 +166,9 @@ export async function saleRoutes(app: FastifyInstance) {
             status: body.paymentMethod === 'cash' ? 'paid' : 'awaiting',
             paymentMethod: body.paymentMethod,
             totalMinor,
+            fxRate: quote ? String(quote.value) : null,
+            fxRateAt: quote ? new Date(quote.at) : null,
+            fxSource: quote?.source ?? null,
             paidAt: body.paymentMethod === 'cash' ? now : null,
           }).returning()
           await tx.insert(saleItem).values(resolved.map((it, i) => ({

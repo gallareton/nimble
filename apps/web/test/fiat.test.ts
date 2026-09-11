@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { formatNimApprox, formatUsd, formatUsdValue, receiptFiat } from '../src/lib/fiat'
+import { formatNimApprox, formatNimLine, formatUsd, formatUsdValue, receiptFiat } from '../src/lib/fiat'
 
 it('formats cents with 2 decimals and dust with 2 significant digits', () => {
   expect(formatUsdValue(12.345)).toBe('≈ $12.35')
@@ -61,4 +61,16 @@ it('formatNimApprox returns null without a usable rate', () => {
   expect(formatNimApprox(250, 0)).toBeNull()
   expect(formatNimApprox(250, -1)).toBeNull()
   expect(formatNimApprox(NaN, 0.005)).toBeNull()
+})
+
+// --- formatNimLine: an already-frozen NIM amount, never a live rate (P5) ---
+
+it('formatNimLine formats a known NIM amount the same way, and nothing without one', () => {
+  expect(formatNimLine('375.5')).toBe('≈ 375.50 NIM')
+  expect(formatNimLine('5300')!.replace(/\D/g, '')).toBe('5300')
+  expect(formatNimLine(null)).toBeNull()
+  expect(formatNimLine(undefined)).toBeNull()
+  expect(formatNimLine('')).toBeNull()
+  expect(formatNimLine('not a number')).toBeNull()
+  expect(formatNimLine('0')).toBeNull()
 })

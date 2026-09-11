@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { lunaToNim } from '@nimble/shared'
 import { chainTransaction, charge, paymentSession, receipt, sale, saleItem } from '../db/schema'
+import { saleAmountNim } from './sales'
 
 const PAGE_LIMIT = 20
 
@@ -77,7 +78,12 @@ export async function historyRoutes(app: FastifyInstance) {
           item: {
             kind: 'cash' as const, saleId: s.id, role: 'receiver',
             snapshot: { amountFiatMinor: s.totalMinor, fiatCurrency: s.fiatCurrency,
-              reference, paymentMethod: 'cash' },
+              reference, paymentMethod: 'cash',
+              // The NIM value of a cash sale comes from the rate frozen onto
+              // the sale when it happened, never from today's (ruling P5) —
+              // null for a sale rung up with no rate available.
+              fxRate: s.fxRate, fxRateAt: s.fxRateAt?.toISOString() ?? null,
+              amountNim: saleAmountNim(s) },
             createdAt: s.createdAt.toISOString(),
           },
         }

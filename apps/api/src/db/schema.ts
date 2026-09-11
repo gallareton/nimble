@@ -249,6 +249,13 @@ export const sale = pgTable('sale', {
   totalMinor: integer('total_minor').notNull(),
   fiatCurrency: text('fiat_currency').notNull().default('USD'),
   chargeId: uuid('charge_id').references(() => charge.id),
+  // The rate at the moment of the sale, frozen exactly like charge.fx_* —
+  // a cash sale settles nothing on chain, so without this its "≈ NIM" could
+  // only ever come from today's rate, which is not what was transacted
+  // (ruling P5). Nullable: a cash sale must never fail for lack of a rate.
+  fxRate: text('fx_rate'),
+  fxRateAt: timestamp('fx_rate_at', { withTimezone: true }),
+  fxSource: text('fx_source'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   paidAt: timestamp('paid_at', { withTimezone: true }),
 }, t => [index('sale_seller_created_idx').on(t.sellerUserId, t.createdAt)])

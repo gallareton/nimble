@@ -6,7 +6,7 @@ import type { FastifyInstance } from 'fastify'
 import { chainTransaction, charge, paymentSession, receipt, refund, sale, saleItem, shift } from '../db/schema'
 import type { Db } from '../db/client'
 import { rejectIfCashierLocked } from '../services/cashierLock'
-import { composeSaleReference } from './sales'
+import { composeSaleReference, saleAmountNim } from './sales'
 
 /** lunaToNim() rejects negatives (it never has to format one on the sale path); refunds and a shift that refunds more than it sold both need a signed rendering. */
 function signedLunaToNim(v: bigint): string {
@@ -255,6 +255,8 @@ export async function buildReport(db: Db, row: typeof shift.$inferSelect): Promi
     saleId: s.id,
     occurredAt: (s.paidAt ?? s.createdAt).toISOString(),
     amountFiatMinor: s.totalMinor,
+    // From the rate frozen onto the sale, not today's (ruling P5).
+    amountNim: saleAmountNim(s),
     reference: composeSaleReference((itemsBySaleId.get(s.id) ?? []).slice()
       .sort((a, b) => a.sortOrder - b.sortOrder)),
   }))

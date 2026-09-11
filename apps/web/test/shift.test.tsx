@@ -482,7 +482,7 @@ it('shows the sold-by-product and NIM/cash split sections when the report carrie
       fiatCurrency: 'USD', averageTicketNim: '10', cashSales: 1,
       byPaymentMethod: { nim: { count: 1, fiatMinor: 250 }, cash: { count: 1, fiatMinor: 250 } } },
     entries: [],
-    cashEntries: [{ saleId: 'c1', occurredAt: '2026-09-08T09:00:00.000Z', amountFiatMinor: 250, reference: 'Soda' }],
+    cashEntries: [{ saleId: 'c1', occurredAt: '2026-09-08T09:00:00.000Z', amountFiatMinor: 250, reference: 'Soda', amountNim: '62.5' }],
     byProduct: [{ name: 'Coffee', quantity: 2, totalMinor: 500 }],
     fiatIncomplete: false,
   }
@@ -500,6 +500,9 @@ it('shows the sold-by-product and NIM/cash split sections when the report carrie
   expect(product.closest('.row')!.querySelector('.row__amt')!.textContent).toBe('5.00')
   expect(screen.getByText('By payment method')).toBeTruthy()
   expect(screen.getByText('Soda').className).toBe('row__title')
+  // P5: the cash entry's NIM line comes from the rate frozen at the sale.
+  expect(screen.getByText('Soda').closest('.row')!.querySelector('.price-nim')!.textContent)
+    .toBe('≈ 62.50 NIM')
   // No emoji stands in for a payment method.
   expect(screen.queryByText(/🪙/)).toBeNull()
 })

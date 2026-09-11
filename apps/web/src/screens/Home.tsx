@@ -8,7 +8,7 @@ import { inNimiqPay } from '../lib/host'
 import { t } from '../i18n'
 import { usePoll } from '../lib/usePoll'
 import { describeError } from '../lib/errors'
-import { FiatBadge, fiatAmount } from '../lib/fiat'
+import { FiatBadge, NimLine, fiatAmount } from '../lib/fiat'
 
 const RECENT_POLL_MS = 5000
 
@@ -103,7 +103,8 @@ export function Home() {
                     <span className="list__static">
                       <span className="dir">{t('Cash')}
                         {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}</span>
-                      <span className="amt">{fiatAmount(r)}</span>
+                      <span className="amt amt-stack">{fiatAmount(r)}
+                        <NimLine amountNim={r.snapshot.amountNim} /></span>
                     </span>
                   ) : (
                   <Link to={r.pending ? `/session/${r.sessionId}` : `/receipt/${r.receiptId}`}>

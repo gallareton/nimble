@@ -85,7 +85,7 @@ async function cashSale(sellerId: string, at: Date, lines: [string, number, numb
 
 type Item = { kind?: string; saleId?: string; receiptId?: string; role: string
   snapshot: { reference?: string; amountFiatMinor?: number; fiatCurrency?: string
-    paymentMethod?: string } }
+    paymentMethod?: string; amountNim?: string | null; fxRate?: string | null } }
 
 it('merges paid cash sales into history: owner only, receiver role, q by item name', async () => {
   const owner = await makeUser(db, `NQ62 ${crypto.randomUUID().slice(0, 8)}`)
@@ -105,6 +105,10 @@ it('merges paid cash sales into history: owner only, receiver role, q by item na
     reference: 'Soda × 2, Sandwich', amountFiatMinor: 1500,
     fiatCurrency: 'USD', paymentMethod: 'cash',
   })
+  // Seeded without fx columns, like every sale row that predates them: the
+  // NIM value is absent rather than re-derived from today's rate (ruling P5).
+  expect(cash[0].snapshot.amountNim).toBeNull()
+  expect(cash[0].snapshot.fxRate).toBeNull()
 
   // 'awaiting' and 'cancelled' cash sales are not takings.
   expect(all.some(i => i.snapshot.reference === 'Beer')).toBe(false)

@@ -5,6 +5,7 @@ import type { ShiftEntry, ShiftReport as ShiftReportView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { StatusBadge } from '../components/StatusBadge'
+import { NimLine } from '../lib/fiat'
 import { t } from '../i18n'
 
 // Every section of a shift report lives here, so the running shift, the
@@ -139,7 +140,8 @@ export function PaymentSplit({ report }: { report: ShiftReportView }) {
                 <span className="row__sub">{t('Cash')} · {new Date(e.occurredAt).toLocaleTimeString()}</span>
                 <span className="row__title">{e.reference ?? t('Cash sale')}</span>
               </span>
-              <span className="row__amt">{(e.amountFiatMinor / 100).toFixed(2)}</span>
+              <span className="row__amt amt-stack">{(e.amountFiatMinor / 100).toFixed(2)}
+                <NimLine amountNim={e.amountNim} /></span>
             </li>
           ))}
         </ul>

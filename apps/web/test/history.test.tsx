@@ -187,4 +187,28 @@ it('shows a paid cash sale as a static row — no receipt to open', async () => 
   const row = label.closest('li')!
   expect(within(row).getByText('15.00 USD')).toBeTruthy()
   expect(row.querySelector('.list__static')).toBeTruthy()
+  // No frozen rate on this sale, so no NIM line at all — never today's rate.
+  expect(row.querySelector('.price-nim')).toBeNull()
+})
+
+it('shows the NIM value of a cash sale from the rate frozen at the sale (P5)', async () => {
+  const api = {
+    history: vi.fn(async () => ({
+      items: [{ kind: 'cash', saleId: 'sale-2', role: 'receiver',
+        snapshot: { amountFiatMinor: 1500, fiatCurrency: 'USD', reference: 'Soda',
+          paymentMethod: 'cash', fxRate: '0.004', fxRateAt: '2026-09-10T10:00:00.000Z',
+          amountNim: '375.5' },
+        createdAt: '2026-09-10T10:00:00.000Z' }],
+      nextCursor: null,
+    })),
+    getShifts: vi.fn(async () => []),
+    getRate: vi.fn(async () => ({ usdPerNim: 0.5 })),
+  }
+  renderHistory(api)
+
+  const row = (await screen.findByText(/Cash · Soda/)).closest('li')!
+  expect(within(row).getByText('15.00 USD')).toBeTruthy()
+  expect(row.querySelector('.price-nim')!.textContent).toBe('≈ 375.50 NIM')
+  // The live rate is never consulted for an already-transacted row.
+  expect(api.getRate).not.toHaveBeenCalled()
 })

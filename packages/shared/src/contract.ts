@@ -214,6 +214,9 @@ export interface ShiftProductTotal { name: string; quantity: number; totalMinor:
  *  charges. Kept as its own shape rather than padding ShiftEntry with nulls. */
 export interface ShiftCashEntry {
   saleId: string; occurredAt: string; amountFiatMinor: number; reference: string | null
+  /** The sale's value in NIM at the rate frozen when it was rung up — never
+   *  today's rate. Null when the sale carries no frozen rate. */
+  amountNim?: string | null
 }
 
 export interface ShiftReport {

@@ -5,6 +5,7 @@ import { monitorTick } from '../src/services/monitor'
 import { SessionEvents } from '../src/services/events'
 import { freshDb } from './helpers/db'
 import { authedApp, makeUser } from './helpers/actors'
+import { nullRates } from '../src/services/rates'
 
 const { db, close } = await freshDb()
 const { app, tokenFor } = authedApp(db)
@@ -201,4 +202,52 @@ it('a vendor cannot read or cancel another vendor\'s sale', async () => {
   const s = (await createSale(a, { items: [{ name: 'Tea', unitPriceMinor: 400, quantity: 1 }], paymentMethod: 'cash' })).json()
   expect((await getSale(b, s.id)).statusCode).toBe(404)
   expect((await cancelSale(b, s.id)).statusCode).toBe(404)
+})
+
+// ── ruling P5: the NIM value of a sale comes from the rate at its moment ──
+
+it('freezes the rate onto a cash sale and carries amountNim into history', async () => {
+  const { t } = await vendor()
+  const created = (await createSale(t, {
+    items: [{ name: 'Soda', unitPriceMinor: 700, quantity: 1 }], paymentMethod: 'cash' })).json()
+
+  const [row] = await db.select().from(sale).where(eq(sale.id, created.id))
+  expect(row.fxRate).toBe('0.004')
+  expect(row.fxSource).toBe('test-fixture')
+  expect(row.fxRateAt).toBeInstanceOf(Date)
+
+  // 7.00 USD at 0.004 USD/NIM = 1750 NIM, from the frozen rate, not a live one.
+  const items = (await app.inject({ url: '/v1/history', headers: auth(t) })).json().items
+  const cash = items.find((i: { saleId?: string }) => i.saleId === created.id)
+  expect(cash.snapshot).toMatchObject({ amountFiatMinor: 700, amountNim: '1750', fxRate: '0.004' })
+  expect(typeof cash.snapshot.fxRateAt).toBe('string')
+})
+
+it('a nim-priced sale freezes the rate too', async () => {
+  const { t } = await vendor()
+  const created = (await createSale(t, {
+    items: [{ name: 'Tea', unitPriceMinor: 400, quantity: 1 }], paymentMethod: 'nim' })).json()
+  const [row] = await db.select().from(sale).where(eq(sale.id, created.id))
+  expect(row.fxRate).toBe('0.004')
+})
+
+it('still creates a cash sale when no quote is available, with amountNim null', async () => {
+  const noRate = authedApp(db, `NQ91 ${crypto.randomUUID().slice(0, 8)}`, { rates: nullRates })
+  const u = await makeUser(db, `NQ92 ${crypto.randomUUID().slice(0, 8)}`)
+  const tok = await noRate.tokenFor(u)
+  const res = await noRate.app.inject({ method: 'POST', url: '/v1/sales',
+    payload: { items: [{ name: 'Soda', unitPriceMinor: 700, quantity: 1 }], paymentMethod: 'cash' },
+    headers: { authorization: `Bearer ${tok}`, 'idempotency-key': crypto.randomUUID() } })
+  expect(res.statusCode).toBe(201)
+
+  const [row] = await db.select().from(sale).where(eq(sale.id, res.json().id))
+  expect(row.fxRate).toBeNull()
+  expect(row.fxRateAt).toBeNull()
+  expect(row.fxSource).toBeNull()
+
+  const items = (await noRate.app.inject({ url: '/v1/history',
+    headers: { authorization: `Bearer ${tok}` } })).json().items
+  const cash = items.find((i: { saleId?: string }) => i.saleId === row.id)
+  expect(cash.snapshot.amountNim).toBeNull()
+  expect(cash.snapshot.fxRate).toBeNull()
 })

@@ -74,6 +74,24 @@ export function formatNimApprox(usdMinor: number, usdPerNim: number | null): str
   return `≈ ${text} NIM`
 }
 
+/**
+ * The same NIM line as `formatNimApprox`, but for an amount the server has
+ * already converted at the rate frozen when the transaction happened (ruling
+ * P5). Anything already transacted must never be re-derived from today's
+ * rate, so this takes the NIM string and only formats it.
+ *
+ * Null for a missing or unparseable amount, so the row falls back to bare fiat.
+ */
+export function formatNimLine(amountNim: string | null | undefined): string | null {
+  if (amountNim === null || amountNim === undefined) return null
+  const nim = Number(amountNim)
+  if (!Number.isFinite(nim) || nim <= 0) return null
+  const text = nim >= 1000
+    ? nim.toLocaleString(undefined, { maximumFractionDigits: 0 })
+    : nim.toFixed(2)
+  return `≈ ${text} NIM`
+}
+
 let cache: { v: number | null; at: number } | null = null
 
 export function useUsdRate(api: Api): number | null {
@@ -100,6 +118,13 @@ export function FiatBadge({ snapshot }: { snapshot: FiatSnapshot & { paymentMeth
   if (snapshot.paymentMethod === 'cash') return null
   const fiat = receiptFiat(snapshot)
   return fiat ? <small className="fiat">{fiat.price}</small> : null
+}
+
+/** The NIM line under a cash sale's amount, from the rate frozen at the
+ *  moment of the sale — nothing at all when the sale carries no rate. */
+export function NimLine({ amountNim }: { amountNim: unknown }) {
+  const text = formatNimLine(typeof amountNim === 'string' ? amountNim : null)
+  return text === null ? null : <span className="price-nim">{text}</span>
 }
 
 /** The amount of a cash sale: minor units of the sale's own currency, printed

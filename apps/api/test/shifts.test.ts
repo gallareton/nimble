@@ -491,6 +491,9 @@ it('byProduct sums quantities across two sales of the same product; cash joins g
   expect(report.totals.byPaymentMethod.nim).toEqual({ count: 0, fiatMinor: 0 })
   expect(report.cashEntries.length).toBe(2)
   expect(report.cashEntries[0].amountFiatMinor).toBe(700)
+  // From the rate frozen onto the sale (0.004 USD/NIM): 7.00 USD = 1750 NIM.
+  expect(report.cashEntries[0].amountNim).toBe('1750')
+  expect(report.cashEntries[1].amountNim).toBe('875')
 })
 
 it('the CSV export carries payment_method and sale_id as the last two columns, cash rows after nim rows', async () => {
