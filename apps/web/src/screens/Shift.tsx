@@ -161,24 +161,31 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
       {exportPanelSection}
       <p className="quiet">{t('NIMble tracks one station. Takings from another phone are not in this report.')}</p>
       {/* Shift close is gated too (spec §5, POST .../close → 423). */}
+      {/* A bottom sheet, not an inline panel: the "Close the shift" button is
+          sticky and can be tapped from anywhere on the page, so the question
+          it opens has to appear where the finger is — an inline panel above
+          the button rendered off-screen and looked like a dead tap. */}
       {shift && !locked && confirmClose && (
-        <section className="form-card confirm-panel" role="dialog" aria-label={t('Close the shift')}>
-          <p>{t("Closing {name}'s shift").replace('{name}', who)}</p>
-          <p className="amt">
-            <span>{report?.totals.grossNim ?? '0'} NIM</span>
-            <span className="quiet"> · {report?.totals.confirmed ?? 0} {t('sales')}</span>
-          </p>
-          {confirmClose.unpaid > 0 && (
-            <p role="alert" className="quiet">
-              {t('{n} bills are still unpaid. Anything paid after you close lands outside this report.')
-                .replace('{n}', String(confirmClose.unpaid))}
+        <div className="app-sheet-backdrop" onClick={() => setConfirmClose(null)}>
+          <section className="app-sheet confirm-sheet" role="dialog" aria-label={t('Close the shift')}
+            onClick={e => e.stopPropagation()}>
+            <p>{t("Closing {name}'s shift").replace('{name}', who)}</p>
+            <p className="amt">
+              <span>{report?.totals.grossNim ?? '0'} NIM</span>
+              <span className="quiet"> · {report?.totals.confirmed ?? 0} {t('sales')}</span>
             </p>
-          )}
-          <div className="actions">
-            <button className="primary" disabled={busy} onClick={() => void confirmCloseNow()}>{t('Close the shift')}</button>
-            <button onClick={() => setConfirmClose(null)}>{t('Keep it open')}</button>
-          </div>
-        </section>
+            {confirmClose.unpaid > 0 && (
+              <p role="alert" className="quiet">
+                {t('{n} bills are still unpaid. Anything paid after you close lands outside this report.')
+                  .replace('{n}', String(confirmClose.unpaid))}
+              </p>
+            )}
+            <div className="actions">
+              <button className="primary" disabled={busy} onClick={() => void confirmCloseNow()}>{t('Close the shift')}</button>
+              <button onClick={() => setConfirmClose(null)}>{t('Keep it open')}</button>
+            </div>
+          </section>
+        </div>
       )}
       {shift && !locked && (
         <div className="cta-bar">

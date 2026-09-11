@@ -891,3 +891,7 @@ a.row--link:hover, button.row--link:hover:not(:disabled) { box-shadow: var(--sha
 
 /* secondary help text, under a primary explanation (R5) */
 .help-secondary { font-size: 13px; color: var(--muted); }
+
+/* close-shift confirmation as a bottom sheet (reuses .app-sheet) */
+.confirm-sheet { display: flex; flex-direction: column; gap: 12px; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); }
+.confirm-sheet .amt { font-size: 22px; }
