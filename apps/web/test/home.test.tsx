@@ -111,13 +111,14 @@ describe('Home RECENT cash rows', () => {
       nextCursor: null,
     } as never)
     await renderHome()
-    const label = await screen.findByText(/Cash · Soda × 2/)
+    const label = await screen.findByText(/· Soda × 2/)
+    expect(label.querySelector('.cash-tag')!.textContent).toBe('Cash')
     expect(label.closest('a')).toBeNull()
     expect(within(label.closest('li')!).getByText('15.00 USD')).toBeTruthy()
     expect(label.closest('li')!.querySelector('.price-nim')).toBeNull()
   })
 
-  it('shows the NIM value frozen at the sale under the fiat amount (P5)', async () => {
+  it('marks a cash sale with a Cash tag and no NIM value', async () => {
     stub.api.history.mockResolvedValueOnce({
       items: [{ kind: 'cash', saleId: 'sale-10', role: 'receiver',
         snapshot: { amountFiatMinor: 1500, fiatCurrency: 'USD', reference: 'Tea',
@@ -126,8 +127,9 @@ describe('Home RECENT cash rows', () => {
       nextCursor: null,
     } as never)
     await renderHome()
-    const row = (await screen.findByText(/Cash · Tea/)).closest('li')!
+    const row = (await screen.findByText(/Tea/)).closest('li')!
     expect(within(row).getByText('15.00 USD')).toBeTruthy()
-    expect(row.querySelector('.price-nim')!.textContent).toBe('≈ 375.50 NIM')
+    expect(row.querySelector('.cash-tag')!.textContent).toBe('Cash')
+    expect(row.querySelector('.price-nim')).toBeNull()
   })
 })

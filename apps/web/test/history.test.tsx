@@ -182,7 +182,8 @@ it('shows a paid cash sale as a static row — no receipt to open', async () => 
   }
   renderHistory(api)
 
-  const label = await screen.findByText(/Cash · Soda × 2, Sandwich/)
+  const label = await screen.findByText(/· Soda × 2, Sandwich/)
+  expect(label.querySelector('.cash-tag')!.textContent).toBe('Cash')
   expect(label.closest('a')).toBeNull() // a cash sale has no receipt
   const row = label.closest('li')!
   expect(within(row).getByText('15.00 USD')).toBeTruthy()
@@ -191,7 +192,7 @@ it('shows a paid cash sale as a static row — no receipt to open', async () => 
   expect(row.querySelector('.price-nim')).toBeNull()
 })
 
-it('shows the NIM value of a cash sale from the rate frozen at the sale (P5)', async () => {
+it('marks a cash sale with a Cash tag and never shows a NIM value for it', async () => {
   const api = {
     history: vi.fn(async () => ({
       items: [{ kind: 'cash', saleId: 'sale-2', role: 'receiver',
@@ -206,9 +207,12 @@ it('shows the NIM value of a cash sale from the rate frozen at the sale (P5)', a
   }
   renderHistory(api)
 
-  const row = (await screen.findByText(/Cash · Soda/)).closest('li')!
+  const row = (await screen.findByText(/Soda/)).closest('li')!
   expect(within(row).getByText('15.00 USD')).toBeTruthy()
-  expect(row.querySelector('.price-nim')!.textContent).toBe('≈ 375.50 NIM')
+  expect(row.querySelector('.cash-tag')!.textContent).toBe('Cash')
+  // Cash corresponds to no NIM sent, so no NIM line even with a frozen rate.
+  expect(row.querySelector('.price-nim')).toBeNull()
+  expect(within(row).queryByText(/NIM/)).toBeNull()
   // The live rate is never consulted for an already-transacted row.
   expect(api.getRate).not.toHaveBeenCalled()
 })

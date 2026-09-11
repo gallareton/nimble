@@ -5,7 +5,7 @@ import type { ShiftListItem } from '@nimble/shared'
 import type { Api, HistoryItem } from '../api/client'
 import { t } from '../i18n'
 import { usePoll } from '../lib/usePoll'
-import { FiatBadge, NimLine, fiatAmount } from '../lib/fiat'
+import { FiatBadge, fiatAmount } from '../lib/fiat'
 
 const FILTERS_KEY = 'nimble:historyFilters'
 const POLL_MS = 5000
@@ -192,11 +192,10 @@ export function History({ api: apiProp }: { api?: Api } = {}) {
             <li key={key(r)} className={r.pending ? 'pending' : undefined}>
               {r.kind === 'cash' ? (
                 <span className="list__static">
-                  <span className="dir">{t('Cash')}
+                  <span className="dir"><span className="cash-tag">{t('Cash')}</span>
                     {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}<br />
                     {new Date(r.createdAt).toLocaleString()}</span>
-                  <span className="amt amt-stack">{fiatAmount(r)}
-                    <NimLine amountNim={r.snapshot.amountNim} /></span>
+                  <span className="amt">{fiatAmount(r)}</span>
                 </span>
               ) : (
               <Link to={r.pending ? `/session/${r.sessionId}` : `/receipt/${r.receiptId}`}>

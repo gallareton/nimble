@@ -919,3 +919,18 @@ a.row--link:hover, button.row--link:hover:not(:disabled) { box-shadow: var(--sha
 /* close-shift confirmation as a bottom sheet (reuses .app-sheet) */
 .confirm-sheet { display: flex; flex-direction: column; gap: 12px; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); }
 .confirm-sheet .amt { font-size: 22px; }
+
+/* A cash sale is set apart by a tag, not by a NIM value it never had
+   (owner, 2026-09-11: cash "does not correspond to any NIM sent"). */
+.cash-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgba(233, 178, 19, 0.25);
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-right: 2px;
+}

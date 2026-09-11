@@ -500,9 +500,8 @@ it('shows the sold-by-product and NIM/cash split sections when the report carrie
   expect(product.closest('.row')!.querySelector('.row__amt')!.textContent).toBe('5.00')
   expect(screen.getByText('By payment method')).toBeTruthy()
   expect(screen.getByText('Soda').className).toBe('row__title')
-  // P5: the cash entry's NIM line comes from the rate frozen at the sale.
-  expect(screen.getByText('Soda').closest('.row')!.querySelector('.price-nim')!.textContent)
-    .toBe('≈ 62.50 NIM')
+  // A cash entry shows fiat only — cash corresponds to no NIM sent.
+  expect(screen.getByText('Soda').closest('.row')!.querySelector('.price-nim')).toBeNull()
   // No emoji stands in for a payment method.
   expect(screen.queryByText(/🪙/)).toBeNull()
 })
