@@ -168,3 +168,23 @@ it('opens the filters already expanded, and counts them, when a filter is active
   expect(screen.queryByText(/any date/)).toBeNull()
   expect(screen.getByText(/today/)).toBeTruthy()
 })
+
+it('shows a paid cash sale as a static row — no receipt to open', async () => {
+  const api = {
+    history: vi.fn(async () => ({
+      items: [{ kind: 'cash', saleId: 'sale-1', role: 'receiver',
+        snapshot: { amountFiatMinor: 1500, fiatCurrency: 'USD',
+          reference: 'Soda × 2, Sandwich', paymentMethod: 'cash' },
+        createdAt: '2026-09-10T10:00:00.000Z' }],
+      nextCursor: null,
+    })),
+    getShifts: vi.fn(async () => []),
+  }
+  renderHistory(api)
+
+  const label = await screen.findByText(/Cash · Soda × 2, Sandwich/)
+  expect(label.closest('a')).toBeNull() // a cash sale has no receipt
+  const row = label.closest('li')!
+  expect(within(row).getByText('15.00 USD')).toBeTruthy()
+  expect(row.querySelector('.list__static')).toBeTruthy()
+})

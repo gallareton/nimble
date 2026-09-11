@@ -16,6 +16,9 @@ export interface Me {
 
 export interface HistoryItem {
   receiptId?: string
+  // A cash sale (no receipt, nothing on chain): rendered as a static row.
+  kind?: 'cash'
+  saleId?: string
   pending?: boolean
   sessionId?: string
   status?: string

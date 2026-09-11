@@ -74,8 +74,18 @@ export function useUsdRate(api: Api): number | null {
 }
 
 /** The one-line fiat figure beside an amount in a list. Renders nothing when
- *  the snapshot carries no fiat value at all. */
-export function FiatBadge({ snapshot }: { snapshot: FiatSnapshot }) {
+ *  the snapshot carries no fiat value at all — a cash sale included: its
+ *  amount IS fiat and is printed on its own (see `fiatAmount`). */
+export function FiatBadge({ snapshot }: { snapshot: FiatSnapshot & { paymentMethod?: unknown } }) {
+  if (snapshot.paymentMethod === 'cash') return null
   const fiat = receiptFiat(snapshot)
   return fiat ? <small className="fiat">{fiat.price}</small> : null
+}
+
+/** The amount of a cash sale: minor units of the sale's own currency, printed
+ *  exactly ("15.00 USD") — no rate, nothing approximate about it. */
+export function fiatAmount(item: { snapshot: Record<string, unknown> }): string {
+  const minor = Number(item.snapshot.amountFiatMinor ?? 0)
+  const currency = String(item.snapshot.fiatCurrency ?? 'USD')
+  return `${(Number.isFinite(minor) ? minor / 100 : 0).toFixed(2)} ${currency}`
 }

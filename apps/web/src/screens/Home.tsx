@@ -8,7 +8,7 @@ import { inNimiqPay } from '../lib/host'
 import { t } from '../i18n'
 import { usePoll } from '../lib/usePoll'
 import { describeError } from '../lib/errors'
-import { FiatBadge } from '../lib/fiat'
+import { FiatBadge, fiatAmount } from '../lib/fiat'
 
 const RECENT_POLL_MS = 5000
 
@@ -98,7 +98,14 @@ export function Home() {
           ) : (
             <ul className="list">
               {recent.map(r => (
-                <li key={r.receiptId ?? r.sessionId} className={r.pending ? 'pending' : undefined}>
+                <li key={r.saleId ?? r.receiptId ?? r.sessionId} className={r.pending ? 'pending' : undefined}>
+                  {r.kind === 'cash' ? (
+                    <span className="list__static">
+                      <span className="dir">{t('Cash')}
+                        {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}</span>
+                      <span className="amt">{fiatAmount(r)}</span>
+                    </span>
+                  ) : (
                   <Link to={r.pending ? `/session/${r.sessionId}` : `/receipt/${r.receiptId}`}>
                     <span className="dir">{r.role === 'payer' ? t('Sent') : t('Received')}
                       {r.snapshot.reference ? ` · ${String(r.snapshot.reference)}` : ''}
@@ -106,6 +113,7 @@ export function Home() {
                     <span className="amt">{String(r.snapshot.amountNim)} NIM
                       <FiatBadge snapshot={r.snapshot} /></span>
                   </Link>
+                  )}
                 </li>
               ))}
             </ul>

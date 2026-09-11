@@ -528,6 +528,19 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .list .amt { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
 .list .amt .fiat { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
 .list li.pending a { opacity: 0.55; }
+/* A cash sale has no receipt to open, so its row is a card, not a link. */
+.list__static {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  font-size: 16px;
+  color: var(--ink);
+}
 
 .dash-day-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .dash-day-nav button { background: none; border: none; color: var(--action); font: inherit; padding: 4px 6px; }

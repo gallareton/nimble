@@ -100,3 +100,19 @@ describe('Pay ring', () => {
     expect(className).toContain('code-ring--urgent')
   })
 })
+
+describe('Home RECENT cash rows', () => {
+  it('lists a paid cash sale with its fiat amount and no receipt link', async () => {
+    stub.api.history.mockResolvedValueOnce({
+      items: [{ kind: 'cash', saleId: 'sale-9', role: 'receiver',
+        snapshot: { amountFiatMinor: 1500, fiatCurrency: 'USD',
+          reference: 'Soda × 2', paymentMethod: 'cash' },
+        createdAt: '2026-09-10T10:00:00.000Z' }],
+      nextCursor: null,
+    } as never)
+    await renderHome()
+    const label = await screen.findByText(/Cash · Soda × 2/)
+    expect(label.closest('a')).toBeNull()
+    expect(within(label.closest('li')!).getByText('15.00 USD')).toBeTruthy()
+  })
+})
