@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { formatUsd, formatUsdValue, receiptFiat } from '../src/lib/fiat'
+import { formatNimApprox, formatUsd, formatUsdValue, receiptFiat } from '../src/lib/fiat'
 
 it('formats cents with 2 decimals and dust with 2 significant digits', () => {
   expect(formatUsdValue(12.345)).toBe('≈ $12.35')
@@ -36,4 +36,29 @@ it('a NIM-priced sale has only a settled value, shown as the price', () => {
 it('falls back to the pre-2026-09 float field, and to nothing at all', () => {
   expect(receiptFiat({ amountUsd: 2.5 })?.price).toBe('≈ $2.50')
   expect(receiptFiat({})).toBeNull()
+})
+
+// --- formatNimApprox: the second line beside every fiat price (P1) -------
+
+it('formatNimApprox drops the decimals above 1000 NIM and groups the thousands', () => {
+  // 26.50 USD at 0.005 USD/NIM = 5300 NIM
+  const s = formatNimApprox(2650, 0.005)
+  expect(s).not.toBeNull()
+  expect(s!.startsWith('≈ ')).toBe(true)
+  expect(s!.endsWith(' NIM')).toBe(true)
+  expect(s!.replace(/\D/g, '')).toBe('5300')
+  // 1000 is already "big": the boundary rounds rather than showing decimals
+  expect(formatNimApprox(500, 0.005)!.replace(/\D/g, '')).toBe('1000')
+})
+
+it('formatNimApprox keeps two decimals below 1000 NIM', () => {
+  expect(formatNimApprox(250, 0.005)).toBe('≈ 500.00 NIM')
+  expect(formatNimApprox(1, 0.005)).toBe('≈ 2.00 NIM')
+})
+
+it('formatNimApprox returns null without a usable rate', () => {
+  expect(formatNimApprox(250, null)).toBeNull()
+  expect(formatNimApprox(250, 0)).toBeNull()
+  expect(formatNimApprox(250, -1)).toBeNull()
+  expect(formatNimApprox(NaN, 0.005)).toBeNull()
 })

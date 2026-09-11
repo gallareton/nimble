@@ -3,6 +3,7 @@ import type { ProductView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { t } from '../i18n'
+import { formatNimApprox, useUsdRate } from '../lib/fiat'
 import { toMinorUnits } from './Charge'
 
 /** A vendor's catalog: add, edit, pin, and retire (never delete — a
@@ -24,6 +25,7 @@ export function Products(props: { api?: Api }) {
   const [editName, setEditName] = useState('')
   const [editPrice, setEditPrice] = useState('')
   const [editCategory, setEditCategory] = useState('')
+  const usdRate = useUsdRate(api)
 
   const load = () => {
     setLoadError(false)
@@ -51,6 +53,10 @@ export function Products(props: { api?: Api }) {
       setBusy(false)
     }
   }
+
+  // The NIM equivalent beside each catalog price (P1) — decoration, gone
+  // when there is no rate.
+  const nimApprox = (minor: number) => formatNimApprox(minor, usdRate)
 
   const startEdit = (p: ProductView) => {
     setEditingId(p.id)
@@ -160,6 +166,7 @@ export function Products(props: { api?: Api }) {
                   <>
                     <span className="dir">
                       {p.name} — {(p.priceMinor / 100).toFixed(2)} USD
+                      {nimApprox(p.priceMinor) ? ` (${nimApprox(p.priceMinor)})` : ''}
                       {p.category ? ` · ${p.category}` : ''}
                       {p.pinned ? ` · 📌` : ''}
                       {!p.active && ` · ${t('Withdrawn')}`}

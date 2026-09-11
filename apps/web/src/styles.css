@@ -832,15 +832,25 @@ a.row--link:hover, button.row--link:hover:not(:disabled) { box-shadow: var(--sha
 /* ── product catalogue ── */
 .product-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .product-btn {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  column-gap: 12px;
   min-height: 44px;
   padding: 10px 14px;
   font-weight: 600;
   font-size: 15px;
+  text-align: left;
 }
 .product-btn .price { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* the NIM line sits under the price, in the right-hand column */
+.product-btn .price-nim { grid-column: 2; text-align: right; }
+
+/* ── the NIM equivalent under a fiat figure (P1) ── */
+.price-nim { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* a fiat amount with its NIM line stacked under it, right-aligned */
+.amt-stack { display: inline-flex; flex-direction: column; align-items: flex-end; }
+.amt-stack .price-nim { font-weight: 500; }
 
 .total-line {
   display: flex;

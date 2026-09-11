@@ -449,6 +449,61 @@ it('"Back to amount" keeps the cart intact', async () => {
   expect(screen.getAllByText(/2\.50/).length).toBeGreaterThan(0)
 })
 
+// --- P1: the NIM equivalent beside every fiat price ---------------------
+
+it('a product chip and the cart carry the NIM equivalent of the fiat price', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]) })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  // 2.50 USD at 0.005 USD/NIM = 500 NIM
+  await waitFor(() => expect(screen.getAllByText('≈ 500.00 NIM').length).toBeGreaterThan(0))
+  fireEvent.click(screen.getByRole('button', { name: /Coffee/ }))
+  // chip, cart line and Total all carry it now
+  await waitFor(() => expect(screen.getAllByText('≈ 500.00 NIM').length).toBe(3))
+})
+
+// --- P2: a non-empty cart owns the amount field -------------------------
+
+it('with a cart there is no NIM unit button: the amount field is a cart line', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]) })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('Coffee'))
+  expect(screen.queryAllByRole('button', { name: /^NIM$/ })).toEqual([])
+  expect(screen.getByLabelText(/add a custom amount \(USD\)/i)).toBeTruthy()
+  expect(screen.getByRole('button', { name: /^Add to cart$/i })).toBeTruthy()
+})
+
+it('a typed amount beside a cart is ignored: Continue carries the cart total', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]), createSale: vi.fn(), claim: vi.fn() })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('Coffee'))
+  fillAmount('5000000')
+  clickContinue()
+
+  expect(screen.getByText('Step 2 of 2 · Payment')).toBeTruthy()
+  expect(screen.getByText('2.50 USD')).toBeTruthy()
+  expect(screen.queryByText(/5000000/)).toBeNull()
+})
+
+it('emptying the cart brings the USD/NIM segment back, with the remembered unit', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]), claim: vi.fn() })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('Coffee'))
+  expect(screen.queryAllByRole('button', { name: /^NIM$/ })).toEqual([])
+
+  fireEvent.click(screen.getByLabelText('-'))
+  expect(screen.queryByText('Cart')).toBeNull()
+  expect(screen.getByRole('button', { name: /^NIM$/ })).toBeTruthy()
+  expect(screen.getByRole('button', { name: /^USD$/ }).getAttribute('aria-pressed')).toBe('true')
+})
+
 it('Products: adding a product priced "2,50" sends priceMinor as an integer 250', async () => {
   cleanup()
   const createProduct = vi.fn(async (_body: { name: string; priceMinor: number; category?: string }) => ({ id: 'p1', name: 'Coffee', priceMinor: 250,

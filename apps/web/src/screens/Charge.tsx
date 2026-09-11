@@ -6,7 +6,7 @@ import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
-import { formatUsd, useUsdRate } from '../lib/fiat'
+import { formatNimApprox, formatUsd, useUsdRate } from '../lib/fiat'
 import { useOnline } from '../lib/online'
 
 type Unit = 'USD' | 'NIM'
@@ -94,12 +94,25 @@ export function Charge(props: { api?: Api }) {
     saveUnit(next)
   }
 
+  // With anything in the cart the amount field is no longer "how much to
+  // charge" — it is a custom cart line, and a cart line is priced in fiat
+  // (P2). The stored preference is left alone, so emptying the cart brings
+  // the cashier's own unit back.
+  const cartActive = cart.length > 0
+  const effectiveUnit: Unit = cartActive ? 'USD' : unit
+
   const approx = (() => {
     const n = Number(amount.replace(',', '.'))
     if (!Number.isFinite(n) || n <= 0) return null
-    if (unit === 'USD') return usdRate ? `≈ ${(n / usdRate).toFixed(5)} NIM` : null
+    if (effectiveUnit === 'USD') return usdRate ? `≈ ${(n / usdRate).toFixed(5)} NIM` : null
     return formatUsd(n, usdRate)
   })()
+
+  /** The small grey NIM line under a fiat figure (P1). */
+  const nimLine = (minor: number) => {
+    const text = formatNimApprox(minor, usdRate)
+    return text === null ? null : <span className="price-nim">{text}</span>
+  }
 
   const submit = async () => {
     setError(null)
@@ -332,8 +345,11 @@ export function Charge(props: { api?: Api }) {
 
           <div className="total-line">
             <span>{cartPath ? t('Total') : t('Amount')}</span>
-            <span className="row__amt">
-              {cartPath ? `${formatMinor(cartTotal)} ${SUPPORTED_FIAT_CURRENCY}` : `${amount} ${unit}`}
+            <span className="row__amt amt-stack">
+              <span>
+                {cartPath ? `${formatMinor(cartTotal)} ${SUPPORTED_FIAT_CURRENCY}` : `${amount} ${unit}`}
+              </span>
+              {cartPath && nimLine(cartTotal)}
             </span>
           </div>
           {!cartPath && approx !== null && <span className="approx">{approx}</span>}
@@ -390,8 +406,9 @@ export function Charge(props: { api?: Api }) {
 
   const productButton = (p: ProductView) => (
     <button type="button" key={p.id} className="product-btn" onClick={() => addToCart(p)}>
-      <span>{p.name}</span>
+      <span className="product-btn__name">{p.name}</span>
       <span className="price">{formatMinor(p.priceMinor)}</span>
+      {nimLine(p.priceMinor)}
     </button>
   )
 
@@ -438,32 +455,40 @@ export function Charge(props: { api?: Api }) {
                     <span className="stepper__n">{it.quantity}</span>
                     <button type="button" aria-label="+" onClick={() => changeQty(i, 1)}>+</button>
                   </span>
-                  <span className="row__amt">{formatMinor(it.unitPriceMinor * it.quantity)}</span>
+                  <span className="row__amt amt-stack">
+                    <span>{formatMinor(it.unitPriceMinor * it.quantity)}</span>
+                    {nimLine(it.unitPriceMinor * it.quantity)}
+                  </span>
                 </li>
               ))}
             </ul>
             <div className="total-line">
               <span>{t('Total')}</span>
-              <span className="row__amt">{formatMinor(cartTotal)} {SUPPORTED_FIAT_CURRENCY}</span>
+              <span className="row__amt amt-stack">
+                <span>{formatMinor(cartTotal)} {SUPPORTED_FIAT_CURRENCY}</span>
+                {nimLine(cartTotal)}
+              </span>
             </div>
           </section>
         )}
 
         <div className="field">
-          <label htmlFor="charge-amount">{t('Amount')}</label>
+          <label htmlFor="charge-amount">{cartActive ? t('Add a custom amount (USD)') : t('Amount')}</label>
           <div className="field-suffix">
             <input id="charge-amount" inputMode="decimal" value={amount}
               onChange={e => setAmount(e.target.value)}
-              placeholder={unit === 'USD' ? '2.50' : '2.5'} />
-            <div className="seg" role="group" aria-label={t('Pricing unit')}>
-              <button type="button" aria-pressed={unit === 'USD'} onClick={() => chooseUnit('USD')}>{t('USD')}</button>
-              <button type="button" aria-pressed={unit === 'NIM'} onClick={() => chooseUnit('NIM')}>{t('NIM')}</button>
-            </div>
+              placeholder={effectiveUnit === 'USD' ? '2.50' : '2.5'} />
+            {!cartActive && (
+              <div className="seg" role="group" aria-label={t('Pricing unit')}>
+                <button type="button" aria-pressed={unit === 'USD'} onClick={() => chooseUnit('USD')}>{t('USD')}</button>
+                <button type="button" aria-pressed={unit === 'NIM'} onClick={() => chooseUnit('NIM')}>{t('NIM')}</button>
+              </div>
+            )}
           </div>
           {approx !== null && <span className="approx">{approx}</span>}
         </div>
 
-        {showCatalog && unit === 'USD' && (
+        {(showCatalog || cartActive) && effectiveUnit === 'USD' && (
           <button type="button" className="primary" onClick={addCustomToCart} disabled={!amount}>
             {t('Add to cart')}
           </button>

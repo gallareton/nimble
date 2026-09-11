@@ -54,6 +54,26 @@ export function formatUsd(nim: number, usdPerNim: number | null): string | null 
   return formatUsdValue(nim * usdPerNim)
 }
 
+/**
+ * The NIM equivalent of a fiat price, for the small grey second line beside
+ * every price in the till (P1). Presentation only — the money is still
+ * counted, quoted and settled in integer minor units; this never feeds a
+ * calculation.
+ *
+ * Null when there is no usable rate, so callers fall back to bare fiat.
+ * Above 1000 NIM the decimals are noise, so they go; below it, two.
+ */
+export function formatNimApprox(usdMinor: number, usdPerNim: number | null): string | null {
+  if (!usdPerNim || usdPerNim <= 0) return null
+  if (!Number.isFinite(usdMinor)) return null
+  const nim = usdMinor / 100 / usdPerNim
+  if (!Number.isFinite(nim)) return null
+  const text = nim >= 1000
+    ? nim.toLocaleString(undefined, { maximumFractionDigits: 0 })
+    : nim.toFixed(2)
+  return `≈ ${text} NIM`
+}
+
 let cache: { v: number | null; at: number } | null = null
 
 export function useUsdRate(api: Api): number | null {
