@@ -41,7 +41,8 @@ wallet with no terminal in between.
 
 What is in the app today: shifts with an operator label, a product
 catalogue with pinned items and categories, a cart on the till, cash or
-NIM per sale, a daily report by product, each shift carrying its operator's name, CSV export,
+NIM per sale, a daily report by product, each shift carrying its operator's name, a one-tap
+export as CSV or JSON,
 remote bills shared as a link, refunds run as a payment backward, a cashier
 PIN lock, and a basic Merchant API (API keys, create a bill with your own
 reference, poll until paid). The target model — a business separate from

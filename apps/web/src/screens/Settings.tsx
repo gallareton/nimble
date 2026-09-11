@@ -4,8 +4,8 @@ import type { ApiKeyView } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
-import { resetIntro } from '../components/Intro'
 import { copyText } from '../lib/copy'
+import { shareApp } from '../lib/share'
 import { t } from '../i18n'
 
 export function Settings({ api: apiProp }: { api?: Api } = {}) {
@@ -14,7 +14,13 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
   const address = ctx?.address ?? null
   const [name, setName] = useState('')
   const [saved, setSaved] = useState(false)
-  const [replay, setReplay] = useState(false)
+  const [recommended, setRecommended] = useState(false)
+
+  // Disconnecting cannot be undone from inside the app — the next launch is
+  // back at the connect screen. Same one-tap-arms-it idiom as revoking a key,
+  // and the armed state lapses so a forgotten first tap cannot be completed
+  // by an unrelated one minutes later.
+  const [armed, setArmed] = useState(false)
 
   // Point-of-sale profile (BR-P15). businessName/businessAddress appear to
   // a payer before they confirm; taxId is printed on receipts only and
@@ -121,6 +127,24 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (!armed) return
+    const id = setTimeout(() => setArmed(false), 4000)
+    return () => clearTimeout(id)
+  }, [armed])
+
+  const recommend = async () => {
+    if (await shareApp() === 'copied') {
+      setRecommended(true)
+      setTimeout(() => setRecommended(false), 2000)
+    }
+  }
+
+  const disconnect = () => {
+    if (!armed) { setArmed(true); return }
+    ctx?.logout()
+  }
+
   const save = async () => {
     await api.updateMe({ displayName: name,
       businessName: businessName.trim() === '' ? null : businessName,
@@ -218,7 +242,7 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
               onChange={e => { setTaxId(e.target.value); setSaved(false) }} />
           </label>
           <p className="quiet">{t('Printed on receipts. Not verified.')}</p>
-          <button onClick={save} disabled={!name}>{t('Save')}</button>
+          <button className="primary" onClick={save} disabled={!name}>{t('Save')}</button>
           {saved && <p role="status">{t('Saved.')}</p>}
         </div>
       )}
@@ -249,7 +273,7 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
                 value={currentPin} onChange={e => setCurrentPin(e.target.value)} />
             </label>
           )}
-          <button onClick={() => void savePin()} disabled={!newPin || pinBusy}>{t('Save PIN')}</button>
+          <button className="primary" onClick={() => void savePin()} disabled={!newPin || pinBusy}>{t('Save PIN')}</button>
           {pinMsg && <p role={pinMsgKind === 'error' ? 'alert' : 'status'}>{pinMsg}</p>}
         </>)}
 
@@ -264,7 +288,7 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
             <input type="password" inputMode="numeric" autoComplete="off" maxLength={8}
               value={unlockPin} onChange={e => setUnlockPin(e.target.value)} />
           </label>
-          <button onClick={() => void disableLock()} disabled={!unlockPin || unlockBusy}>{t('Unlock the till')}</button>
+          <button className="primary" onClick={() => void disableLock()} disabled={!unlockPin || unlockBusy}>{t('Unlock the till')}</button>
           {unlockMsg && <p role="alert">{unlockMsg}</p>}
         </>)}
       </section>
@@ -291,7 +315,7 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
               {t('Label')}
               <input value={newLabel} maxLength={60} onChange={e => setNewLabel(e.target.value)} placeholder="POS terminal" />
             </label>
-            <button onClick={() => void createKey()} disabled={!newLabel.trim() || keyBusy}>{t('Create')}</button>
+            <button className="primary" onClick={() => void createKey()} disabled={!newLabel.trim() || keyBusy}>{t('Create')}</button>
           </>
         ))}
         {createErr && <p role="alert">{createErr}</p>}
@@ -317,10 +341,42 @@ export function Settings({ api: apiProp }: { api?: Api } = {}) {
         {keysErr && <p role="alert">{keysErr}</p>}
       </section>
 
-      <p><Link to="/products">{t('Manage products')}</Link></p>
-      <button onClick={() => { resetIntro(); setReplay(true) }}>{t('Show the guide again')}</button>
-      {replay && <p role="status">{t('The guide will show next time you open the home screen.')}</p>}
-      {ctx && <button onClick={ctx.logout}>{t('Disconnect')}</button>}
+      <section className="form-card">
+        <h2>{t('Point of sale')}</h2>
+        <ul className="rows rows--plain">
+          <li>
+            <Link className="row row--link" to="/products">
+              <span className="row__title">{t('Products')}</span>
+            </Link>
+          </li>
+        </ul>
+      </section>
+
+      <section className="form-card">
+        <h2>{t('Help')}</h2>
+        <ul className="rows rows--plain">
+          <li>
+            <Link className="row row--link" to="/guide">
+              <span className="row__title">{t('How it works')}</span>
+            </Link>
+          </li>
+        </ul>
+        <button onClick={() => void recommend()}>
+          {recommended ? t('Link copied') : t('Recommend NIMble')}
+        </button>
+      </section>
+
+      {ctx && (
+        <section className="form-card danger-zone">
+          <h2>{t('Danger zone')}</h2>
+          <p className="quiet">
+            {t('Disconnecting signs you out of NIMble on this phone. Your NIM stays in Nimiq Pay.')}
+          </p>
+          <button className="danger" onClick={disconnect}>
+            {armed ? t('Are you sure? Tap again to disconnect') : t('Disconnect')}
+          </button>
+        </section>
+      )}
     </main>
   )
 }

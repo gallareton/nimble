@@ -802,3 +802,50 @@ it('Receipt offers "New charge" to the side that took the money', async () => {
   expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'New payment' })).toBeNull()
 })
+
+// --- Task 5: Settings reorganisation (R4, R5, R11, R17) ------------------
+
+it('form buttons that save something are .primary, and go disabled empty-handed', async () => {
+  cleanup()
+  const api = { getMe: vi.fn(async () => meWith()), getApiKeys: vi.fn(async () => []) }
+  render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(api.getMe).toHaveBeenCalled())
+
+  // R11: a disabled save button must still look like the primary action —
+  // the grey comes from :disabled, not from dropping the class.
+  const create = screen.getByRole('button', { name: 'Create' })
+  expect(create.className).toContain('primary')
+  expect(create.hasAttribute('disabled')).toBe(true)
+  fireEvent.change(screen.getByLabelText('Label'), { target: { value: 'POS' } })
+  expect(screen.getByRole('button', { name: 'Create' }).hasAttribute('disabled')).toBe(false)
+
+  const savePin = screen.getByRole('button', { name: 'Save PIN' })
+  expect(savePin.className).toContain('primary')
+  expect(savePin.hasAttribute('disabled')).toBe(true)
+  fireEvent.change(screen.getByLabelText(/Set a cashier PIN/i), { target: { value: '1234' } })
+  expect(screen.getByRole('button', { name: 'Save PIN' }).hasAttribute('disabled')).toBe(false)
+
+  const save = screen.getByRole('button', { name: 'Save' })
+  expect(save.className).toContain('primary')
+  expect(save.hasAttribute('disabled')).toBe(true)
+
+  // "Lock the till" is the secondary of the pair and stays plain.
+  expect(screen.queryByRole('button', { name: 'Lock the till' })).toBeNull()
+})
+
+it('Settings files Products under Point of sale and the guide under Help', async () => {
+  cleanup()
+  const api = { getMe: vi.fn(async () => meWith()), getApiKeys: vi.fn(async () => []) }
+  render(<MemoryRouter><Settings api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(api.getMe).toHaveBeenCalled())
+
+  expect(screen.getByRole('heading', { name: 'Point of sale' })).toBeTruthy()
+  expect(screen.getByRole('link', { name: 'Products' }).getAttribute('href')).toBe('/products')
+  expect(screen.getByRole('heading', { name: 'Help' })).toBeTruthy()
+  expect(screen.getByRole('link', { name: 'How it works' }).getAttribute('href')).toBe('/guide')
+  expect(screen.getByRole('button', { name: 'Recommend NIMble' })).toBeTruthy()
+
+  // The guide is a screen now, not a localStorage flag to un-set (R4).
+  expect(screen.queryByText(/Show the guide again/i)).toBeNull()
+  expect(screen.queryByRole('link', { name: 'Manage products' })).toBeNull()
+})

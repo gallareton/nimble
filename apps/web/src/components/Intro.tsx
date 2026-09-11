@@ -10,10 +10,6 @@ export function markIntroSeen() {
   try { localStorage.setItem(KEY, '1') } catch { /* private mode */ }
 }
 
-export function resetIntro() {
-  try { localStorage.removeItem(KEY) } catch { /* private mode */ }
-}
-
 /**
  * Shown once, before the first payment. Reviewers expected the payer to type
  * a code the seller shows — the opposite of how this works — so the guide

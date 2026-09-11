@@ -200,9 +200,10 @@ nothing below is worth diagnosing on top of a broken payment.
 
 ### 14. Navigation, profile, dashboard (2026-09-10, after the competition slice)
 
-- [ ] **Bottom bar** on Home, Till, Shift, History; the active tab is
-      highlighted. **More** opens a sheet with Dashboard, Products, Remote
-      bill, Settings; Escape or tapping outside closes it.
+- [ ] **Bottom bar** of six tabs — Home · Pay · Charge · Shift · History ·
+      More — with Home first; the active tab is highlighted. **More** opens a
+      sheet with Dashboard, Products, How it works, Settings (no Remote bill);
+      Escape or tapping outside closes it.
 - [ ] **One back arrow**: from Products it goes to Shift, from Settings and
       History to Home, from a receipt to History — never "wherever you came
       from". The old per-screen "‹ Home / ‹ Shift" buttons are gone.
@@ -222,6 +223,58 @@ nothing below is worth diagnosing on top of a broken payment.
       for payment appears under "awaiting" with a link into the session and
       disappears once confirmed. "‹ day" shows yesterday; "day ›" is disabled
       on today. An empty day shows one sentence, not a grid of zeros.
+
+### 15. UX audit fixes (2026-09-11)
+
+- [ ] **Tab bar**: six tabs with **Home first** — Home · Pay · Charge · Shift ·
+      History · More. The labels still fit on a 360 px screen.
+- [ ] **Keyboard**: tap any text field on the phone — the tab bar disappears
+      while the keyboard is up and comes back when it closes. A sticky CTA bar
+      sits above the tab bar, and at the bottom when the bar is hidden.
+- [ ] **Header**: scroll a long screen — the title stays put under the browser
+      chrome and is never clipped.
+- [ ] **Pay ring**: the code ring is a true circle (not an oval) on every
+      phone. The timer reads 22 px; the ring turns **amber under 30 s** and
+      **red under 10 s**. The invite is now secondary text: "Receiver doesn't
+      have NIMble yet? Send them a link".
+- [ ] **Charge is two steps**: step 1 "How much?", step 2 "Payment". The
+      USD/NIM segment sits **inside** the amount field, with the conversion
+      right under it.
+- [ ] **Charge with a catalogue**: in USD a typed amount must be **added to the
+      cart** before Continue does anything. The cart stepper is compact. On
+      step 2, **NIM** and **Cash** are a matched pair.
+- [ ] **"Bill someone who isn't here"** lives on Charge (step 1), not on Shift.
+      "Manage products" is gone from Charge and from Shift.
+- [ ] **Shift** shows "On the till: name". A line reads "Soda × 5" and
+      "25.00" as **separate** elements — never run together — and there is no
+      coin emoji.
+- [ ] **Export**: one **Export** button; tapping it reveals **Export CSV** and
+      **Export JSON** (both ≥ 44 px).
+- [ ] **Close the shift** is the sticky primary; tapping it opens a
+      confirmation dialog naming the operator, the total and the sale count,
+      with the unpaid-bills warning **inside** the dialog, and "Keep it open"
+      to back out.
+- [ ] **Past shifts are gone from Shift** — it shows only the current (or
+      just-closed) shift.
+- [ ] **History** has a **Transactions | Shifts** segment. **Filters**
+      collapse behind a "Filters (n)" button and open when any filter is
+      active. Empty date fields read "From · any date" and "To · today".
+- [ ] A past shift opens at **/history/shifts/:id** — the same report,
+      read-only, with its own Export.
+- [ ] **Receipt**: the luna amount is small print, **Copy hash** sits on its
+      own line under the hash, and the bottom offers "New charge" (receiver)
+      or "New payment" (payer) plus "Done".
+- [ ] **Settings**: **Save**, **Save PIN** and **Create** are blue when
+      enabled and grey when disabled (never a washed-out blue). **Products**
+      is under **Point of sale**; **How it works** and **Recommend NIMble**
+      are under **Help**.
+- [ ] **Settings → Danger zone**: **Disconnect** is red and takes **two taps**
+      ("Are you sure? Tap again to disconnect"); the armed state lapses after
+      a few seconds. "Show the guide again" is gone.
+- [ ] **Home**: **Pay** and **Charge** are equal-weight filled cards with role
+      captions; "Today's numbers" sits next to RECENT; a single row reads
+      "How does NIMble work?" instead of the old list, and opens the guide at
+      **/guide** (also reachable from More).
 
 ### 11. Offline
 

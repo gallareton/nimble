@@ -317,6 +317,10 @@ const pl: Record<string, string> = {
   'New payment': 'Nowa płatność',
   'New charge': 'Nowa sprzedaż',
   'Done': 'Gotowe',
+  'Help': 'Pomoc',
+  'Danger zone': 'Strefa ryzyka',
+  'Disconnecting signs you out of NIMble on this phone. Your NIM stays in Nimiq Pay.': 'Rozłączenie wylogowuje Cię z NIMble na tym telefonie. Twoje NIM zostają w Nimiq Pay.',
+  'Are you sure? Tap again to disconnect': 'Na pewno? Dotknij ponownie, aby rozłączyć',
 }
 
 const de: Record<string, string> = {
@@ -625,6 +629,10 @@ const de: Record<string, string> = {
   'New payment': 'Neue Zahlung',
   'New charge': 'Neue Abrechnung',
   'Done': 'Fertig',
+  'Help': 'Hilfe',
+  'Danger zone': 'Gefahrenbereich',
+  'Disconnecting signs you out of NIMble on this phone. Your NIM stays in Nimiq Pay.': 'Beim Trennen wirst du auf diesem Telefon aus NIMble abgemeldet. Deine NIM bleiben in Nimiq Pay.',
+  'Are you sure? Tap again to disconnect': 'Sicher? Zum Trennen erneut tippen',
 }
 
 const es: Record<string, string> = {
@@ -933,6 +941,10 @@ const es: Record<string, string> = {
   'New payment': 'Nuevo pago',
   'New charge': 'Nuevo cobro',
   'Done': 'Listo',
+  'Help': 'Ayuda',
+  'Danger zone': 'Zona de riesgo',
+  'Disconnecting signs you out of NIMble on this phone. Your NIM stays in Nimiq Pay.': 'Al desconectar cierras la sesión de NIMble en este teléfono. Tus NIM siguen en Nimiq Pay.',
+  'Are you sure? Tap again to disconnect': '¿Seguro? Toca otra vez para desconectar',
 }
 
 const fr: Record<string, string> = {
@@ -1241,6 +1253,10 @@ const fr: Record<string, string> = {
   'New payment': "Nouveau paiement",
   'New charge': "Nouvel encaissement",
   'Done': "Terminé",
+  'Help': "Aide",
+  'Danger zone': "Zone sensible",
+  'Disconnecting signs you out of NIMble on this phone. Your NIM stays in Nimiq Pay.': "La déconnexion vous déconnecte de NIMble sur ce téléphone. Vos NIM restent dans Nimiq Pay.",
+  'Are you sure? Tap again to disconnect': "Vraiment ? Touchez à nouveau pour vous déconnecter",
 }
 
 const pt: Record<string, string> = {
@@ -1549,6 +1565,10 @@ const pt: Record<string, string> = {
   'New payment': 'Novo pagamento',
   'New charge': 'Nova cobrança',
   'Done': 'Concluído',
+  'Help': 'Ajuda',
+  'Danger zone': 'Zona de risco',
+  'Disconnecting signs you out of NIMble on this phone. Your NIM stays in Nimiq Pay.': 'Desconectar termina a sessão do NIMble neste telemóvel. Os seus NIM ficam na Nimiq Pay.',
+  'Are you sure? Tap again to disconnect': 'De certeza? Toque novamente para desconectar',
 }
 
 const dictionaries: Partial<Record<Locale, Record<string, string>>> = { pl, de, es, fr, pt }
