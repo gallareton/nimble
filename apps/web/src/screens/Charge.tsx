@@ -10,6 +10,8 @@ import { formatUsd, useUsdRate } from '../lib/fiat'
 import { useOnline } from '../lib/online'
 
 type Unit = 'USD' | 'NIM'
+type Step = 'amount' | 'pay'
+type Method = 'nim' | 'cash'
 const UNIT_KEY = 'nimble.charge.unit'
 
 function loadUnit(): Unit {
@@ -42,15 +44,17 @@ function formatMinor(minor: number): string {
   return (minor / 100).toFixed(2)
 }
 
-// BLIK-style: the receiver fills in what they are asking for FIRST; the code
-// is the last thing entered, and the payer gets the approval prompt the
-// moment it is submitted — no second data-entry step on this side. The
-// cashier prices the sale in fiat; the server converts and freezes the quote.
+// BLIK-style, in two steps (R7): the receiver says how much FIRST — from the
+// catalog, from a cart, or by typing an amount — and only then picks how the
+// money arrives and takes the payer's code. The cashier prices the sale in
+// fiat; the server converts and freezes the quote.
 export function Charge(props: { api?: Api }) {
   const ctx = useAppOptional()
   const api = props.api ?? ctx?.api
   if (!api) throw new Error('Charge needs api via props or AppProvider')
   const navigate = useNavigate()
+  const [step, setStep] = useState<Step>('amount')
+  const [method, setMethod] = useState<Method>('nim')
   const [unit, setUnit] = useState<Unit>(loadUnit)
   const [amount, setAmount] = useState('')
   const [reference, setReference] = useState('')
@@ -60,19 +64,18 @@ export function Charge(props: { api?: Api }) {
   const usdRate = useUsdRate(api)
   const [online, recheckOnline] = useOnline(api)
 
-  // Catalog layer (Task 4). `products` stays null until a catalog-aware
-  // caller answers — a test double without getProducts (every pre-existing
-  // test) leaves this screen exactly as it was, per the governing rule that
-  // an owner with no catalog sees today's screen unchanged.
+  // Catalog layer. `products` stays null until a catalog-aware caller
+  // answers — a test double without getProducts leaves this screen on the
+  // no-catalog path, where an owner types an amount by hand.
   const [products, setProducts] = useState<ProductView[] | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const [search, setSearch] = useState('')
   const [cartError, setCartError] = useState<string | null>(null)
   const [cartBusy, setCartBusy] = useState(false)
   const [cashMessage, setCashMessage] = useState<string | null>(null)
-  // Set once "Take NIM" has minted a sale awaiting payment — the screen then
-  // narrows to just the code field, same shape as the no-catalog flow's own
-  // code step, but claiming by saleId instead of by amount.
+  // Set once a NIM cart sale has been minted server-side. It survives a
+  // failed claim so a second tap of "Request payment" reuses the same sale
+  // instead of minting a duplicate; any edit to the cart clears it.
   const [pendingSale, setPendingSale] = useState<{ saleId: string } | null>(null)
 
   useEffect(() => {
@@ -158,10 +161,11 @@ export function Charge(props: { api?: Api }) {
     }
   }
 
-  // --- Cart (Task 4) ------------------------------------------------
+  // --- Cart ------------------------------------------------------------
 
   const addToCart = (p: ProductView) => {
     setCashMessage(null)
+    setPendingSale(null)
     setCart(prev => {
       const idx = prev.findIndex(it => it.productId === p.id)
       if (idx >= 0) {
@@ -181,12 +185,14 @@ export function Charge(props: { api?: Api }) {
       return
     }
     setCashMessage(null)
+    setPendingSale(null)
     setCart(prev => [...prev, { productId: null, name: t('Custom'), unitPriceMinor, quantity: 1 }])
     setAmount('')
   }
 
   const changeQty = (index: number, delta: number) => {
     setCashMessage(null)
+    setPendingSale(null)
     setCart(prev => {
       const next = [...prev]
       const item = next[index]
@@ -209,46 +215,29 @@ export function Charge(props: { api?: Api }) {
     return t('Could not complete the sale. Check your connection and try again.')
   }
 
-  const takeNim = async () => {
-    setCartError(null)
-    setCashMessage(null)
-    const stillOnline = await recheckOnline()
-    if (!stillOnline) return
-    setCartBusy(true)
-    try {
-      const sale = await api.createSale({ items: cartItemsForApi(), paymentMethod: 'nim' })
-      setCart([])
-      setPendingSale({ saleId: sale.id })
-    } catch (e) {
-      setCartError(saleErrorMessage(e))
-    } finally {
-      setCartBusy(false)
-    }
-  }
-
-  const takeCash = async () => {
-    setCartError(null)
-    setCashMessage(null)
-    setCartBusy(true)
-    try {
-      await api.createSale({ items: cartItemsForApi(), paymentMethod: 'cash' })
-      setCart([])
-      setCashMessage(t('Recorded.'))
-    } catch (e) {
-      setCartError(saleErrorMessage(e))
-    } finally {
-      setCartBusy(false)
-    }
-  }
-
-  const claimSaleCode = async () => {
-    if (!pendingSale) return
+  // Step 2, cart + NIM. The sale is minted once and kept: a wrong code costs
+  // a retry, never a duplicate sale on the server.
+  const requestPaymentForCart = async () => {
     setError(null)
+    setCartError(null)
     setBusy(true)
     const stillOnline = await recheckOnline()
     if (!stillOnline) { setBusy(false); return }
+    let saleId = pendingSale?.saleId ?? null
+    if (saleId === null) {
+      try {
+        const sale = await api.createSale({ items: cartItemsForApi(), paymentMethod: 'nim' })
+        saleId = sale.id
+        setPendingSale({ saleId: sale.id })
+      } catch (e) {
+        setCartError(saleErrorMessage(e))
+        setBusy(false)
+        return
+      }
+    }
     try {
-      const res = await api.claim(code.replace(/\s/g, ''), { saleId: pendingSale.saleId })
+      const res = await api.claim(code.replace(/\s/g, ''), { saleId })
+      setCart([])
       navigate(`/session/${res.sessionId}`)
     } catch (e) {
       if (e instanceof ApiError && e.code === 'RATE_LIMITED') setError(t('Too many attempts. Wait a moment.'))
@@ -258,95 +247,140 @@ export function Charge(props: { api?: Api }) {
     }
   }
 
-  // --- Render ---------------------------------------------------------
+  const recordCashSale = async () => {
+    setCartError(null)
+    setCashMessage(null)
+    setCartBusy(true)
+    try {
+      await api.createSale({ items: cartItemsForApi(), paymentMethod: 'cash' })
+      setCart([])
+      setPendingSale(null)
+      setCashMessage(t('Recorded.'))
+      setStep('amount')
+    } catch (e) {
+      setCartError(saleErrorMessage(e))
+    } finally {
+      setCartBusy(false)
+    }
+  }
 
-  if (pendingSale) {
+  // --- Step transition --------------------------------------------------
+
+  // The cart wins: with anything in it, a stray typed amount is ignored.
+  const canContinue = cart.length > 0
+    || (amount.trim() !== '' && (unit === 'NIM' || !showCatalog))
+
+  const goToPay = () => {
+    setError(null)
+    if (cart.length > 0) { setStep('pay'); return }
+    if (unit === 'USD') {
+      if (toMinorUnits(amount) === null) {
+        setError(t('Enter a valid amount (max 2 decimals).'))
+        return
+      }
+    } else {
+      try {
+        if (nimToLuna(amount.replace(',', '.')) <= 0n) throw new RangeError('non-positive NIM amount')
+      } catch {
+        setError(t('Enter a valid NIM amount (max 5 decimals).'))
+        return
+      }
+    }
+    setStep('pay')
+  }
+
+  // --- Shared fragments -------------------------------------------------
+
+  const codeField = (
+    <div className="field">
+      <label htmlFor="charge-code">{t('Code from the payer')}</label>
+      <input
+        id="charge-code"
+        className="code-input"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={7}
+        value={code}
+        onChange={e => {
+          const digits = e.target.value.replace(/\D/g, '').slice(0, 6)
+          setCode(digits.length > 3 ? `${digits.slice(0, 3)} ${digits.slice(3)}` : digits)
+        }}
+        placeholder="123 456"
+      />
+    </div>
+  )
+
+  const offlineNotice = !online && (
+    <p role="alert" className="offline-notice">
+      {t("Offline — payments can't be accepted until the connection is back.")}
+    </p>
+  )
+
+  const codeComplete = code.replace(/\s/g, '').length === 6
+
+  // --- Step 2: Payment --------------------------------------------------
+
+  if (step === 'pay') {
+    const cartPath = cart.length > 0
     return (
       <main>
         <div className="form-card">
-          <label>
-            {t('Code from the payer')}
-            <input
-              className="code-input"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={7}
-              value={code}
-              onChange={e => {
-                const digits = e.target.value.replace(/\D/g, '').slice(0, 6)
-                setCode(digits.length > 3 ? `${digits.slice(0, 3)} ${digits.slice(3)}` : digits)
-              }}
-              placeholder="123 456"
-            />
-          </label>
-          {!online && (
-            <p role="alert" className="offline-notice">
-              {t("Offline — payments can't be accepted until the connection is back.")}
-            </p>
-          )}
-          <button className="primary" onClick={() => void claimSaleCode()}
-            disabled={busy || !online || code.replace(/\s/g, '').length !== 6}>
-            {t('Request payment')}
+          <h2>{t('Step 2 of 2 · Payment')}</h2>
+          <button type="button" className="link-btn" onClick={() => setStep('amount')}>
+            ‹ {t('Back to amount')}
           </button>
+
+          <div className="total-line">
+            <span>{cartPath ? t('Total') : t('Amount')}</span>
+            <span className="row__amt">
+              {cartPath ? `${formatMinor(cartTotal)} ${SUPPORTED_FIAT_CURRENCY}` : `${amount} ${unit}`}
+            </span>
+          </div>
+          {!cartPath && approx !== null && <span className="approx">{approx}</span>}
+
+          {cartPath ? (<>
+            <div className="seg seg--wide" role="group" aria-label={t('Payment method')}>
+              <button type="button" aria-pressed={method === 'nim'} onClick={() => setMethod('nim')}>{t('NIM')}</button>
+              <button type="button" aria-pressed={method === 'cash'} onClick={() => setMethod('cash')}>{t('Cash')}</button>
+            </div>
+            {method === 'nim' ? (<>
+              {codeField}
+              {offlineNotice}
+            </>) : null}
+          </>) : (<>
+            <div className="field">
+              <label htmlFor="charge-reference">{t('Reference')}</label>
+              <input id="charge-reference" value={reference} maxLength={100}
+                onChange={e => setReference(e.target.value)} placeholder="Soda" />
+            </div>
+            {codeField}
+            {offlineNotice}
+          </>)}
         </div>
         {error && <p role="alert">{error}</p>}
+        {cartError && <p role="alert">{cartError}</p>}
+        <div className="cta-bar">
+          {cartPath && method === 'cash' ? (
+            <button className="primary" onClick={() => void recordCashSale()} disabled={cartBusy}>
+              {t('Record cash sale')}
+            </button>
+          ) : (
+            <button className="primary"
+              onClick={cartPath ? () => void requestPaymentForCart() : submit}
+              disabled={busy || !online || !codeComplete}>
+              {t('Request payment')}
+            </button>
+          )}
+        </div>
       </main>
     )
   }
 
-  if (!showCatalog) {
-    return (
-      <main>
-        <div className="form-card">
-        <div className="chips" role="group" aria-label={t('Pricing unit')}>
-          <button type="button" className={`chip ${unit === 'USD' ? 'chip--on' : ''}`}
-            aria-pressed={unit === 'USD'} onClick={() => chooseUnit('USD')}>{t('USD')}</button>
-          <button type="button" className={`chip ${unit === 'NIM' ? 'chip--on' : ''}`}
-            aria-pressed={unit === 'NIM'} onClick={() => chooseUnit('NIM')}>{t('NIM')}</button>
-        </div>
-        <label>
-          {unit === 'USD' ? t('Amount (USD)') : t('Amount (NIM)')}
-          <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)}
-            placeholder={unit === 'USD' ? '2.50' : '2.5'} />
-          {approx !== null && <span className="quiet">{approx}</span>}
-        </label>
-        <label>
-          {t('Reference')}
-          <input value={reference} maxLength={100} onChange={e => setReference(e.target.value)} placeholder="Soda" />
-        </label>
-        <label>
-          {t('Code from the payer')}
-          <input
-            className="code-input"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={7}
-            value={code}
-            onChange={e => {
-              const digits = e.target.value.replace(/\D/g, '').slice(0, 6)
-              setCode(digits.length > 3 ? `${digits.slice(0, 3)} ${digits.slice(3)}` : digits)
-            }}
-            placeholder="123 456"
-          />
-        </label>
-        {!online && (
-          <p role="alert" className="offline-notice">
-            {t("Offline — payments can't be accepted until the connection is back.")}
-          </p>
-        )}
-        <button className="primary" onClick={submit}
-          disabled={busy || !online || !amount || code.replace(/\s/g, '').length !== 6}>
-          {t('Request payment')}
-        </button>
-        </div>
-        {error && <p role="alert">{error}</p>}
-      </main>
-    )
-  }
+  // --- Step 1: How much? ------------------------------------------------
 
-  // Catalog view: pinned first (API order, kept stable — never resorted by
-  // popularity, so a cashier's muscle memory for where things sit holds),
-  // then categories, then an "Other" bucket for uncategorized items.
+  // Pinned first (API order, kept stable — never resorted by popularity, so a
+  // cashier's muscle memory for where things sit holds), then categories,
+  // then an "Other" bucket for uncategorized items.
   const q = search.trim().toLowerCase()
   const matches = (p: ProductView) => !q || p.name.toLowerCase().includes(q)
   const pinned = activeProducts.filter(p => p.pinned && matches(p))
@@ -354,127 +388,101 @@ export function Charge(props: { api?: Api }) {
   const categories = Array.from(new Set(rest.map(p => p.category).filter((c): c is string => !!c)))
   const uncategorized = rest.filter(p => !p.category)
 
+  const productButton = (p: ProductView) => (
+    <button type="button" key={p.id} className="product-btn" onClick={() => addToCart(p)}>
+      <span>{p.name}</span>
+      <span className="price">{formatMinor(p.priceMinor)}</span>
+    </button>
+  )
+
   return (
     <main>
       <div className="form-card">
-        <label>
-          {t('Search products')}
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('Search products')} />
-        </label>
-        {pinned.length > 0 && (
-          <section>
-            <h3>{t('Pinned')}</h3>
-            <div className="product-grid">
-              {pinned.map(p => (
-                <button type="button" key={p.id} className="product-btn" onClick={() => addToCart(p)}>
-                  <span>{p.name}</span>
-                  <span className="quiet">{formatMinor(p.priceMinor)}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-        {categories.map(cat => (
-          <section key={cat}>
-            <h3>{cat}</h3>
-            <div className="product-grid">
-              {rest.filter(p => p.category === cat).map(p => (
-                <button type="button" key={p.id} className="product-btn" onClick={() => addToCart(p)}>
-                  <span>{p.name}</span>
-                  <span className="quiet">{formatMinor(p.priceMinor)}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        ))}
-        {uncategorized.length > 0 && (
-          <section>
-            <h3>{t('Other')}</h3>
-            <div className="product-grid">
-              {uncategorized.map(p => (
-                <button type="button" key={p.id} className="product-btn" onClick={() => addToCart(p)}>
-                  <span>{p.name}</span>
-                  <span className="quiet">{formatMinor(p.priceMinor)}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+        <h2>{t('Step 1 of 2 · How much?')}</h2>
 
-        <div className="chips" role="group" aria-label={t('Pricing unit')}>
-          <button type="button" className={`chip ${unit === 'USD' ? 'chip--on' : ''}`}
-            aria-pressed={unit === 'USD'} onClick={() => chooseUnit('USD')}>{t('USD')}</button>
-          <button type="button" className={`chip ${unit === 'NIM' ? 'chip--on' : ''}`}
-            aria-pressed={unit === 'NIM'} onClick={() => chooseUnit('NIM')}>{t('NIM')}</button>
-        </div>
-        <label>
-          {unit === 'USD' ? t('Amount (USD)') : t('Amount (NIM)')}
-          <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)}
-            placeholder={unit === 'USD' ? '2.50' : '2.5'} />
-          {approx !== null && <span className="quiet">{approx}</span>}
-        </label>
-        {unit === 'USD' ? (
-          <button type="button" onClick={addCustomToCart} disabled={!amount}>{t('Add to cart')}</button>
-        ) : (<>
-          <label>
-            {t('Reference')}
-            <input value={reference} maxLength={100} onChange={e => setReference(e.target.value)} placeholder="Soda" />
-          </label>
-          <label>
-            {t('Code from the payer')}
-            <input
-              className="code-input"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={7}
-              value={code}
-              onChange={e => {
-                const digits = e.target.value.replace(/\D/g, '').slice(0, 6)
-                setCode(digits.length > 3 ? `${digits.slice(0, 3)} ${digits.slice(3)}` : digits)
-              }}
-              placeholder="123 456"
-            />
-          </label>
-          <button className="primary" onClick={submit}
-            disabled={busy || !online || !amount || code.replace(/\s/g, '').length !== 6}>
-            {t('Request payment')}
-          </button>
+        {showCatalog && (<>
+          <div className="field">
+            <label htmlFor="charge-search">{t('Search products')}</label>
+            <input id="charge-search" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={t('Search products')} />
+          </div>
+          {pinned.length > 0 && (
+            <section>
+              <h3>{t('Pinned')}</h3>
+              <div className="product-grid">{pinned.map(productButton)}</div>
+            </section>
+          )}
+          {categories.map(cat => (
+            <section key={cat}>
+              <h3>{cat}</h3>
+              <div className="product-grid">{rest.filter(p => p.category === cat).map(productButton)}</div>
+            </section>
+          ))}
+          {uncategorized.length > 0 && (
+            <section>
+              <h3>{t('Other')}</h3>
+              <div className="product-grid">{uncategorized.map(productButton)}</div>
+            </section>
+          )}
         </>)}
 
         {cart.length > 0 && (
-          <section className="cart">
+          <section>
             <h3>{t('Cart')}</h3>
-            <ul className="cart-list">
+            <ul className="rows rows--plain">
               {cart.map((it, i) => (
-                <li key={it.productId ?? `custom-${i}`}>
-                  <span>{it.name}</span>
-                  <span className="qty">
+                <li key={it.productId ?? `custom-${i}`} className="row">
+                  <span className="row__main"><span className="row__title">{it.name}</span></span>
+                  <span className="stepper">
                     <button type="button" aria-label="-" onClick={() => changeQty(i, -1)}>−</button>
-                    {it.quantity}
+                    <span className="stepper__n">{it.quantity}</span>
                     <button type="button" aria-label="+" onClick={() => changeQty(i, 1)}>+</button>
                   </span>
-                  <span>{formatMinor(it.unitPriceMinor * it.quantity)}</span>
+                  <span className="row__amt">{formatMinor(it.unitPriceMinor * it.quantity)}</span>
                 </li>
               ))}
             </ul>
-            <p className="amt">{t('Total')}: {formatMinor(cartTotal)} {SUPPORTED_FIAT_CURRENCY}</p>
-            {!online && (
-              <p role="alert" className="offline-notice">
-                {t("Offline — payments can't be accepted until the connection is back.")}
-              </p>
-            )}
-            <div className="actions">
-              <button className="primary" onClick={() => void takeNim()} disabled={cartBusy || !online}>
-                {t('Take NIM')}
-              </button>
-              <button onClick={() => void takeCash()} disabled={cartBusy}>{t('Cash')}</button>
+            <div className="total-line">
+              <span>{t('Total')}</span>
+              <span className="row__amt">{formatMinor(cartTotal)} {SUPPORTED_FIAT_CURRENCY}</span>
             </div>
           </section>
         )}
+
+        <div className="field">
+          <label htmlFor="charge-amount">{t('Amount')}</label>
+          <div className="field-suffix">
+            <input id="charge-amount" inputMode="decimal" value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder={unit === 'USD' ? '2.50' : '2.5'} />
+            <div className="seg" role="group" aria-label={t('Pricing unit')}>
+              <button type="button" aria-pressed={unit === 'USD'} onClick={() => chooseUnit('USD')}>{t('USD')}</button>
+              <button type="button" aria-pressed={unit === 'NIM'} onClick={() => chooseUnit('NIM')}>{t('NIM')}</button>
+            </div>
+          </div>
+          {approx !== null && <span className="approx">{approx}</span>}
+        </div>
+
+        {showCatalog && unit === 'USD' && (
+          <button type="button" className="primary" onClick={addCustomToCart} disabled={!amount}>
+            {t('Add to cart')}
+          </button>
+        )}
+
         {cashMessage && <p role="status">{cashMessage}</p>}
         {cartError && <p role="alert">{cartError}</p>}
       </div>
-      <p><Link to="/products">{t('Manage products')}</Link></p>
+      {error && <p role="alert">{error}</p>}
+      <ul className="rows">
+        <li>
+          <Link className="row row--link" to="/charge/remote">
+            <span className="row__title">{t("Bill someone who isn't here")}</span>
+          </Link>
+        </li>
+      </ul>
+      <div className="cta-bar">
+        <button className="primary" onClick={goToPay} disabled={!canContinue}>{t('Continue')}</button>
+      </div>
     </main>
   )
 }

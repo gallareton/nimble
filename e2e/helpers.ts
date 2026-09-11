@@ -39,8 +39,10 @@ export async function pairAndClaim(browser: Browser) {
  */
 export async function submitCharge(receiver: Page, code: string, amount: string,
   reference?: string, unit: 'USD' | 'NIM' = 'NIM') {
+  // Two-step till (R7): amount and unit on step 1, payer code on step 2.
   await receiver.getByRole('button', { name: new RegExp(`^${unit}$`) }).click()
   await receiver.getByLabel(/amount/i).fill(amount)
+  await receiver.getByRole('button', { name: 'Continue' }).click()
   if (reference) await receiver.getByLabel(/reference/i).fill(reference)
   await receiver.getByLabel(/code/i).fill(code)
   await receiver.getByRole('button', { name: /request payment/i }).click()

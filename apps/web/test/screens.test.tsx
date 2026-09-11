@@ -139,18 +139,38 @@ it('Approval shows nothing when affordability is sufficient (true)', async () =>
   expect(screen.queryByText(/short by/i)).toBeNull()
 })
 
+// --- Charge: the two-step till (R7) -------------------------------------
+//
+// Step 1 asks "how much?" (catalog, cart, or a typed amount), step 2 asks
+// how the money arrives and takes the payer's code. Every test below walks
+// that path: pick a unit, fill Amount, Continue, then fill Code and tap
+// Request payment.
+
+const fiatApi = (extra: Record<string, unknown> = {}) => ({
+  getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
+  getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })),
+  ...extra,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}) as any
+
+const fillAmount = (value: string) =>
+  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value } })
+const clickContinue = () => fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+const fillCode = (value = '123456') =>
+  fireEvent.change(screen.getByLabelText(/code/i), { target: { value } })
+const clickRequestPayment = () => fireEvent.click(screen.getByText(/request payment/i))
+
 it('Charge defaults to USD and sends fiat minor units, never amountLuna', async () => {
   cleanup() // this suite doesn't auto-cleanup between tests (no vitest globals)
   localStorage.clear()
   const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ claim })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
-  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '12.34' } })
-  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
-  fireEvent.click(screen.getByText(/request payment/i))
+  fillAmount('12.34')
+  clickContinue()
+  fillCode()
+  clickRequestPayment()
 
   await waitFor(() => expect(claim).toHaveBeenCalled())
   expect(claim.mock.calls[0][1]).toMatchObject({ fiatAmountMinor: 1234, fiatCurrency: 'USD' })
@@ -161,15 +181,14 @@ it('Charge in NIM mode sends amountLuna, never fiatAmountMinor', async () => {
   cleanup()
   localStorage.clear()
   const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ claim })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
-  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '2.5' } })
-  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
-  fireEvent.click(screen.getByText(/request payment/i))
+  fillAmount('2.5')
+  clickContinue()
+  fillCode()
+  clickRequestPayment()
 
   await waitFor(() => expect(claim).toHaveBeenCalled())
   expect(claim.mock.calls[0][1]).toMatchObject({ amountLuna: '250000' })
@@ -177,13 +196,21 @@ it('Charge in NIM mode sends amountLuna, never fiatAmountMinor', async () => {
   expect(claim.mock.calls[0][1]).not.toHaveProperty('fiatCurrency')
 })
 
+it('Charge step 1: Continue stays disabled until there is an amount', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ claim: vi.fn() })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+
+  expect(screen.getByRole('button', { name: 'Continue' }).hasAttribute('disabled')).toBe(true)
+  fillAmount('1.00')
+  expect(screen.getByRole('button', { name: 'Continue' }).hasAttribute('disabled')).toBe(false)
+})
+
 it('Charge remembers the last chosen unit across mounts via localStorage', async () => {
   cleanup()
   localStorage.clear()
-  const claim = vi.fn(async () => ({ sessionId: 's1' }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ claim: vi.fn(async () => ({ sessionId: 's1' })) })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
   cleanup()
@@ -197,17 +224,15 @@ it('Charge in USD mode: an invalid amount shows the USD message and never calls 
   cleanup()
   localStorage.clear()
   const claim = vi.fn(async () => ({ sessionId: 's1' }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ claim })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
-  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '12.345' } })
-  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
-  fireEvent.click(screen.getByText(/request payment/i))
+  fillAmount('12.345')
+  clickContinue()
 
   await screen.findByText(/valid amount/i)
   expect(screen.queryByText(/valid nim amount/i)).toBeNull()
+  expect(screen.queryByText(/request payment/i)).toBeNull() // never left step 1
   expect(claim).not.toHaveBeenCalled()
 })
 
@@ -215,15 +240,12 @@ it('Charge in NIM mode: an invalid amount shows the NIM message and never calls 
   cleanup()
   localStorage.clear()
   const claim = vi.fn(async () => ({ sessionId: 's1' }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ claim })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
-  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '2.123456' } })
-  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
-  fireEvent.click(screen.getByText(/request payment/i))
+  fillAmount('2.123456')
+  clickContinue()
 
   await screen.findByText(/valid nim amount/i)
   expect(claim).not.toHaveBeenCalled()
@@ -233,15 +255,14 @@ it('Charge in NIM mode: a comma decimal ("1,50") sends the same amountLuna as a 
   cleanup()
   localStorage.clear()
   const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ claim })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
-  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '1,50' } })
-  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
-  fireEvent.click(screen.getByText(/request payment/i))
+  fillAmount('1,50')
+  clickContinue()
+  fillCode()
+  clickRequestPayment()
 
   await waitFor(() => expect(claim).toHaveBeenCalled())
   expect(claim.mock.calls[0][1]).toMatchObject({ amountLuna: '150000' })
@@ -251,15 +272,12 @@ it('Charge in NIM mode: "0" shows the NIM validation message and never calls cla
   cleanup()
   localStorage.clear()
   const claim = vi.fn(async () => ({ sessionId: 's1' }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const api = { claim, getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ claim })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
 
   fireEvent.click(screen.getByRole('button', { name: /^NIM$/i }))
-  fireEvent.change(screen.getByLabelText(/amount/i), { target: { value: '0' } })
-  fireEvent.change(screen.getByLabelText(/code/i), { target: { value: '123456' } })
-  fireEvent.click(screen.getByText(/request payment/i))
+  fillAmount('0')
+  clickContinue()
 
   await screen.findByText(/valid nim amount/i)
   expect(claim).not.toHaveBeenCalled()
@@ -277,27 +295,46 @@ it('toMinorUnits parses fiat text to integer minor units, rejecting garbage and 
   expect(toMinorUnits('1'.repeat(20))).toBeNull() // a till will never see a 20-digit price
 })
 
-// --- Task 4: catalog and cart on the Charge screen ----------------------
+// --- Charge: catalog and cart -------------------------------------------
 
 const coffee = { id: 'p1', name: 'Coffee', priceMinor: 250, category: null, pinned: true, active: true, sortOrder: 0 }
 
-it('Charge with no products renders exactly the pre-catalog screen (no cart, no catalog section)', async () => {
+const nimSale = (id: string) => ({ id, status: 'awaiting', state: 'awaiting',
+  paymentMethod: 'nim', totalMinor: 250, fiatCurrency: 'USD', shiftId: null, chargeId: null,
+  items: [], createdAt: 'x', paidAt: null })
+
+it('Charge with no catalog shows neither a Cart nor a product search', async () => {
   cleanup()
   localStorage.clear()
-  const api = { claim: vi.fn(), getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ claim: vi.fn() })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
   expect(screen.queryByText('Cart')).toBeNull()
-  expect(screen.queryByText('Take NIM')).toBeNull()
-  expect(screen.getByText(/request payment/i)).toBeTruthy()
+  expect(screen.queryByText('Search products')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy()
+})
+
+it('Charge step 1 no longer carries a "Manage products" link', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]) })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  await screen.findByText('Coffee')
+  expect(screen.queryByText(/manage products/i)).toBeNull()
+})
+
+it('Charge step 1 links out to the remote bill screen', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ claim: vi.fn() })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  const link = screen.getByRole('link', { name: /Bill someone who isn't here/i })
+  expect(link.getAttribute('href')).toBe('/charge/remote')
 })
 
 it('tapping a 2.50 product twice sums the cart to 5.00, counted in integer cents', async () => {
   cleanup()
   localStorage.clear()
-  const api = { getProducts: vi.fn(async () => [coffee]),
-    getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]) })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
   const tap = () => fireEvent.click(screen.getByRole('button', { name: /Coffee/ }))
   await waitFor(() => expect(screen.getByRole('button', { name: /Coffee/ })).toBeTruthy())
@@ -306,47 +343,110 @@ it('tapping a 2.50 product twice sums the cart to 5.00, counted in integer cents
   await waitFor(() => expect(screen.getAllByText(/5\.00/).length).toBeGreaterThan(0))
 })
 
-it('Cash calls createSale with paymentMethod cash and catalog items priced by the server', async () => {
+it('a cart paid in cash records the sale and returns to step 1 with a confirmation', async () => {
   cleanup()
   localStorage.clear()
   const createSale = vi.fn(async (_body: { items: unknown[]; paymentMethod: string }) => ({ id: 'sale1', status: 'paid', state: 'paid',
-    paymentMethod: 'cash', totalMinor: 250, fiatCurrency: 'USD', shiftId: null, chargeId: null,
+    paymentMethod: 'cash', totalMinor: 500, fiatCurrency: 'USD', shiftId: null, chargeId: null,
     items: [], createdAt: 'x', paidAt: 'x' }))
-  const api = { getProducts: vi.fn(async () => [coffee]), createSale,
-    getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]), createSale })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
-  fireEvent.click(await screen.findByText('Coffee'))
+  const coffeeBtn = () => screen.getByRole('button', { name: /Coffee/ })
+  await waitFor(() => expect(coffeeBtn()).toBeTruthy())
+  fireEvent.click(coffeeBtn())
+  fireEvent.click(coffeeBtn())
+  expect(screen.getAllByText(/5\.00/).length).toBeGreaterThan(0)
+
+  clickContinue()
   fireEvent.click(screen.getByRole('button', { name: /^Cash$/i }))
+  fireEvent.click(screen.getByRole('button', { name: /record cash sale/i }))
+
   await waitFor(() => expect(createSale).toHaveBeenCalledTimes(1))
   const [body] = createSale.mock.calls[0]
   expect(body.paymentMethod).toBe('cash')
-  expect(body.items).toEqual([{ productId: 'p1', quantity: 1 }])
+  expect(body.items).toEqual([{ productId: 'p1', quantity: 2 }])
   await waitFor(() => expect(screen.getByText(/Recorded/i)).toBeTruthy())
+  // back on step 1, with the cart cleared
+  expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy()
+  expect(screen.queryByText('Cart')).toBeNull()
 })
 
-it('Take NIM creates a nim sale, then claims the code by saleId with no fiatAmountMinor', async () => {
+it('a cart paid in NIM creates the sale once and claims the code by saleId', async () => {
   cleanup()
   localStorage.clear()
-  const createSale = vi.fn(async (_body: { items: unknown[]; paymentMethod: string }) => ({ id: 'sale2', status: 'awaiting', state: 'awaiting',
-    paymentMethod: 'nim', totalMinor: 250, fiatCurrency: 'USD', shiftId: null, chargeId: null,
-    items: [], createdAt: 'x', paidAt: null }))
+  const createSale = vi.fn(async (_body: { items: unknown[]; paymentMethod: string }) => nimSale('sale2'))
   const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => ({ sessionId: 's1' }))
-  const api = { getProducts: vi.fn(async () => [coffee]), createSale, claim,
-    getRate: vi.fn(async () => ({ usdPerNim: 0.005 })),
-    getNetwork: vi.fn(async () => ({ network: 'test', height: 1 })) } as any
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]), createSale, claim })
   render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
   fireEvent.click(await screen.findByText('Coffee'))
-  fireEvent.click(screen.getByRole('button', { name: /Take NIM/i }))
-  await waitFor(() => expect(createSale).toHaveBeenCalledTimes(1))
-  expect(createSale.mock.calls[0][0].paymentMethod).toBe('nim')
+  clickContinue()
+  fillCode()
+  clickRequestPayment()
 
-  fireEvent.change(await screen.findByLabelText(/code/i), { target: { value: '123456' } })
-  fireEvent.click(screen.getByText(/request payment/i))
   await waitFor(() => expect(claim).toHaveBeenCalledTimes(1))
+  expect(createSale).toHaveBeenCalledTimes(1)
+  expect(createSale.mock.calls[0][0].paymentMethod).toBe('nim')
   const [, opts] = claim.mock.calls[0]
   expect(opts).toEqual({ saleId: 'sale2' })
   expect(opts).not.toHaveProperty('fiatAmountMinor')
+})
+
+it('a failed claim on a cart sale is retried against the same sale, never a duplicate one', async () => {
+  cleanup()
+  localStorage.clear()
+  const createSale = vi.fn(async (_body: { items: unknown[]; paymentMethod: string }) => nimSale('sale2'))
+  const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => { throw new ApiError('NOT_FOUND', 'nope', 404) })
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]), createSale, claim })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('Coffee'))
+  clickContinue()
+  fillCode()
+  clickRequestPayment()
+  await screen.findByText(/code unavailable/i)
+  expect(createSale).toHaveBeenCalledTimes(1)
+
+  clickRequestPayment()
+  await waitFor(() => expect(claim).toHaveBeenCalledTimes(2))
+  expect(createSale).toHaveBeenCalledTimes(1)
+  expect(claim.mock.calls[1][1]).toEqual({ saleId: 'sale2' })
+})
+
+it('editing the cart after a failed claim mints a fresh sale on the next request', async () => {
+  cleanup()
+  localStorage.clear()
+  let n = 0
+  const createSale = vi.fn(async (_body: { items: unknown[]; paymentMethod: string }) => nimSale(`sale${++n}`))
+  const claim = vi.fn(async (_code: string, _opts?: Record<string, unknown>) => { throw new ApiError('NOT_FOUND', 'nope', 404) })
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]), createSale, claim })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('Coffee'))
+  clickContinue()
+  fillCode()
+  clickRequestPayment()
+  await screen.findByText(/code unavailable/i)
+
+  fireEvent.click(screen.getByRole('button', { name: /back to amount/i }))
+  fireEvent.click(screen.getByLabelText('+'))
+  clickContinue()
+  clickRequestPayment()
+
+  await waitFor(() => expect(createSale).toHaveBeenCalledTimes(2))
+  expect(createSale.mock.calls[1][0].items).toEqual([{ productId: 'p1', quantity: 2 }])
+  await waitFor(() => expect(claim.mock.calls[1][1]).toEqual({ saleId: 'sale2' }))
+})
+
+it('"Back to amount" keeps the cart intact', async () => {
+  cleanup()
+  localStorage.clear()
+  const api = fiatApi({ getProducts: vi.fn(async () => [coffee]), createSale: vi.fn(), claim: vi.fn() })
+  render(<MemoryRouter><Charge api={api} /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('Coffee'))
+  clickContinue()
+  expect(screen.queryByText('Cart')).toBeNull() // step 2 shows a total, not the list
+  fireEvent.click(screen.getByRole('button', { name: /back to amount/i }))
+
+  expect(screen.getByText('Cart')).toBeTruthy()
+  expect(screen.getAllByText(/2\.50/).length).toBeGreaterThan(0)
 })
 
 it('Products: adding a product priced "2,50" sends priceMinor as an integer 250', async () => {
