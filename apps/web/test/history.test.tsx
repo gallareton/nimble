@@ -13,10 +13,19 @@ beforeEach(() => { sessionStorage.clear() })
 
 const past = [
   { id: 'past-2', operatorLabel: 'Cy', openedAt: '2026-08-26T08:00:00.000Z',
-    closedAt: '2026-08-26T16:00:00.000Z', grossNim: '900', confirmed: 3 },
+    closedAt: '2026-08-26T16:00:00.000Z', grossNim: '900', confirmed: 3,
+    grossFiatMinor: null, fiatCurrency: null, cashSales: 0 },
   { id: 'past-1', operatorLabel: 'Ana', openedAt: '2026-08-25T08:00:00.000Z',
-    closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1 },
+    closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1,
+    grossFiatMinor: null, fiatCurrency: null, cashSales: 0 },
 ]
+
+// A shift paid for entirely in cash — the row the audit saw as "0 NIM".
+const cashShift = {
+  id: 'past-3', operatorLabel: 'Jonek', openedAt: '2026-09-11T08:00:00.000Z',
+  closedAt: '2026-09-11T16:00:00.000Z', grossNim: '0', confirmed: 0,
+  grossFiatMinor: 3500, fiatCurrency: 'USD', cashSales: 2,
+}
 
 const reports: Record<string, unknown> = {
   'past-1': {
@@ -53,12 +62,25 @@ it('lists past shifts under the Shifts segment, each one a link to its own repor
   await waitFor(() => expect(screen.getByRole('tab', { name: 'Transactions' })).toBeTruthy())
   fireEvent.click(screen.getByRole('tab', { name: 'Shifts' }))
 
-  await waitFor(() => expect(screen.getByText('Cy')).toBeTruthy())
-  const row = screen.getByText('Ana').closest('a')!
+  await waitFor(() => expect(screen.getByText(/Cy/)).toBeTruthy())
+  const row = screen.getByText(/Ana/).closest('a')!
   expect(row.getAttribute('href')).toBe('/history/shifts/past-1')
   // R12: date, operator and amount are three elements, never one glued run.
   expect(within(row).getByText('400 NIM').className).toBe('row__amt')
-  expect(screen.getByText('Ana').className).toBe('row__sub')
+  // Q1: the row says how many sales it took, whichever way they were paid.
+  expect(row.querySelector('.row__sub')!.textContent).toBe('Ana · 1 sales')
+})
+
+it('shows a cash-only shift by its fiat takings and its full sale count, not as 0 NIM', async () => {
+  const api = { history: emptyHistory, getShifts: vi.fn(async () => [cashShift]) }
+  renderHistory(api)
+  fireEvent.click(await screen.findByRole('tab', { name: 'Shifts' }))
+
+  await waitFor(() => expect(screen.getByText('35.00 USD')).toBeTruthy())
+  const row = screen.getByText('35.00 USD').closest('a')!
+  expect(row.querySelector('.row__amt')!.textContent).toBe('35.00 USD')
+  expect(row.querySelector('.row__sub')!.textContent).toBe('Jonek · 2 sales')
+  expect(screen.queryByText('0 NIM')).toBeNull()
 })
 
 it('says so plainly when the vendor has no closed shifts yet', async () => {

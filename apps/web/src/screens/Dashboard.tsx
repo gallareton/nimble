@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { DashboardView } from '@nimble/shared'
+import { SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { t } from '../i18n'
@@ -84,7 +85,8 @@ export function Dashboard(props: { api?: Api }) {
           <p className="quiet">{t('Nothing recorded for this day yet.')}</p>
         ) : (
           <>
-            <p className="amt">{formatMinor(view.grossFiatMinor)}</p>
+            {/* A bare number is not money: name the currency (ruling Q2). */}
+            <p className="amt">{formatMinor(view.grossFiatMinor)} {SUPPORTED_FIAT_CURRENCY}</p>
             <p className="quiet">{view.grossNim} NIM · {view.salesCount} {t('sales')}</p>
             {view.refundsCount > 0 && (
               <p className="quiet">{view.refundsCount} {t('refunds')} · {view.refundedNim} NIM</p>
@@ -133,8 +135,8 @@ export function Dashboard(props: { api?: Api }) {
       {!isEmptyDay && (
         <section className="form-card">
           <h2>{t('Cash / NIM')}</h2>
-          <p>{t('Cash')}: {view.byPaymentMethod.cash.count} · {formatMinor(view.byPaymentMethod.cash.fiatMinor)}</p>
-          <p>{t('NIM')}: {view.byPaymentMethod.nim.count} · {formatMinor(view.byPaymentMethod.nim.fiatMinor)}</p>
+          <p>{t('Cash')}: {view.byPaymentMethod.cash.count} · {formatMinor(view.byPaymentMethod.cash.fiatMinor)} {SUPPORTED_FIAT_CURRENCY}</p>
+          <p>{t('NIM')}: {view.byPaymentMethod.nim.count} · {formatMinor(view.byPaymentMethod.nim.fiatMinor)} {SUPPORTED_FIAT_CURRENCY}</p>
         </section>
       )}
 

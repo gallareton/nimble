@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { ShiftEntry, ShiftReport as ShiftReportView } from '@nimble/shared'
+import { SUPPORTED_FIAT_CURRENCY } from '@nimble/shared'
 import { useAppOptional } from '../AppContext'
 import type { Api } from '../api/client'
 import { StatusBadge } from '../components/StatusBadge'
@@ -12,21 +13,58 @@ import { t } from '../i18n'
 // apart the way they once did (span-wrapped fields in one copy, flat text
 // in the other).
 
+/** One definition of "takings" for every screen: NIM *and* cash. The audit
+ *  found a shift with two cash sales headlined "0 NIM · 0 sales" with 35.00
+ *  USD sitting right under it — the count came from `confirmed`, which is
+ *  NIM-charges-only by design, and the headline from grossNim alone. */
+export function reportHeadline(totals: ShiftReportView['totals']) {
+  const cashSales = totals.cashSales ?? 0
+  const isFiat = totals.grossFiatMinor != null && Boolean(totals.fiatCurrency)
+  const cashMinor = totals.byPaymentMethod?.cash.fiatMinor ?? 0
+  return {
+    sales: totals.confirmed + cashSales,
+    cashSales,
+    cashMinor,
+    currency: totals.fiatCurrency ?? null,
+    /** True when the headline is the fiat gross — the one figure that covers
+     *  both payment methods. Without fiat the headline falls back to NIM,
+     *  and the NIM/cash split line below it would only repeat itself. */
+    isFiat,
+    gross: isFiat
+      ? `${(totals.grossFiatMinor! / 100).toFixed(2)} ${totals.fiatCurrency!}`
+      : `${totals.grossNim} NIM`,
+  }
+}
+
+/** The R12 rule — an amount and a count are never one glued string — as a
+ *  helper: each part its own element, the dots only between them. */
+export function dotted(parts: ReactNode[]): ReactNode[] {
+  return parts.flatMap((part, i) => (i === 0 ? [part] : [<span key={`d${i}`}> · </span>, part]))
+}
+
+/** The line under the headline: where the takings came from. The NIM figure
+ *  is skipped when the headline is already that same NIM total. */
+export function splitParts(totals: ShiftReportView['totals']): ReactNode[] {
+  const { isFiat, sales, cashSales, cashMinor, currency } = reportHeadline(totals)
+  const parts: ReactNode[] = []
+  if (isFiat) parts.push(<span key="nim">{totals.grossNim} NIM</span>)
+  if (cashSales > 0 && currency)
+    parts.push(<span key="cash">{(cashMinor / 100).toFixed(2)} {currency} {t('cash')}</span>)
+  parts.push(<span key="sales">{sales} {t('sales')}</span>)
+  return parts
+}
+
 export function ReportSummary({ report }: { report: ShiftReportView }) {
-  const { grossNim, confirmed, failed, grossFiatMinor, fiatCurrency } = report.totals
-  const empty = confirmed === 0 && report.entries.length === 0
+  const { failed } = report.totals
+  const head = reportHeadline(report.totals)
+  const empty = head.sales === 0 && report.entries.length === 0
   return (
     <section className="form-card">
       {/* R12: never one concatenated string — the amount and the sale count
           are separate elements, which is what the audit's "glued together"
           screens were really complaining about. */}
-      <p className="amt">
-        <span>{grossNim} NIM</span>
-        <span className="quiet"> · {confirmed} {t('sales')}</span>
-      </p>
-      {grossFiatMinor !== null && fiatCurrency && (
-        <p className="quiet">{(grossFiatMinor / 100).toFixed(2)} {fiatCurrency}</p>
-      )}
+      <p className="amt">{head.gross}</p>
+      <p className="quiet">{dotted(splitParts(report.totals))}</p>
       {failed > 0 && <p className="quiet">{failed} {t('failed')}</p>}
       {empty && <p className="quiet">{t('No sales yet — takings will appear here.')}</p>}
       {report.fiatIncomplete && <p className="quiet">{t('Some sales had no exchange rate, so the fiat total is partial.')}</p>}
@@ -94,6 +132,9 @@ export function EntryList({ entries, locked }: { entries: ShiftEntry[]; locked: 
 // crash.
 export function ProductBreakdown({ report }: { report: ShiftReportView }) {
   if (!report.byProduct || report.byProduct.length === 0) return null
+  // A bare "35.00" next to "Soda × 7" reads as a quantity or a NIM price;
+  // every money figure on this screen names its currency (ruling Q2).
+  const cur = report.totals.fiatCurrency ?? SUPPORTED_FIAT_CURRENCY
   return (
     <section className="form-card">
       <h2>{t('Sold by product')}</h2>
@@ -101,7 +142,7 @@ export function ProductBreakdown({ report }: { report: ShiftReportView }) {
         {report.byProduct.map(p => (
           <li key={p.name} className="row">
             <span className="row__title">{p.name} × {p.quantity}</span>
-            <span className="row__amt">{(p.totalMinor / 100).toFixed(2)}</span>
+            <span className="row__amt">{(p.totalMinor / 100).toFixed(2)} {cur}</span>
           </li>
         ))}
       </ul>
@@ -112,6 +153,10 @@ export function ProductBreakdown({ report }: { report: ShiftReportView }) {
 export function PaymentSplit({ report }: { report: ShiftReportView }) {
   if (!report.totals.byPaymentMethod) return null
   const { nim, cash } = report.totals.byPaymentMethod
+  const cur = report.totals.fiatCurrency ?? SUPPORTED_FIAT_CURRENCY
+  // "sales" here counted transactions, not the items in them — the audit
+  // read it as pieces sold. Say which one it is.
+  const transactions = (n: number) => t('{n} transactions').replace('{n}', String(n))
   return (
     <section className="form-card">
       <h2>{t('By payment method')}</h2>
@@ -119,16 +164,16 @@ export function PaymentSplit({ report }: { report: ShiftReportView }) {
         <li className="row">
           <span className="row__main">
             <span className="row__title">{t('NIM')}</span>
-            <span className="row__sub">{nim.count} {t('sales')}</span>
+            <span className="row__sub">{transactions(nim.count)}</span>
           </span>
-          <span className="row__amt">{(nim.fiatMinor / 100).toFixed(2)}</span>
+          <span className="row__amt">{(nim.fiatMinor / 100).toFixed(2)} {cur}</span>
         </li>
         <li className="row">
           <span className="row__main">
             <span className="row__title">{t('Cash')}</span>
-            <span className="row__sub">{cash.count} {t('sales')}</span>
+            <span className="row__sub">{transactions(cash.count)}</span>
           </span>
-          <span className="row__amt">{(cash.fiatMinor / 100).toFixed(2)}</span>
+          <span className="row__amt">{(cash.fiatMinor / 100).toFixed(2)} {cur}</span>
         </li>
       </ul>
       {report.cashEntries && report.cashEntries.length > 0 && (
@@ -139,7 +184,7 @@ export function PaymentSplit({ report }: { report: ShiftReportView }) {
                 <span className="row__sub">{t('Cash')} · {new Date(e.occurredAt).toLocaleTimeString()}</span>
                 <span className="row__title">{e.reference ?? t('Cash sale')}</span>
               </span>
-              <span className="row__amt">{(e.amountFiatMinor / 100).toFixed(2)}</span>
+              <span className="row__amt">{(e.amountFiatMinor / 100).toFixed(2)} {cur}</span>
             </li>
           ))}
         </ul>

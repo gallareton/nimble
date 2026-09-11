@@ -62,8 +62,11 @@ function renderDashboard(getDashboard: (day?: string) => Promise<DashboardView>)
 describe('Dashboard', () => {
   it('renders tile numbers from the fixture', async () => {
     renderDashboard(async () => baseView)
-    await screen.findByText('7.50')
+    await screen.findByText('7.50 USD')
     expect(screen.getByText(/12\.5 NIM · 3 sales/)).toBeTruthy()
+    // Q2: every money figure on the dashboard names its currency.
+    expect(screen.getByText(/Cash: 1 · 2\.50 USD/)).toBeTruthy()
+    expect(screen.getByText(/NIM: 2 · 5\.00 USD/)).toBeTruthy()
   })
 
   it('shows an empty state, not zeros, for a day with nothing recorded', async () => {
@@ -84,7 +87,7 @@ describe('Dashboard', () => {
 
   it('disables "›" for today and "‹" fetches yesterday', async () => {
     const api = renderDashboard(async () => baseView)
-    await screen.findByText('7.50')
+    await screen.findByText('7.50 USD')
 
     const next = screen.getByRole('button', { name: /›/ }) as HTMLButtonElement
     expect(next.disabled).toBe(true)

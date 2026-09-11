@@ -333,6 +333,27 @@ export async function shiftRoutes(app: FastifyInstance) {
         else 0 end), 0)`,
       confirmed: sql<number>`count(case when ${paymentSession.status} = 'CONFIRMED'
         and ${refund.id} is null then 1 end)::int`,
+      // The fiat side of the same confirmed, non-refund charges. buildReport
+      // adds a charge's fiat only when it has one (and flags the report
+      // incomplete otherwise); the sum here does the same by treating a
+      // missing price as zero rather than as a null total.
+      nimFiatMinor: sql<number>`coalesce(sum(case when ${paymentSession.status} = 'CONFIRMED'
+        and ${refund.id} is null then ${charge.fiatAmountMinor} else 0 end), 0)::int`,
+      nimCurrency: sql<string | null>`max(case when ${paymentSession.status} = 'CONFIRMED'
+        and ${refund.id} is null then ${charge.fiatCurrency} end)`,
+      // Cash sales never produce a charge row, so they cannot come out of the
+      // join above — same reasoning (and same predicate: shift, cash, paid)
+      // as buildReport's separate cash query, as a correlated subquery so the
+      // list still costs one round trip however many shifts come back.
+      cashSales: sql<number>`(select count(*) from ${sale}
+        where ${sale.shiftId} = ${shift.id}
+          and ${sale.paymentMethod} = 'cash' and ${sale.status} = 'paid')::int`,
+      cashFiatMinor: sql<number>`coalesce((select sum(${sale.totalMinor}) from ${sale}
+        where ${sale.shiftId} = ${shift.id}
+          and ${sale.paymentMethod} = 'cash' and ${sale.status} = 'paid'), 0)::int`,
+      cashCurrency: sql<string | null>`(select max(${sale.fiatCurrency}) from ${sale}
+        where ${sale.shiftId} = ${shift.id}
+          and ${sale.paymentMethod} = 'cash' and ${sale.status} = 'paid')`,
     })
       .from(shift)
       .leftJoin(charge, eq(charge.shiftId, shift.id))
@@ -350,6 +371,13 @@ export async function shiftRoutes(app: FastifyInstance) {
       closedAt: r.closedAt?.toISOString() ?? null,
       grossNim: lunaToNim(BigInt(r.grossLuna)),
       confirmed: Number(r.confirmed),
+      // Null, not 0, for a shift that took nothing either way: "no money"
+      // and "0.00 USD" read differently, and buildReport draws the same line.
+      grossFiatMinor: Number(r.confirmed) > 0 || Number(r.cashSales) > 0
+        ? Number(r.nimFiatMinor) + Number(r.cashFiatMinor)
+        : null,
+      fiatCurrency: r.nimCurrency ?? r.cashCurrency ?? null,
+      cashSales: Number(r.cashSales),
     }))
     return reply.send(items)
   })

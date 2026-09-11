@@ -5,7 +5,7 @@ import type { Api } from '../api/client'
 import { ApiError } from '../api/client'
 import { t } from '../i18n'
 import { usePoll } from '../lib/usePoll'
-import { EntryList, ExportButton, PaymentSplit, ProductBreakdown, ReportSummary, useExport } from './ShiftReport'
+import { EntryList, ExportButton, PaymentSplit, ProductBreakdown, ReportSummary, dotted, reportHeadline, splitParts, useExport } from './ShiftReport'
 
 // Reading stays available offline (BR-P10 blocks accepting a payment, not
 // looking at what already happened): this screen deliberately never checks
@@ -139,6 +139,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
   }
 
   const who = shift?.operatorLabel ?? report?.shift.operatorLabel ?? ''
+  const close = report ? reportHeadline(report.totals) : null
 
   return (
     <main>
@@ -170,10 +171,18 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
           <section className="app-sheet confirm-sheet" role="dialog" aria-label={t('Close the shift')}
             onClick={e => e.stopPropagation()}>
             <p>{t("Closing {name}'s shift").replace('{name}', who)}</p>
-            <p className="amt">
-              <span>{report?.totals.grossNim ?? '0'} NIM</span>
-              <span className="quiet"> · {report?.totals.confirmed ?? 0} {t('sales')}</span>
-            </p>
+            {/* The same takings the report shows, at the irreversible
+                moment: a dialog that repeats a wrong summary is worse than
+                no summary. Until the report has loaded there is no total to
+                show and the confirm button below stays disabled. */}
+            {close && <>
+              <p className="amt">{close.gross}</p>
+              <p className="quiet">{dotted(splitParts(report!.totals))}</p>
+              {close.cashSales > 0 && close.currency && (
+                <p>{t('Cash to settle')}: {(close.cashMinor / 100).toFixed(2)} {close.currency}</p>
+              )}
+            </>}
+            {!report && <p className="quiet">{t('Loading…')}</p>}
             {confirmClose.unpaid > 0 && (
               <p role="alert" className="quiet">
                 {t('{n} bills are still unpaid. Anything paid after you close lands outside this report.')
@@ -181,7 +190,7 @@ export function Shift({ api: apiProp }: { api?: Api } = {}) {
               </p>
             )}
             <div className="actions">
-              <button className="primary" disabled={busy} onClick={() => void confirmCloseNow()}>{t('Close the shift')}</button>
+              <button className="primary" disabled={busy || !report} onClick={() => void confirmCloseNow()}>{t('Close the shift')}</button>
               <button onClick={() => setConfirmClose(null)}>{t('Keep it open')}</button>
             </div>
           </section>

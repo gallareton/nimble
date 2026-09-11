@@ -135,9 +135,19 @@ export function History({ api: apiProp }: { api?: Api } = {}) {
                 <Link className="row row--link" to={`/history/shifts/${s.id}`}>
                   <span className="row__main">
                     <span className="row__title">{new Date(s.openedAt).toLocaleDateString()}</span>
-                    <span className="row__sub">{s.operatorLabel}</span>
+                    {/* Takings = NIM + cash, and a sale is a sale whichever
+                        way it was paid — the list must say what the report
+                        says (ruling Q1). Older rows carry neither field; they
+                        fall back to the NIM-only figure rather than 0.00. */}
+                    <span className="row__sub">
+                      {s.operatorLabel} · {s.confirmed + (s.cashSales ?? 0)} {t('sales')}
+                    </span>
                   </span>
-                  <span className="row__amt">{s.grossNim} NIM</span>
+                  <span className="row__amt">
+                    {s.grossFiatMinor != null && s.fiatCurrency
+                      ? `${(s.grossFiatMinor / 100).toFixed(2)} ${s.fiatCurrency}`
+                      : `${s.grossNim} NIM`}
+                  </span>
                 </Link>
               </li>
             ))}

@@ -547,3 +547,52 @@ it('the past-shifts list subtracts refunds, agreeing with the report it summaris
   expect(listed.grossNim).toBe(report.totals.grossNim)   // 6, not 14
   expect(listed.confirmed).toBe(report.totals.confirmed) // 1 sale, not 2
 })
+
+it('the shift list carries the same gross as the report: cash included, cashSales counted apart from confirmed', async () => {
+  const { t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Ana' }, headers: auth2(t) })).json()
+
+  // The audit's screen exactly: two cash sales of 17.50 and no NIM at all.
+  for (const _ of [1, 2]) {
+    const res = await createSale(t, { items: [{ name: 'Soda', unitPriceMinor: 1750, quantity: 1 }], paymentMethod: 'cash' })
+    expect(res.statusCode).toBe(201)
+  }
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth2(t) })
+
+  const report = (await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth2(t) })).json()
+  const [row] = (await app.inject({ url: '/v1/shifts', headers: auth2(t) })).json()
+  expect(row.id).toBe(id)
+  expect(row.grossFiatMinor).toBe(3500)
+  expect(row.grossFiatMinor).toBe(report.totals.grossFiatMinor)
+  expect(row.fiatCurrency).toBe('USD')
+  expect(row.cashSales).toBe(2)
+  expect(row.confirmed).toBe(0)
+  expect(row.grossNim).toBe('0')
+})
+
+it('the shift list adds NIM fiat to cash, and reports null gross for a shift that took nothing', async () => {
+  const { t } = await vendor()
+  const { id } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Bo' }, headers: auth2(t) })).json()
+  await confirmFiatSale(id, t, 1000)
+  expect((await createSale(t, { items: [{ name: 'Soda', unitPriceMinor: 250, quantity: 1 }], paymentMethod: 'cash' })).statusCode).toBe(201)
+  await app.inject({ method: 'POST', url: `/v1/shifts/${id}/close`, headers: auth2(t) })
+
+  const { id: emptyId } = (await app.inject({ method: 'POST', url: '/v1/shifts',
+    payload: { operatorLabel: 'Cy' }, headers: auth2(t) })).json()
+  await app.inject({ method: 'POST', url: `/v1/shifts/${emptyId}/close`, headers: auth2(t) })
+
+  const list = (await app.inject({ url: '/v1/shifts', headers: auth2(t) })).json()
+  const mixed = list.find((s: { id: string }) => s.id === id)
+  const empty = list.find((s: { id: string }) => s.id === emptyId)
+  const report = (await app.inject({ url: `/v1/shifts/${id}/report`, headers: auth2(t) })).json()
+  expect(mixed.grossFiatMinor).toBe(1250)
+  expect(mixed.grossFiatMinor).toBe(report.totals.grossFiatMinor)
+  expect(mixed.confirmed).toBe(1)
+  expect(mixed.cashSales).toBe(1)
+  // Nothing taken either way: null, not a 0.00 that reads like a real total.
+  expect(empty.grossFiatMinor).toBeNull()
+  expect(empty.fiatCurrency).toBeNull()
+  expect(empty.cashSales).toBe(0)
+})

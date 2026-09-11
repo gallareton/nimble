@@ -497,7 +497,8 @@ it('shows the sold-by-product and NIM/cash split sections when the report carrie
   // R12: the name and the amount are two elements, never one run of text.
   // "Coffee × 25.00" was what the audit actually saw on the device.
   expect(screen.queryByText('Coffee × 25.00')).toBeNull()
-  expect(product.closest('.row')!.querySelector('.row__amt')!.textContent).toBe('5.00')
+  // Q2: the amount names its currency — "5.00" alone read as pieces or NIM.
+  expect(product.closest('.row')!.querySelector('.row__amt')!.textContent).toBe('5.00 USD')
   expect(screen.getByText('By payment method')).toBeTruthy()
   expect(screen.getByText('Soda').className).toBe('row__title')
   // A cash entry shows fiat only — cash corresponds to no NIM sent.
@@ -521,4 +522,72 @@ it('renders the shift report with neither new section when byProduct/byPaymentMe
   await waitFor(() => expect(screen.getByText('500 NIM')).toBeTruthy())
   expect(screen.queryByText('Sold by product')).toBeNull()
   expect(screen.queryByText('By payment method')).toBeNull()
+})
+
+// Ruling Q1/Q2 (audit round 2, image20–27): a shift whose only takings were
+// two cash sales of 17.50 was headlined "0 NIM · 0 sales" over an empty
+// state, with 35.00 USD printed underneath it.
+const cashOnlyReport = {
+  shift: { id: 's1', operatorLabel: 'Jonek', openedAt: '2026-09-11T08:00:00.000Z', closedAt: null },
+  totals: {
+    count: 0, confirmed: 0, failed: 0, refunded: 0,
+    grossNim: '0', grossFiatMinor: 3500, fiatCurrency: 'USD', averageTicketNim: null,
+    cashSales: 2,
+    byPaymentMethod: { nim: { count: 0, fiatMinor: 0 }, cash: { count: 2, fiatMinor: 3500 } },
+  },
+  entries: [],
+  cashEntries: [],
+  byProduct: [{ name: 'Soda', quantity: 7, totalMinor: 3500 }],
+  fiatIncomplete: false,
+}
+const cashOnlyApi = () => ({
+  getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Jonek',
+    openedAt: '2026-09-11T08:00:00.000Z', closedAt: null })),
+  getShiftReport: vi.fn(async () => cashOnlyReport),
+  getOutstandingBills: vi.fn(async () => ({ bills: [] })),
+  closeShift: vi.fn(async () => cashOnlyReport),
+})
+
+it('counts cash in the takings: a cash-only shift headlines the fiat gross and its sale count, never an empty state', async () => {
+  render(<MemoryRouter><Shift api={cashOnlyApi() as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Jonek')).toBeTruthy())
+
+  const headline = screen.getAllByText('35.00 USD').find(e => e.className === 'amt')
+  expect(headline).toBeTruthy()
+  expect(screen.getByText(/0 NIM/).closest('p')!.textContent).toBe('0 NIM · 35.00 USD cash · 2 sales')
+  expect(screen.queryByText(/No sales yet/)).toBeNull()
+
+  // Q2: a bare "35.00" beside "Soda × 7" reads as pieces or NIM.
+  const product = screen.getByText('Soda × 7').closest('li')!
+  expect(within(product).getByText('35.00 USD')).toBeTruthy()
+  // Q2: the split counts transactions, not items.
+  expect(screen.getByText('2 transactions')).toBeTruthy()
+})
+
+it('repeats the full takings — and the cash to settle — in the close-shift dialog', async () => {
+  render(<MemoryRouter><Shift api={cashOnlyApi() as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Jonek')).toBeTruthy())
+  fireEvent.click(screen.getByRole('button', { name: 'Close the shift' }))
+
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText('35.00 USD').className).toBe('amt')
+  expect(within(dialog).getByText(/Cash to settle/).textContent).toBe('Cash to settle: 35.00 USD')
+  expect(within(dialog).getByText(/0 NIM/).closest('p')!.textContent).toBe('0 NIM · 35.00 USD cash · 2 sales')
+})
+
+it('will not let the shift be closed on a summary it has not loaded yet', async () => {
+  const api = {
+    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Jonek',
+      openedAt: '2026-09-11T08:00:00.000Z', closedAt: null })),
+    // Never resolves: the report is still in flight when the vendor taps.
+    getShiftReport: vi.fn(() => new Promise(() => {})),
+    getOutstandingBills: vi.fn(async () => ({ bills: [] })),
+  }
+  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  await waitFor(() => expect(screen.getByText('Jonek')).toBeTruthy())
+  fireEvent.click(screen.getByRole('button', { name: 'Close the shift' }))
+
+  const dialog = await screen.findByRole('dialog')
+  const confirm = within(dialog).getByRole('button', { name: 'Close the shift' }) as HTMLButtonElement
+  expect(confirm.disabled).toBe(true)
 })

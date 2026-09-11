@@ -203,6 +203,15 @@ export interface ShiftEntry {
 export interface ShiftListItem extends ShiftView {
   grossNim: string
   confirmed: number
+  /** Same definition as ShiftReport.totals.grossFiatMinor: confirmed NIM
+   *  sales' fiat value plus paid cash sales' totals. Null when the shift has
+   *  neither — a list row must never disagree with the report it summarises,
+   *  which is exactly what "utarg pomija gotówkę" was. */
+  grossFiatMinor: number | null
+  fiatCurrency: string | null
+  /** Paid cash sales in this shift. Never folded into `confirmed`, which
+   *  stays NIM-charge-only; a sales count is `confirmed + cashSales`. */
+  cashSales: number
 }
 
 /** One row of the POS "sold by product" breakdown — paid sales only (cash
