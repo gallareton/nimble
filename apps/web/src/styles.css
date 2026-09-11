@@ -214,7 +214,8 @@ button.chip {
 }
 
 /* ── brand ── */
-.brand { font-weight: 800; font-size: 28px; letter-spacing: -0.02em; color: var(--ink); }
+/* Brand test (product owner, 2026-09-11): NIM in Nimiq gold, ble in light blue. */
+.brand { font-weight: 800; font-size: 28px; letter-spacing: -0.02em; color: var(--nimiq-gold); }
 .brand em { font-style: normal; color: var(--action); }
 
 .brand-chip {
