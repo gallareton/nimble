@@ -299,7 +299,8 @@ button.chip:disabled,
 .btn-sm { min-height: 44px; padding: 10px 18px; font-size: 15px; }
 
 .actions { display: flex; gap: 10px; }
-.actions > button { flex: 1; }
+.actions > button, .actions > a { flex: 1; }
+.actions > a > button { width: 100%; }
 
 /* ── forms ── */
 label {
@@ -855,6 +856,7 @@ a.row--link:hover, button.row--link:hover:not(:disabled) { box-shadow: var(--sha
   color: var(--muted);
 }
 .seg button:hover:not(:disabled) { box-shadow: none; }
+.seg button[aria-selected='true'],
 .seg button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
 .seg--wide { display: flex; }
 .seg--wide button { flex: 1; min-height: 48px; font-size: 16px; }

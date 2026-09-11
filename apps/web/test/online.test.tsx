@@ -1,8 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { Charge } from '../src/screens/Charge'
-import { Shift } from '../src/screens/Shift'
+import { PastShiftReport } from '../src/screens/ShiftReport'
 import { RETRY_INTERVAL_MS } from '../src/lib/online'
 
 afterEach(() => {
@@ -68,15 +68,18 @@ it('still renders a past shift report while offline', async () => {
     totals: { count: 1, confirmed: 1, failed: 0, grossNim: '400', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '400' },
     entries: [], fiatIncomplete: false,
   }
-  const api = {
-    getCurrentShift: vi.fn(async () => null),
-    getShifts: vi.fn(async () => past),
-    getShiftReport: vi.fn(async () => pastReport),
-  }
-  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
+  const api = { getShiftReport: vi.fn(async () => pastReport) }
+  // A past shift is its own route now (R15) — reading it must still never
+  // check connectivity.
+  render(
+    <MemoryRouter initialEntries={['/history/shifts/past-1']}>
+      <Routes>
+        <Route path="/history/shifts/:id" element={<PastShiftReport api={api as never} />} />
+      </Routes>
+    </MemoryRouter>,
+  )
   await waitFor(() => expect(screen.getByText('Ana')).toBeTruthy())
-  fireEvent.click(screen.getByText('Ana'))
-  await waitFor(() => expect(screen.getByText('400 NIM')).toBeTruthy())
+  expect(screen.getByText('400 NIM')).toBeTruthy()
 })
 
 it('refuses at submit time when a fresh probe fails, even though navigator.onLine is still true — a dead uplink behind a live Wi-Fi association', async () => {

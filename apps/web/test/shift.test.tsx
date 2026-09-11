@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { Shift } from '../src/screens/Shift'
 import { NewRemoteCharge } from '../src/screens/NewRemoteCharge'
@@ -60,8 +60,11 @@ it('shows an on-screen panel with the export text when the webview cannot share 
   render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
   await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
   fireEvent.click(screen.getByText('Close the shift'))
-  await waitFor(() => expect(screen.getByText('Download CSV')).toBeTruthy())
-  fireEvent.click(screen.getByText('Download CSV'))
+  const dialog = await screen.findByRole('dialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Close the shift' }))
+  await waitFor(() => expect(screen.getByText('Export')).toBeTruthy())
+  fireEvent.click(screen.getByText('Export'))
+  fireEvent.click(screen.getByText('Export CSV'))
   await waitFor(() => expect((screen.getByRole('textbox') as HTMLTextAreaElement).value)
     .toBe('id,amount\n1,500'))
   ;(navigator as unknown as { canShare?: unknown }).canShare = originalCanShare
@@ -86,149 +89,15 @@ it('shares the export via navigator.share when the webview supports it, without 
   render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
   await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
   fireEvent.click(screen.getByText('Close the shift'))
-  await waitFor(() => expect(screen.getByText('Download CSV')).toBeTruthy())
-  fireEvent.click(screen.getByText('Download CSV'))
+  const dialog = await screen.findByRole('dialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Close the shift' }))
+  await waitFor(() => expect(screen.getByText('Export')).toBeTruthy())
+  fireEvent.click(screen.getByText('Export'))
+  fireEvent.click(screen.getByText('Export JSON'))
   await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
   expect(screen.queryByRole('textbox')).toBeNull()
   delete (navigator as unknown as { canShare?: unknown }).canShare
   delete (navigator as unknown as { share?: unknown }).share
-})
-
-it('lists past shifts and shows a selected one\'s report using the same export actions', async () => {
-  const past = [
-    { id: 'past-2', operatorLabel: 'Cy', openedAt: '2026-08-26T08:00:00.000Z', closedAt: '2026-08-26T16:00:00.000Z', grossNim: '900', confirmed: 3 },
-    { id: 'past-1', operatorLabel: 'Ana', openedAt: '2026-08-25T08:00:00.000Z', closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1 },
-  ]
-  const pastReport = {
-    shift: past[1],
-    totals: { count: 1, confirmed: 1, failed: 0, grossNim: '400', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '400' },
-    entries: [], fiatIncomplete: false,
-  }
-  const api = {
-    getCurrentShift: vi.fn(async () => null),
-    getShifts: vi.fn(async () => past),
-    getShiftReport: vi.fn(async (id: string) => {
-      if (id === 'past-1') return pastReport
-      throw new Error('unexpected id')
-    }),
-  }
-  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText('Open a shift')).toBeTruthy())
-  await waitFor(() => expect(screen.getByText('Cy')).toBeTruthy())
-  expect(screen.getByText('Ana')).toBeTruthy()
-
-  fireEvent.click(screen.getByText('Ana'))
-  await waitFor(() => expect(screen.getByText('400 NIM')).toBeTruthy())
-  expect(screen.getByText('Download CSV')).toBeTruthy()
-})
-
-it('shows nothing extra when the vendor has no past shifts', async () => {
-  const api = {
-    getCurrentShift: vi.fn(async () => null),
-    getShifts: vi.fn(async () => []),
-  }
-  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText('Open a shift')).toBeTruthy())
-  expect(screen.queryByText(/Past shifts/i)).toBeNull()
-})
-
-it('renders the past-shifts list identically whether reached from the open-shift form or the closed-shift view', async () => {
-  const past = [
-    { id: 'past-1', operatorLabel: 'Ana', openedAt: '2026-08-25T08:00:00.000Z', closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1 },
-  ]
-  const noShiftApi = { getCurrentShift: vi.fn(async () => null), getShifts: vi.fn(async () => past) }
-  const { unmount } = render(<MemoryRouter><Shift api={noShiftApi as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText('Ana')).toBeTruthy())
-  const noShiftHtml = screen.getByText('Ana').closest('a')!.innerHTML
-  unmount()
-  cleanup()
-
-  // A closed shift (shift === null, report set) reaches the same "else"
-  // render branch as the running-shift view, just without the current
-  // shift's own report replaced yet — the list only shows once !shift.
-  const closedShiftApi = {
-    getCurrentShift: vi.fn(async () => ({ id: 's1', operatorLabel: 'Cy', openedAt: '2026-08-27T08:00:00.000Z', closedAt: null })),
-    getShiftReport: vi.fn(async () => ({
-      shift: { id: 's1', operatorLabel: 'Cy', openedAt: '2026-08-27T08:00:00.000Z', closedAt: '2026-08-27T16:00:00.000Z' },
-      totals: { count: 0, confirmed: 0, failed: 0, grossNim: '0', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: null },
-      entries: [], fiatIncomplete: false,
-    })),
-    closeShift: vi.fn(async () => ({
-      shift: { id: 's1', operatorLabel: 'Cy', openedAt: '2026-08-27T08:00:00.000Z', closedAt: '2026-08-27T16:00:00.000Z' },
-      totals: { count: 0, confirmed: 0, failed: 0, grossNim: '0', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: null },
-      entries: [], fiatIncomplete: false,
-    })),
-    getShifts: vi.fn(async () => past),
-  }
-  render(<MemoryRouter><Shift api={closedShiftApi as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
-  fireEvent.click(screen.getByText('Close the shift'))
-  await waitFor(() => expect(screen.getByText('Ana')).toBeTruthy())
-  const closedHtml = screen.getByText('Ana').closest('a')!.innerHTML
-  expect(closedHtml).toBe(noShiftHtml)
-})
-
-it('lets the vendor leave a viewed past shift and return to the open-a-shift form, without a remount', async () => {
-  const past = [
-    { id: 'past-1', operatorLabel: 'Ana', openedAt: '2026-08-25T08:00:00.000Z', closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1 },
-  ]
-  const pastReport = {
-    shift: past[0],
-    totals: { count: 1, confirmed: 1, failed: 0, grossNim: '400', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '400' },
-    entries: [], fiatIncomplete: false,
-  }
-  const api = {
-    getCurrentShift: vi.fn(async () => null),
-    getShifts: vi.fn(async () => past),
-    getShiftReport: vi.fn(async () => pastReport),
-  }
-  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText('Ana')).toBeTruthy())
-
-  fireEvent.click(screen.getByText('Ana'))
-  await waitFor(() => expect(screen.getByText('400 NIM')).toBeTruthy())
-
-  fireEvent.click(screen.getByText(/Back/i))
-  await waitFor(() => expect(screen.getByText('Open a shift')).toBeTruthy())
-})
-
-it('clears an open export panel when the vendor switches from one past shift to another', async () => {
-  const past = [
-    { id: 'past-2', operatorLabel: 'Cy', openedAt: '2026-08-26T08:00:00.000Z', closedAt: '2026-08-26T16:00:00.000Z', grossNim: '900', confirmed: 3 },
-    { id: 'past-1', operatorLabel: 'Ana', openedAt: '2026-08-25T08:00:00.000Z', closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1 },
-  ]
-  const reports: Record<string, unknown> = {
-    'past-1': {
-      shift: past[1],
-      totals: { count: 1, confirmed: 1, failed: 0, grossNim: '400', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '400' },
-      entries: [], fiatIncomplete: false,
-    },
-    'past-2': {
-      shift: past[0],
-      totals: { count: 3, confirmed: 3, failed: 0, grossNim: '900', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '300' },
-      entries: [], fiatIncomplete: false,
-    },
-  }
-  const originalCanShare = (navigator as unknown as { canShare?: unknown }).canShare
-  delete (navigator as unknown as { canShare?: unknown }).canShare
-  const api = {
-    getCurrentShift: vi.fn(async () => null),
-    getShifts: vi.fn(async () => past),
-    getShiftReport: vi.fn(async (id: string) => reports[id]),
-    fetchShiftExport: vi.fn(async () => ({ text: 'id,amount\n1,400', filename: 'shift-past-1.csv', mime: 'text/csv' })),
-  }
-  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText('Ana')).toBeTruthy())
-
-  fireEvent.click(screen.getByText('Ana'))
-  await waitFor(() => expect(screen.getByText('400 NIM')).toBeTruthy())
-  fireEvent.click(screen.getByText('Download CSV'))
-  await waitFor(() => expect(screen.getByRole('textbox')).toBeTruthy())
-
-  fireEvent.click(screen.getByText('Cy'))
-  await waitFor(() => expect(screen.getByText('900 NIM')).toBeTruthy())
-  expect(screen.queryByRole('textbox')).toBeNull()
-  ;(navigator as unknown as { canShare?: unknown }).canShare = originalCanShare
 })
 
 it('lets the vendor return to the open-a-shift form after closing a shift, keeping the report until then', async () => {
@@ -246,15 +115,17 @@ it('lets the vendor return to the open-a-shift form after closing a shift, keepi
   render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
   await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
   fireEvent.click(screen.getByText('Close the shift'))
+  const dialog = await screen.findByRole('dialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Close the shift' }))
 
-  // The closed report and its export actions stay reachable until the
+  // The closed report and its export action stay reachable until the
   // vendor explicitly leaves — closing must not hide them immediately.
-  await waitFor(() => expect(screen.getByText('Download CSV')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('Export')).toBeTruthy())
   expect(screen.getByText('500 NIM')).toBeTruthy()
 
   fireEvent.click(screen.getByText(/Back/i))
   await waitFor(() => expect(screen.getByText('Open a shift')).toBeTruthy())
-  expect(screen.queryByText('Download CSV')).toBeNull()
+  expect(screen.queryByText('Export')).toBeNull()
 })
 
 it('tells the vendor a shift is already open instead of failing silently on a 409', async () => {
@@ -390,12 +261,16 @@ it('warns before closing a shift while bills are still unpaid, then closes on th
 
   fireEvent.click(screen.getByText('Close the shift'))
   await waitFor(() => expect(api.getOutstandingBills).toHaveBeenCalled())
-  expect(await screen.findByRole('alert')).toBeTruthy()
-  expect(screen.getByText(/2 bills are still unpaid/i)).toBeTruthy()
-  // The first tap warns and must NOT have closed anything.
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByRole('alert')).toBeTruthy()
+  expect(within(dialog).getByText(/2 bills are still unpaid/i)).toBeTruthy()
+  // Opening the panel warns and must NOT have closed anything.
   expect(api.closeShift).not.toHaveBeenCalled()
+  // "Keep it open" is the way out — the old "Close it anyway" idiom is gone.
+  expect(within(dialog).getByRole('button', { name: 'Keep it open' })).toBeTruthy()
+  expect(screen.queryByText('Close it anyway')).toBeNull()
 
-  fireEvent.click(screen.getByText('Close it anyway'))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Close the shift' }))
   await waitFor(() => expect(api.closeShift).toHaveBeenCalledTimes(1))
 })
 
@@ -417,6 +292,11 @@ it('closes without a warning when no bills are outstanding', async () => {
   await waitFor(() => expect(screen.getByText('Close the shift')).toBeTruthy())
 
   fireEvent.click(screen.getByText('Close the shift'))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).queryByRole('alert')).toBeNull()
+  expect(api.closeShift).not.toHaveBeenCalled()
+
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Close the shift' }))
   await waitFor(() => expect(api.closeShift).toHaveBeenCalledTimes(1))
   expect(screen.queryByRole('alert')).toBeNull()
 })
@@ -574,8 +454,10 @@ it('hides refund and close-shift while the cashier lock is on, but leaves the re
 
   expect(screen.queryByRole('link', { name: 'Refund' })).toBeNull()
   expect(screen.queryByText('Close the shift')).toBeNull()
-  // Accepting a bill (creating a charge request) is untouched by the lock.
-  expect(screen.getByText('Bill someone who isn\'t here')).toBeTruthy()
+  // R16: remote billing lives on Charge step 1 and product management on
+  // More/Settings — neither is a link on the Shift screen any more.
+  expect(screen.queryByText('Bill someone who isn\'t here')).toBeNull()
+  expect(screen.queryByText('Manage products')).toBeNull()
 })
 
 it('shows refund and close-shift normally when the cashier lock is off', async () => {
@@ -610,9 +492,16 @@ it('shows the sold-by-product and NIM/cash split sections when the report carrie
   }
   render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
   await waitFor(() => expect(screen.getByText('Sold by product')).toBeTruthy())
-  expect(screen.getByText(/Coffee × 2/)).toBeTruthy()
+  const product = screen.getByText('Coffee × 2')
+  expect(product.className).toBe('row__title')
+  // R12: the name and the amount are two elements, never one run of text.
+  // "Coffee × 25.00" was what the audit actually saw on the device.
+  expect(screen.queryByText('Coffee × 25.00')).toBeNull()
+  expect(product.closest('.row')!.querySelector('.row__amt')!.textContent).toBe('5.00')
   expect(screen.getByText('By payment method')).toBeTruthy()
-  expect(screen.getByText(/Soda/)).toBeTruthy()
+  expect(screen.getByText('Soda').className).toBe('row__title')
+  // No emoji stands in for a payment method.
+  expect(screen.queryByText(/🪙/)).toBeNull()
 })
 
 it('renders the shift report with neither new section when byProduct/byPaymentMethod are absent (older report shape)', async () => {
@@ -630,26 +519,4 @@ it('renders the shift report with neither new section when byProduct/byPaymentMe
   await waitFor(() => expect(screen.getByText('500 NIM')).toBeTruthy())
   expect(screen.queryByText('Sold by product')).toBeNull()
   expect(screen.queryByText('By payment method')).toBeNull()
-})
-
-it('hides the export links on a past shift\'s report while the cashier lock is on', async () => {
-  const past = [{ id: 'past-1', operatorLabel: 'Ana', openedAt: '2026-08-25T08:00:00.000Z',
-    closedAt: '2026-08-25T16:00:00.000Z', grossNim: '400', confirmed: 1 }]
-  const pastReport = {
-    shift: past[0],
-    totals: { count: 1, confirmed: 1, failed: 0, grossNim: '400', grossFiatMinor: null, fiatCurrency: null, averageTicketNim: '400' },
-    entries: [], fiatIncomplete: false,
-  }
-  const api = {
-    getCurrentShift: vi.fn(async () => null),
-    getShifts: vi.fn(async () => past),
-    getShiftReport: vi.fn(async () => pastReport),
-    getMe: vi.fn(async () => ({ walletAddress: 'NQ1', displayName: null, cashierLocked: true, cashierPinSet: true })),
-  }
-  render(<MemoryRouter><Shift api={api as never} /></MemoryRouter>)
-  await waitFor(() => expect(screen.getByText('Ana')).toBeTruthy())
-  fireEvent.click(screen.getByText('Ana'))
-  await waitFor(() => expect(screen.getByText('400 NIM')).toBeTruthy())
-  expect(screen.queryByText('Download CSV')).toBeNull()
-  expect(screen.queryByText('Download JSON')).toBeNull()
 })

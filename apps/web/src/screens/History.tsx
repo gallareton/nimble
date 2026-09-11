@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAppOptional } from '../AppContext'
+import type { ShiftListItem } from '@nimble/shared'
 import type { Api, HistoryItem } from '../api/client'
 import { t } from '../i18n'
 import { usePoll } from '../lib/usePoll'
@@ -20,7 +21,16 @@ export function History({ api: apiProp }: { api?: Api } = {}) {
   const role = params.get('role') ?? ''
   const from = params.get('from') ?? ''
   const to = params.get('to') ?? ''
+  const view = params.get('view') === 'shifts' ? 'shifts' : 'transactions'
   const hasFilters = Boolean(q || role || from || to)
+  // R19: the search box and the two date fields fold away behind one
+  // "Filters" button. `null` = the vendor has not decided, so the block
+  // follows whether anything is actually filtering; once they tap, their
+  // choice wins.
+  const [openFilters, setOpenFilters] = useState<boolean | null>(null)
+  const activeFilters = [q, from, to].filter(Boolean).length
+  const filtersOpen = openFilters ?? Boolean(q || from || to)
+  const [shifts, setShifts] = useState<ShiftListItem[]>([])
 
   const [items, setItems] = useState<HistoryItem[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
@@ -47,6 +57,13 @@ export function History({ api: apiProp }: { api?: Api } = {}) {
     sessionStorage.setItem(FILTERS_KEY, next.toString())
     setParams(next, { replace: true })
   }
+
+  // A vendor with no closed shifts yet should see the empty line, not an
+  // error state — an unavailable endpoint is simply an empty list.
+  useEffect(() => {
+    if (view !== 'shifts') return
+    void (api.getShifts?.() ?? Promise.resolve([])).then(setShifts).catch(() => {})
+  }, [api, view])
 
   const query = () => {
     const st = stateRef.current
@@ -101,24 +118,60 @@ export function History({ api: apiProp }: { api?: Api } = {}) {
 
   return (
     <main>
+      <div className="seg seg--wide" role="tablist" aria-label={t('History')}>
+        <button type="button" role="tab" aria-selected={view === 'transactions'}
+          onClick={() => setFilter({ view: '' })}>{t('Transactions')}</button>
+        <button type="button" role="tab" aria-selected={view === 'shifts'}
+          onClick={() => setFilter({ view: 'shifts' })}>{t('Shifts')}</button>
+      </div>
+
+      {view === 'shifts' ? (
+        shifts.length === 0 ? (
+          <p className="quiet">{t('No closed shifts yet.')}</p>
+        ) : (
+          <ul className="rows">
+            {shifts.map(s => (
+              <li key={s.id}>
+                <Link className="row row--link" to={`/history/shifts/${s.id}`}>
+                  <span className="row__main">
+                    <span className="row__title">{new Date(s.openedAt).toLocaleDateString()}</span>
+                    <span className="row__sub">{s.operatorLabel}</span>
+                  </span>
+                  <span className="row__amt">{s.grossNim} NIM</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : (<>
       <div className="filters">
-        <input
-          type="search"
-          value={q}
-          onChange={e => setFilter({ q: e.target.value })}
-          placeholder={t('Search by reference or amount')}
-          aria-label={t('Search history')}
-        />
-        <div className="dates">
-          <label>{t('From')}
-            <input type="date" value={from} max={to || undefined}
-              onChange={e => setFilter({ from: e.target.value })} />
-          </label>
-          <label>{t('To')}
-            <input type="date" value={to} min={from || undefined}
-              onChange={e => setFilter({ to: e.target.value })} />
-          </label>
-        </div>
+        <button className="link-btn" aria-expanded={filtersOpen}
+          onClick={() => setOpenFilters(!filtersOpen)}>
+          {t('Filters')}{activeFilters > 0 ? ` (${activeFilters})` : ''}
+        </button>
+        {filtersOpen && (<>
+          <input
+            type="search"
+            value={q}
+            onChange={e => setFilter({ q: e.target.value })}
+            placeholder={t('Search by reference or amount')}
+            aria-label={t('Search history')}
+          />
+          <div className="dates">
+            {/* A native date input has no placeholder, so the label carries
+                the hint about what an empty field actually means (R18). */}
+            <label>
+              <span>{t('From')}{!from && <span className="quiet"> · {t('any date')}</span>}</span>
+              <input type="date" value={from} max={to || undefined}
+                onChange={e => setFilter({ from: e.target.value })} />
+            </label>
+            <label>
+              <span>{t('To')}{!to && <span className="quiet"> · {t('today')}</span>}</span>
+              <input type="date" value={to} min={from || undefined}
+                onChange={e => setFilter({ to: e.target.value })} />
+            </label>
+          </div>
+        </>)}
         <div className="chips" role="group" aria-label={t('Direction')}>
           {([['', t('All')], ['payer', t('Sent')], ['receiver', t('Received')]] as const).map(([value, label]) => (
             <button key={value} className={`chip ${role === value ? 'chip--on' : ''}`}
@@ -150,6 +203,7 @@ export function History({ api: apiProp }: { api?: Api } = {}) {
       )}
       <div ref={sentinelRef} aria-hidden />
       {loading && <p className="quiet center">{t('Loading…')}</p>}
+      </>)}
     </main>
   )
 }

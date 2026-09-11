@@ -772,4 +772,33 @@ it('Receipt shows the receiving point-of-sale name and Tax ID frozen on the char
   await screen.findByText('Corner Kiosk')
   expect(screen.getByText('PL1234567890')).toBeTruthy()
   expect(screen.getByText('Tax ID')).toBeTruthy()
+  // R20: a receipt ends with somewhere to go — the primary is the action
+  // this person would take again (they paid, so "New payment"), and "Done"
+  // goes home. The luna figure is demoted to its own faint class.
+  expect(screen.getByRole('button', { name: 'New payment' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'New charge' })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy()
+  expect(screen.getByText(/250000 luna/).className).toBe('luna')
+})
+
+it('Receipt offers "New charge" to the side that took the money', async () => {
+  cleanup()
+  const history = vi.fn(async () => ({
+    items: [{ receiptId: 'r2', role: 'receiver', snapshot: {
+      amountNim: '2.5', amountLuna: '250000', asset: 'NIM', network: 'nimiq',
+      sender: 'NQ00 SENDER', recipient: 'NQ99 RECV', hash: 'deadbeef'.repeat(4),
+      confirmedAt: new Date().toISOString(),
+    } }],
+  }))
+  const api = { history }
+  render(
+    <MemoryRouter initialEntries={['/receipt/r2']}>
+      <Routes>
+        <Route path="/receipt/:id" element={<Receipt api={api as never} />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+  expect(await screen.findByRole('button', { name: 'New charge' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'New payment' })).toBeNull()
 })

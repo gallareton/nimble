@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useAppOptional } from '../AppContext'
 import type { Api, HistoryItem } from '../api/client'
 import { copyText } from '../lib/copy'
@@ -26,10 +26,10 @@ export function Receipt({ api: apiProp }: { api?: Api } = {}) {
     <main>
       <h1>{t('Receipt')}</h1>
       {Boolean(s.receiverBusinessName) && <p className="business-name">{String(s.receiverBusinessName)}</p>}
-      <dl>
+      <dl className="dl-rows">
         {Boolean(s.receiverTaxId) && (<><dt>{t('Tax ID')}</dt><dd>{String(s.receiverTaxId)}</dd></>)}
         <dt>{t('Direction')}</dt><dd>{item.role === 'payer' ? t('Sent') : t('Received')}</dd>
-        <dt>{t('Amount')}</dt><dd>{String(s.amountNim)} NIM <small>({String(s.amountLuna)} luna)</small></dd>
+        <dt>{t('Amount')}</dt><dd>{String(s.amountNim)} NIM <small className="luna">({String(s.amountLuna)} luna)</small></dd>
         {fiat && (<>
           <dt>{t('Price')}</dt><dd>{fiat.price}</dd>
         </>)}
@@ -42,10 +42,10 @@ export function Receipt({ api: apiProp }: { api?: Api } = {}) {
         {Boolean(s.reference) && (<><dt>{t('Reference')}</dt><dd>{String(s.reference)}</dd></>)}
         <dt>{t('Confirmed')}</dt><dd>{new Date(String(s.confirmedAt)).toLocaleString()}</dd>
         <dt>{t('Transaction')}</dt>
-        <dd>
+        <dd className="hash-row">
           <a href={`https://test.nimiq.watch/#${hash}`} target="_blank" rel="noreferrer">
             …{hash.slice(-8)} ↗
-          </a>{' '}
+          </a>
           <button className="chip" onClick={() => {
             void copyText(hash).then(ok => {
               if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) }
@@ -55,6 +55,15 @@ export function Receipt({ api: apiProp }: { api?: Api } = {}) {
           </button>
         </dd>
       </dl>
+      {/* A receipt is the end of one job and the start of the next: the
+          primary is whichever action this person would actually take again
+          (R20), and "Done" simply goes home. */}
+      <div className="actions">
+        {item.role === 'payer'
+          ? <Link to="/pay"><button className="primary">{t('New payment')}</button></Link>
+          : <Link to="/charge"><button className="primary">{t('New charge')}</button></Link>}
+        <Link to="/"><button>{t('Done')}</button></Link>
+      </div>
     </main>
   )
 }

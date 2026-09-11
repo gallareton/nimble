@@ -14,6 +14,7 @@ import { Receipt } from './screens/Receipt'
 import { Refund } from './screens/Refund'
 import { Settings } from './screens/Settings'
 import { Shift } from './screens/Shift'
+import { PastShiftReport } from './screens/ShiftReport'
 import type { ReactNode } from 'react'
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -39,6 +40,7 @@ export function App() {
           <Route path="/session/:id" element={<RequireAuth><Approval /></RequireAuth>} />
           <Route path="/receipt/:id" element={<RequireAuth><Receipt /></RequireAuth>} />
           <Route path="/history" element={<RequireAuth><History /></RequireAuth>} />
+          <Route path="/history/shifts/:id" element={<RequireAuth><PastShiftReport /></RequireAuth>} />
           <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
           <Route path="/shift" element={<RequireAuth><Shift /></RequireAuth>} />
           <Route path="/refund/:chargeId" element={<RequireAuth><Refund /></RequireAuth>} />
