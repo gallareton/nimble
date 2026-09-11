@@ -13,8 +13,8 @@
   --nimiq-gray: #f4f4f4;
 
   --ink: var(--nimiq-blue);
-  --muted: rgba(31, 35, 72, 0.6);
-  --faint: rgba(31, 35, 72, 0.4);
+  --muted: rgba(31, 35, 72, 0.72);
+  --faint: rgba(31, 35, 72, 0.5);
   --line: rgba(31, 35, 72, 0.12);
   --card: #ffffff;
   --action: var(--nimiq-light-blue);
@@ -25,6 +25,21 @@
   --shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.08);
   --shadow-lift: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
   --radius: 12px;
+  /* type scale (R22) */
+  --fs-12: 12px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+  --fs-28: 28px;
+  --fs-48: 48px;
+  /* spacing scale (R22) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 16px;
+  --sp-4: 24px;
+  --sp-5: 32px;
+  --tabbar-h: 64px;
+  --ring-size: min(78vw, 280px);
   --body: 'Mulish Variable', Muli, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-family: var(--body);
   color-scheme: light;
@@ -45,10 +60,10 @@ body {
 main {
   max-width: 480px;
   margin: 0 auto;
-  padding: 24px 20px 36px;
+  padding: 24px 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
 }
 
 h1, h2 {
@@ -85,7 +100,11 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   gap: 10px;
   max-width: 480px;
   margin: 0 auto;
-  padding: 16px 20px 0;
+  padding: 16px 20px 8px;
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background: var(--nimiq-gray);
 }
 .app-header__back {
   font-size: 24px;
@@ -103,7 +122,22 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .app-header__title { flex: 1; font-size: 20px; }
 .app-header .cashier-lock-badge { font-size: 12px; }
 
-.app-shell__content--with-bar { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+.app-shell { --bar-offset: var(--tabbar-h); }
+.app-shell--no-bar { --bar-offset: 0px; }
+.app-shell__content--with-bar { padding-bottom: calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom)); }
+
+/* A sticky action bar sits above the tab bar — and on its own at the bottom
+   when the keyboard has taken the tab bar away (R9). */
+.cta-bar {
+  position: sticky;
+  bottom: calc(var(--bar-offset) + env(safe-area-inset-bottom));
+  z-index: 10;
+  padding: 12px 0;
+  margin-top: 8px;
+  background: linear-gradient(to top, var(--nimiq-gray) 70%, transparent);
+}
+.cta-bar > button { width: 100%; }
+.tabbar-hidden .app-tabbar { display: none; }
 
 .app-tabbar {
   position: fixed;
@@ -208,21 +242,61 @@ button, .btn {
 }
 button:hover:not(:disabled) { box-shadow: var(--shadow-lift); }
 button:active { transform: translateY(1px); }
-button:disabled { opacity: 0.4; cursor: default; transform: none; }
+button:disabled, .btn:disabled { cursor: default; transform: none; }
 button:focus-visible, a:focus-visible, input:focus-visible {
   outline: 2px solid var(--action);
   outline-offset: 2px;
 }
 
-button.primary {
+button.primary, .btn.primary {
   background: var(--nimiq-light-blue);
   background-image: var(--action-bg);
   color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  font-size: 14px;
+  font-size: 16px;
 }
 button.primary:hover:not(:disabled) { background-image: var(--action-bg-darkened); }
+
+/* R11: a disabled button reads as grey and inert, never as a washed-out
+   primary — "falsely disabled" was the single loudest note in the audit.
+   Last in the cascade on purpose: it has to beat .primary and .chip. */
+button:disabled,
+.btn:disabled,
+button.primary:disabled,
+.primary:disabled,
+button.chip:disabled,
+.chip:disabled {
+  background: #e4e5ec;
+  background-image: none;
+  color: var(--faint);
+  box-shadow: none;
+  opacity: 1;
+}
+
+/* a button that reads as a link — secondary actions inside a card */
+.link-btn {
+  background: none;
+  background-image: none;
+  box-shadow: none;
+  color: var(--action);
+  font-weight: 600;
+  min-height: 44px;
+  padding: 8px 4px;
+}
+.link-btn:hover:not(:disabled) { box-shadow: none; text-decoration: underline; text-underline-offset: 3px; }
+
+/* destructive, and dressed as such (R17) */
+.danger {
+  background: var(--card);
+  background-image: none;
+  color: var(--nimiq-red);
+  border: 1.5px solid var(--nimiq-red);
+  box-shadow: none;
+}
+.danger:hover:not(:disabled) { box-shadow: none; }
+.danger-zone { border: 1px solid rgba(217, 68, 50, 0.3); }
+.danger-zone h2 { color: var(--nimiq-red); }
+
+.btn-sm { min-height: 44px; padding: 10px 18px; font-size: 15px; }
 
 .actions { display: flex; gap: 10px; }
 .actions > button { flex: 1; }
@@ -255,7 +329,7 @@ input:focus { border-color: var(--action); outline: none; }
   padding: 20px 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
 }
 .form-card input { background: var(--nimiq-gray); border-color: transparent; }
 .form-card input:focus { border-color: var(--action); }
@@ -289,9 +363,9 @@ input:focus { border-color: var(--action); outline: none; }
 
 /* BLIK-style code entry: one input, six-digit rhythm */
 input.code-input {
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: 0.3em;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
   text-align: center;
   padding: 14px 8px 14px calc(8px + 0.3em);
   font-variant-numeric: tabular-nums;
@@ -301,14 +375,18 @@ input.code-input {
 /* ── the signature: payment code inside a depleting ring ── */
 .code-ring {
   --frac: 1;
-  width: min(84vw, 340px);
-  aspect-ratio: 1;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  flex-shrink: 0;
+  aspect-ratio: auto;
   margin: 10px auto 0;
   border-radius: 50%;
-  padding: 7px;
-  background: conic-gradient(var(--action) calc(var(--frac) * 100%), var(--line) 0);
+  padding: 6px;
+  background: conic-gradient(var(--ring-color, var(--action)) calc(var(--frac) * 100%), var(--line) 0);
   transition: background 1s linear;
 }
+.code-ring--warn { --ring-color: var(--nimiq-orange); }
+.code-ring--urgent { --ring-color: var(--nimiq-red); }
 .code-ring__inner {
   width: 100%;
   height: 100%;
@@ -319,12 +397,12 @@ input.code-input {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 6px;
   text-align: center;
 }
 
 .code-display {
-  font-size: 50px;
+  font-size: 44px;
   font-weight: 800;
   letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
@@ -333,8 +411,8 @@ input.code-input {
 
 .countdown {
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  font-size: 14px;
+  color: var(--ink);
+  font-size: 22px;
   font-weight: 600;
 }
 
@@ -407,12 +485,18 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .home-actions a { text-decoration: none; }
 .home-actions button {
   width: 100%;
-  min-height: 128px;
-  font-size: 23px;
+  min-height: 120px;
+  font-size: 22px;
   font-weight: 800;
   border-radius: var(--radius);
 }
-.home-actions button.primary { text-transform: none; letter-spacing: 0; font-size: 23px; }
+.home-actions button.primary { font-size: 22px; }
+/* R1: a symmetric pair — Pay in light blue, Charge in Nimiq Blue. */
+.home-actions .home-actions__charge {
+  background: var(--nimiq-blue);
+  background-image: var(--blue-bg);
+  color: #fff;
+}
 .home-actions .sub {
   display: block;
   margin-top: 4px;
@@ -477,7 +561,9 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .quiet { color: var(--muted); font-size: 15px; }
 
 /* ── history filters ── */
-.filters { display: flex; flex-direction: column; gap: 10px; }
+.filters { display: flex; flex-direction: column; gap: 12px; }
+.filters .chips { margin-top: 8px; }
+.filters input[type='search'], .dates input { min-height: 48px; padding: 10px 14px; font-size: 15px; }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .dates { display: flex; gap: 10px; }
 .dates label { flex: 1; font-size: 12px; }
@@ -673,3 +759,133 @@ dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
   color: var(--ink);
   background-image: none;
 }
+
+
+/* ── list rows (R12): title left, subtitle grey under it, amount right.
+   Never concatenated text — every piece is its own flex child, which is
+   what the audit's "glued together" screens were really complaining about. */
+.rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 14px 16px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+.row__main { display: flex; flex-direction: column; min-width: 0; }
+.row__title { font-size: 16px; overflow-wrap: anywhere; }
+.row__sub { font-size: 13px; color: var(--muted); }
+.row__amt { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+a.row--link, button.row--link {
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  border: none;
+  cursor: pointer;
+}
+a.row--link:hover, button.row--link:hover:not(:disabled) { box-shadow: var(--shadow-lift); text-decoration: none; }
+.row--link::after { content: '›'; color: var(--faint); font-size: 22px; line-height: 1; }
+/* the same rows without the card, for use inside a .form-card */
+.rows--plain .row {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 10px 0;
+  min-height: 0;
+  border-bottom: 1px solid var(--line);
+}
+.rows--plain .row:last-child { border-bottom: none; }
+
+/* ── quantity stepper (cart) ── */
+.stepper { display: inline-flex; align-items: center; gap: 8px; }
+.stepper button {
+  width: 32px;
+  height: 32px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+}
+.stepper__n { min-width: 40px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── product catalogue ── */
+.product-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.product-btn {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.product-btn .price { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 600;
+}
+.total-line .row__amt { font-size: 22px; }
+
+/* ── segmented control ── */
+.seg {
+  display: inline-flex;
+  background: var(--nimiq-gray);
+  border-radius: 999px;
+  padding: 3px;
+}
+.seg button {
+  min-height: 38px;
+  padding: 6px 14px;
+  box-shadow: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--muted);
+}
+.seg button:hover:not(:disabled) { box-shadow: none; }
+.seg button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+.seg--wide { display: flex; }
+.seg--wide button { flex: 1; min-height: 48px; font-size: 16px; }
+
+/* ── amount field with a currency suffix (R8) ── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-suffix { display: flex; align-items: center; gap: 8px; }
+.field-suffix input { flex: 1; }
+.approx { font-size: 16px; font-weight: 600; color: var(--ink); }
+
+/* ── section heading with a trailing link ── */
+.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.section-head a { font-size: 14px; font-weight: 600; }
+
+/* ── receipt detail rows (R20) ── */
+.dl-rows dt, .dl-rows dd { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.luna { font-size: 12px; color: var(--faint); font-weight: 500; }
+.hash-row { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+
+/* ── shift ── */
+.shift-who { font-size: 16px; font-weight: 600; color: var(--ink); }
+.confirm-panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* secondary help text, under a primary explanation (R5) */
+.help-secondary { font-size: 13px; color: var(--muted); }

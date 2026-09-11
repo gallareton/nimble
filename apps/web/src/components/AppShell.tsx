@@ -15,11 +15,13 @@ import { t } from '../i18n'
 // per the plan (never scattered back into individual screens again).
 const PARENTS: Array<[RegExp, string]> = [
   [/^\/dashboard/, '/'],
-  [/^\/charge\/remote/, '/shift'],
-  [/^\/products/, '/shift'],
+  [/^\/charge\/remote/, '/charge'],
+  [/^\/products/, '/settings'],
   [/^\/refund\//, '/shift'],
   [/^\/receipt\//, '/history'],
   [/^\/settings/, '/'],
+  [/^\/guide/, '/'],
+  [/^\/history\/shifts\//, '/history'],
   [/^\/history/, '/'],
   [/^\/session\//, '/'],
   [/^\/r\//, '/'],
@@ -44,6 +46,8 @@ const TITLES: Array<[RegExp, string]> = [
   [/^\/charge\/remote/, 'Remote bill'],
   [/^\/charge/, 'Charge'],
   [/^\/products/, 'Products'],
+  [/^\/guide/, 'How it works'],
+  [/^\/history\/shifts\//, 'Shift report'],
   [/^\/history/, 'History'],
   [/^\/refund\//, 'Refund'],
 ]
@@ -67,8 +71,9 @@ function hidesBar(pathname: string): boolean {
 
 interface Tab { to: string; label: string; icon: string }
 const TABS: Tab[] = [
+  { to: '/', label: 'Home', icon: '⌂' },
   { to: '/pay', label: 'Pay', icon: '↗' },
-  { to: '/charge', label: 'Till', icon: '⊞' },
+  { to: '/charge', label: 'Charge', icon: '⊞' },
   { to: '/shift', label: 'Shift', icon: '≡' },
   { to: '/history', label: 'History', icon: '⟲' },
 ]
@@ -77,9 +82,58 @@ interface MoreItem { to: string; label: string }
 const MORE_ITEMS: MoreItem[] = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/products', label: 'Products' },
-  { to: '/charge/remote', label: 'Remote bill' },
+  { to: '/guide', label: 'How it works' },
   { to: '/settings', label: 'Settings' },
 ]
+
+// R9: the bottom bar must get out of the way of the on-screen keyboard —
+// a cashier typing an amount should see the field, not six tabs under it.
+// Two independent signals, because neither is reliable alone: a text field
+// taking focus on a touch device, and the visual viewport shrinking. Both
+// are guarded for the test environment, which has neither API in full.
+const NON_TEXT_INPUT_TYPES = ['checkbox', 'radio', 'button', 'submit', 'range', 'file']
+
+function isTextField(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null
+  if (!el || !el.tagName) return false
+  if (el.tagName === 'TEXTAREA') return true
+  if (el.tagName !== 'INPUT') return false
+  return !NON_TEXT_INPUT_TYPES.includes((el as HTMLInputElement).type)
+}
+
+function useKeyboardOpen(): boolean {
+  const [textFieldFocused, setTextFieldFocused] = useState(false)
+  const [viewportShrunk, setViewportShrunk] = useState(false)
+
+  useEffect(() => {
+    const onFocusIn = (e: FocusEvent) => { if (isTextField(e.target)) setTextFieldFocused(true) }
+    const onFocusOut = (e: FocusEvent) => { if (isTextField(e.target)) setTextFieldFocused(false) }
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('focusout', onFocusOut)
+    return () => {
+      document.removeEventListener('focusin', onFocusIn)
+      document.removeEventListener('focusout', onFocusOut)
+    }
+  }, [])
+
+  useEffect(() => {
+    const vv = typeof window === 'undefined' ? undefined : window.visualViewport
+    if (!vv) return
+    const read = () => {
+      const h = vv.height
+      setViewportShrunk(h > 0 && h < window.innerHeight * 0.8)
+    }
+    read()
+    vv.addEventListener('resize', read)
+    return () => vv.removeEventListener('resize', read)
+  }, [])
+
+  const coarse = typeof window === 'undefined'
+    ? false
+    : window.matchMedia?.('(pointer: coarse)')?.matches ?? false
+
+  return (textFieldFocused && coarse) || viewportShrunk
+}
 
 export function AppShell() {
   const location = useLocation()
@@ -87,6 +141,7 @@ export function AppShell() {
   const { api, token, wallet } = useApp()
   const [moreOpen, setMoreOpen] = useState(false)
   const [locked, setLocked] = useState(false)
+  const keyboardOpen = useKeyboardOpen()
 
   const pathname = location.pathname
 
@@ -114,9 +169,10 @@ export function AppShell() {
   const parent = parentOf(pathname)
   const title = titleFor(pathname)
   const showBar = !hidesBar(pathname)
+  const barVisible = showBar && !keyboardOpen
 
   return (
-    <div className="app-shell">
+    <div className={barVisible ? 'app-shell' : 'app-shell app-shell--no-bar tabbar-hidden'}>
       {(parent !== null || title !== null || locked) && (
         <header className="app-header">
           {parent !== null && (
@@ -131,7 +187,7 @@ export function AppShell() {
         <Outlet />
       </div>
 
-      {showBar && (
+      {barVisible && (
         <nav className="app-tabbar" aria-label="Main">
           {TABS.map(tab => {
             const active = pathname === tab.to
